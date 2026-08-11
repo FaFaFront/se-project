@@ -1,0 +1,10 @@
+node_modules
+dist
+generated
+.next
+out
+build
+storybook-static
+*.min.js
+package-lock.json
+docs

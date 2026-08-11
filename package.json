@@ -1,0 +1,57 @@
+{
+  "name": "se-project",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "prepare": "husky",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix && prettier --write .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "web:dev": "yarn workspace web dev",
+    "web:build": "yarn workspace web build",
+    "web:storybook": "yarn workspace web storybook",
+    "web:build-storybook": "yarn workspace web build-storybook",
+    "api:dev": "yarn workspace api dev",
+    "api:build": "yarn workspace api build",
+    "db:create": "yarn workspace api db.create",
+    "db:start": "yarn workspace api db.start",
+    "db:stop": "yarn workspace api db.stop",
+    "db:down": "yarn workspace api db.down",
+    "db:generate": "yarn workspace api db.generate",
+    "db:push": "yarn workspace api db.push",
+    "db:studio": "yarn workspace api db.studio",
+    "db:migrate": "yarn workspace api db.migrate",
+    "db:seed": "yarn workspace api db.seed"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/js": "^9.15.0",
+    "eslint": "^9.15.0",
+    "eslint-config-next": "^15.0.0",
+    "eslint-config-prettier": "^9.1.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "next": "^15.5.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.15.0"
+  },
+  "resolutions": {
+    "@types/express": "^4.17.21",
+    "@types/express-serve-static-core": "^4.19.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
+  },
+  "packageManager": "yarn@4.17.0"
+}

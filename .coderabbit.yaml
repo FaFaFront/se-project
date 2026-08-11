@@ -1,0 +1,28 @@
+language: "th"
+
+reviews:
+  profile: "chill"
+  high_level_summary: false
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches: ["main", "develop"]
+  path_filters:
+    - "!**/*.lock"
+    - "!**/dist/**"
+    - "!**/node_modules/**"
+
+knowledge_base:
+  web_search:
+    enabled: true
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "docs/review-guidelines.md"
+
+tools:
+  eslint:
+    enabled: true
+  gitleaks:
+    enabled: true
