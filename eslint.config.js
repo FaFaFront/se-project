@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
-import prettier from "eslint-config-prettier";
+import prettierConfig from "eslint-config-prettier";
+import prettierPlugin from "eslint-plugin-prettier";
 import { defineConfig } from "eslint/config";
 import { FlatCompat } from "@eslint/eslintrc";
 
@@ -28,7 +29,7 @@ export default defineConfig([
     ...c,
     files: ["apps/api/**/*.{ts,tsx,js,jsx}"],
   })),
-  { files: ["apps/api/**/*.{ts,tsx,js,jsx}"], ...prettier },
+  { files: ["apps/api/**/*.{ts,tsx,js,jsx}"], ...prettierConfig },
   {
     files: ["apps/api/**/*.{ts,tsx,js,jsx}"],
     languageOptions: {
@@ -47,12 +48,14 @@ export default defineConfig([
         exports: "writable",
       },
     },
+    plugins: { prettier: prettierPlugin },
     rules: {
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       "prefer-const": "error",
       eqeqeq: "error",
+      "prettier/prettier": "error",
     },
   },
 
@@ -60,8 +63,14 @@ export default defineConfig([
   ...nextConfigs.map((c) => ({ ...c, files: ["apps/web/**/*.{ts,tsx,js,jsx}"] })),
   {
     files: ["apps/web/**/*.{ts,tsx,js,jsx}"],
+    ...prettierConfig,
+  },
+  {
+    files: ["apps/web/**/*.{ts,tsx,js,jsx}"],
+    plugins: { prettier: prettierPlugin },
     rules: {
       "@next/next/no-html-link-for-pages": ["error", "apps/web/src/app/"],
+      "prettier/prettier": "error",
     },
   },
 ]);
