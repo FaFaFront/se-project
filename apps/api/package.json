@@ -5,8 +5,9 @@
   "main": "src/server.ts",
   "license": "MIT",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "start": "node dist/src/server.js",
     "check": "tsc --noEmit",
     "db.create": "docker compose up -d db",
