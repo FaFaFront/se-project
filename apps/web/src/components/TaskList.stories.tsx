@@ -5,6 +5,19 @@ const meta: Meta<typeof TaskList> = {
   title: "TaskList",
   component: TaskList,
   tags: ["autodocs"],
+  parameters: {
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        push: () => {},
+        replace: () => {},
+        refresh: () => {},
+        back: () => {},
+        forward: () => {},
+        prefetch: () => {},
+      },
+    },
+  },
 };
 
 export default meta;
