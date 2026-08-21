@@ -25,10 +25,10 @@ jobs:
         run: yarn install --immutable
 
       - name: Prepare api .env from example
-        # `yarn workspace api check` runs tsc, which transitively imports the
-        # Prisma client. Copy the example so anything that reads DATABASE_URL at
-        # type-check time has something to find.
         run: cp apps/api/.env.example apps/api/.env
+
+      - name: Generate Prisma client
+        run: yarn workspace api db.generate
 
       - name: Lint
         run: yarn lint
