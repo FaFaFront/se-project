@@ -7,9 +7,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:opacity-90",
-        secondary: "bg-secondary text-secondary-foreground hover:opacity-90",
-        outline: "border border-border bg-background hover:bg-secondary",
+        primary: "bg-primary text-canvas hover:opacity-90",
+        secondary: "bg-surface-lavender text-ink hover:opacity-90",
+        outline: "border border-hairline bg-canvas text-ink hover:bg-surface-lavender",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -18,7 +18,7 @@ const buttonVariants = cva(
       },
     },
     defaultVariants: {
-      variant: "default",
+      variant: "primary",
       size: "default",
     },
   }
