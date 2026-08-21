@@ -140,6 +140,8 @@ export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: 
         className={`fixed inset-0 z-40 flex lg:hidden ${
           isSidebarOpen ? "" : "pointer-events-none"
         }`}
+        inert={!isSidebarOpen}
+        aria-hidden={!isSidebarOpen}
       >
         <div
           className={`absolute inset-0 z-20 bg-black/30 transition-opacity duration-300 ${
@@ -173,7 +175,7 @@ export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: 
                   router.push(href);
                   setIsSidebarOpen(false);
                 }}
-                className={`font-ibm-plex py-1 text-left text-sm font-medium ${
+                className={`font-inter py-1 text-left text-sm font-medium ${
                   pathname === href ? "text-primary" : "text-ink"
                 }`}
               >
@@ -203,12 +205,12 @@ export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: 
 
                     <div className="flex flex-col">
                       {userName && (
-                        <span className="font-ibm-plex text-ink-black text-xs font-semibold">
+                        <span className="font-inter text-ink-black text-xs font-semibold">
                           {userName}
                         </span>
                       )}
                       {userMoney && (
-                        <span className="font-ibm-plex text-ink text-[10px]">{userMoney}฿</span>
+                        <span className="font-inter text-ink text-[10px]">{userMoney}฿</span>
                       )}
                     </div>
                   </div>
