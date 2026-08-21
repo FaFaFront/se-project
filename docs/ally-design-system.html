@@ -1,0 +1,1346 @@
+<title>Ally Voltage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --docs-bg: #faf9fc;
+    --docs-bg-raised: #ffffff;
+    --docs-border: #e3dfec;
+    --docs-text: #241b2e;
+    --docs-text-dim: #6c637a;
+    --docs-accent: #852ef2;
+    --docs-accent-ink: #954293;
+    --docs-code-bg: #f2eef9;
+    --docs-shadow: 0 1px 2px rgba(36, 27, 46, 0.06);
+
+    /* Ally brand tokens — fixed, not theme-dependent (documented system is light-only) */
+    --primary: #852ef2;
+    --brand-plum: #954293;
+    --brand-plum-dark: #7d2279;
+    --brand-plum-deepest: #300942;
+    --brand-ultra-dark: #16052b;
+    --ink: #2a2a2a;
+    --ink-link: #0000ee;
+    --ink-black: #000000;
+    --canvas: #ffffff;
+    --surface-lavender: #e7eaf7;
+    --hairline: #dddddd;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --docs-bg: #150c1f;
+      --docs-bg-raised: #1d1128;
+      --docs-border: #33253f;
+      --docs-text: #efeaf7;
+      --docs-text-dim: #a898b8;
+      --docs-accent: #b184f7;
+      --docs-accent-ink: #d199d0;
+      --docs-code-bg: #241633;
+      --docs-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --docs-bg: #150c1f;
+    --docs-bg-raised: #1d1128;
+    --docs-border: #33253f;
+    --docs-text: #efeaf7;
+    --docs-text-dim: #a898b8;
+    --docs-accent: #b184f7;
+    --docs-accent-ink: #d199d0;
+    --docs-code-bg: #241633;
+    --docs-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--docs-bg);
+    color: var(--docs-text);
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: var(--docs-accent); color: #fff; }
+
+  a { color: inherit; }
+
+  .mono {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+  }
+
+  /* ---------- Shell layout ---------- */
+  .shell {
+    display: grid;
+    grid-template-columns: 264px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    border-right: 1px solid var(--docs-border);
+    background: var(--docs-bg-raised);
+    padding: 28px 20px 40px;
+  }
+
+  .brandmark {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .brandmark .wordmark {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--docs-text);
+  }
+
+  .brandmark .swatch-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    background: linear-gradient(135deg, var(--primary), var(--brand-plum-deepest));
+    flex: none;
+  }
+
+  .sidebar .subtitle {
+    font-size: 11px;
+    color: var(--docs-text-dim);
+    margin: 0 0 28px;
+    letter-spacing: 0.02em;
+  }
+
+  .nav-group { margin-bottom: 22px; }
+
+  .nav-group-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--docs-text-dim);
+    margin: 0 0 8px 10px;
+  }
+
+  .nav-group a {
+    display: block;
+    font-size: 13.5px;
+    padding: 6px 10px;
+    border-radius: 7px;
+    text-decoration: none;
+    color: var(--docs-text-dim);
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+
+  .nav-group a:hover {
+    background: var(--docs-code-bg);
+    color: var(--docs-text);
+  }
+
+  .nav-group a.active {
+    background: var(--docs-code-bg);
+    color: var(--docs-accent-ink);
+    font-weight: 600;
+  }
+
+  main { min-width: 0; padding: 0 0 120px; }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    justify-content: flex-end;
+    padding: 14px 40px 0;
+    background: linear-gradient(var(--docs-bg) 60%, transparent);
+    pointer-events: none;
+  }
+  .topbar > * { pointer-events: auto; }
+
+  .theme-toggle {
+    display: inline-flex;
+    gap: 2px;
+    background: var(--docs-bg-raised);
+    border: 1px solid var(--docs-border);
+    border-radius: 999px;
+    padding: 3px;
+    box-shadow: var(--docs-shadow);
+  }
+  .theme-toggle button {
+    border: none;
+    background: transparent;
+    color: var(--docs-text-dim);
+    font-size: 11.5px;
+    font-family: inherit;
+    padding: 5px 11px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .theme-toggle button.active {
+    background: var(--docs-accent);
+    color: #fff;
+  }
+
+  .content {
+    max-width: 920px;
+    padding: 8px 40px 0;
+  }
+
+  /* ---------- Intro ---------- */
+  .intro {
+    padding: 56px 0 40px;
+    border-bottom: 1px solid var(--docs-border);
+    margin-bottom: 56px;
+  }
+  .intro .eyebrow {
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--docs-accent-ink);
+    margin: 0 0 14px;
+  }
+  .intro h1 {
+    font-size: 40px;
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    margin: 0 0 16px;
+    text-wrap: balance;
+    font-weight: 700;
+  }
+  .intro p {
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--docs-text-dim);
+    max-width: 62ch;
+    margin: 0 0 22px;
+  }
+  .intro .meta-row {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+  }
+  .intro .meta-row span.k {
+    color: var(--docs-text-dim);
+    margin-right: 6px;
+  }
+  .intro .meta-row span.v { font-weight: 600; }
+  .swatch-strip {
+    display: flex;
+    height: 8px;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 26px;
+    max-width: 420px;
+  }
+  .swatch-strip div { flex: 1; }
+
+  /* ---------- Sections ---------- */
+  section.doc-section {
+    margin-bottom: 64px;
+    scroll-margin-top: 24px;
+  }
+  section.doc-section > h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+  }
+  section.doc-section > .section-desc {
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--docs-text-dim);
+    max-width: 68ch;
+    margin: 0 0 28px;
+  }
+
+  h3.sub {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--docs-text-dim);
+    margin: 32px 0 14px;
+  }
+  h3.sub:first-of-type { margin-top: 0; }
+
+  /* ---------- Color swatches ---------- */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+  }
+  .color-card {
+    border: 1px solid var(--docs-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--docs-bg-raised);
+    box-shadow: var(--docs-shadow);
+  }
+  .color-swatch { height: 76px; position: relative; }
+  .color-body { padding: 10px 13px 13px; }
+  .color-name { font-size: 13px; font-weight: 600; margin: 0 0 3px; }
+  .color-hex { font-size: 12px; color: var(--docs-text-dim); margin: 0 0 6px; }
+  .color-freq {
+    font-size: 10.5px;
+    color: var(--docs-text-dim);
+    display: inline-block;
+    padding: 2px 7px;
+    background: var(--docs-code-bg);
+    border-radius: 999px;
+  }
+
+  /* ---------- Type specimens ---------- */
+  .type-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--docs-border);
+  }
+  .type-row:last-child { border-bottom: none; }
+  .type-sample {
+    color: var(--docs-text);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+  .type-meta {
+    flex: none;
+    text-align: right;
+    font-size: 11.5px;
+    color: var(--docs-text-dim);
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+  .type-meta .token-name {
+    display: block;
+    color: var(--docs-accent-ink);
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+
+  /* ---------- Token table (spacing/radius) ---------- */
+  .token-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  .token-table th {
+    text-align: left;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--docs-text-dim);
+    font-weight: 600;
+    padding: 0 12px 10px;
+    border-bottom: 1px solid var(--docs-border);
+  }
+  .token-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--docs-border);
+    vertical-align: middle;
+  }
+  .token-table tr:last-child td { border-bottom: none; }
+  .token-table .token-name { color: var(--docs-accent-ink); font-weight: 500; }
+  .bar-track {
+    background: var(--docs-code-bg);
+    border-radius: 4px;
+    height: 10px;
+    width: 160px;
+    overflow: hidden;
+  }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--brand-plum-deepest)); border-radius: 4px; }
+  .radius-demo {
+    width: 44px; height: 44px;
+    background: var(--primary);
+    flex: none;
+  }
+
+  /* ---------- Component preview cards ---------- */
+  .preview-card {
+    border: 1px solid var(--docs-border);
+    border-radius: 14px;
+    background: var(--docs-bg-raised);
+    box-shadow: var(--docs-shadow);
+    margin-bottom: 22px;
+    overflow: hidden;
+  }
+  .preview-stage {
+    padding: 36px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .preview-stage.light-stage { background: #ffffff; }
+  .preview-stage.lavender-stage { background: var(--surface-lavender); }
+  .preview-stage.dark-stage { background: var(--brand-ultra-dark); }
+  .preview-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-top: 1px solid var(--docs-border);
+    font-size: 12px;
+  }
+  .preview-label .name { font-weight: 600; }
+  .preview-label .desc { color: var(--docs-text-dim); font-size: 11.5px; }
+
+  /* Ally components, rendered with real tokens */
+  .a-btn-primary {
+    font-family: "Inter", sans-serif;
+    background: var(--primary);
+    color: var(--canvas);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    border: 1px solid var(--primary);
+    border-radius: 24px;
+    padding: 8px 22px;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(133, 46, 242, 0.18);
+  }
+  .a-btn-secondary {
+    font-family: "Inter", sans-serif;
+    background: transparent;
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    border: 1px solid var(--ink-black);
+    border-radius: 24px;
+    padding: 8px 22px;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+  }
+  .a-segmented {
+    display: inline-flex;
+    gap: 10px;
+    background: var(--surface-lavender);
+    padding: 8px;
+    border-radius: 28px;
+  }
+  .a-segmented .tab {
+    font-family: "Inter", sans-serif;
+    background: transparent;
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 600;
+    border: 1px solid var(--ink-black);
+    border-radius: 24px;
+    padding: 12px 24px;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+  }
+  .a-segmented .tab.is-active {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: #ffffff;
+  }
+  .a-nav {
+    width: 100%;
+    background: var(--canvas);
+    height: 60px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--hairline);
+    border-radius: 8px;
+  }
+  .a-nav .wordmark {
+    font-family: "Inter", sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    text-transform: lowercase;
+  }
+  .a-nav .links {
+    display: flex;
+    gap: 20px;
+    font-family: "Inter", sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .a-nav .links a { text-decoration: none; color: var(--ink); }
+  .a-nav .cta {
+    font-family: "Inter", sans-serif;
+    background: var(--primary);
+    color: var(--canvas);
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 24px;
+    padding: 8px 18px;
+    cursor: pointer;
+  }
+  .a-nav-link { font-family: "Inter", sans-serif; color: var(--ink-link); font-size: 14px; text-decoration: underline; }
+
+  .a-feature-panel {
+    width: 100%;
+    background: var(--brand-plum);
+    color: var(--canvas);
+    border-radius: 24px;
+    padding: 32px 16px;
+    font-family: "Inter", sans-serif;
+  }
+  .a-feature-panel h4 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 18px;
+  }
+  .a-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .a-feature-cell {
+    background: rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 14px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .a-cta-dark {
+    width: 100%;
+    background: var(--brand-plum-deepest);
+    color: var(--canvas);
+    border-radius: 40px;
+    padding: 40px;
+    font-family: "Inter", sans-serif;
+    text-align: center;
+  }
+  .a-cta-dark h4 { font-size: 30px; font-weight: 700; margin: 0 0 6px; }
+  .a-cta-dark .partner { font-size: 13px; opacity: 0.75; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  .a-card-photo {
+    width: 220px;
+    border-radius: 24px;
+    overflow: hidden;
+    background: var(--canvas);
+    font-family: "Inter", sans-serif;
+    flex: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  }
+  .a-card-photo .photo {
+    height: 130px;
+    background:
+      radial-gradient(circle at 30% 30%, rgba(255,255,255,0.35), transparent 45%),
+      linear-gradient(135deg, var(--primary), var(--brand-plum-deepest));
+  }
+  .a-card-photo .caption { padding: 14px; font-size: 13px; color: var(--ink); line-height: 1.5; }
+  .a-card-photo .caption strong { display: block; margin-bottom: 4px; font-size: 14px; }
+
+  .a-text-input {
+    font-family: "Inter", sans-serif;
+    background: var(--canvas);
+    color: var(--ink);
+    font-size: 16px;
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    padding: 12px 16px;
+    height: 48px;
+    width: 260px;
+  }
+  .a-text-input::placeholder { color: #9a9a9a; }
+
+  .a-multiselect {
+    position: relative;
+    width: 280px;
+    font-family: "Inter", sans-serif;
+  }
+  .a-multiselect-control {
+    background: var(--canvas);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    min-height: 48px;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .a-multiselect-control:focus-visible,
+  .a-multiselect-control.is-open {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+  }
+  .a-multiselect-placeholder {
+    font-size: 16px;
+    color: #9a9a9a;
+    padding: 4px 2px;
+  }
+  .a-multiselect-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface-lavender);
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 4px 6px 4px 10px;
+  }
+  .a-multiselect-chip button {
+    all: unset;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    color: var(--ink);
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .a-multiselect-chip button:hover { background: rgba(0,0,0,0.1); }
+  .a-multiselect-caret {
+    margin-left: auto;
+    color: var(--ink);
+    font-size: 11px;
+    flex: none;
+    padding: 0 2px;
+    transition: transform 0.15s ease;
+  }
+  .a-multiselect-control.is-open .a-multiselect-caret { transform: rotate(180deg); }
+  .a-multiselect-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: var(--canvas);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    padding: 6px;
+    display: none;
+    max-height: 240px;
+    overflow-y: auto;
+    z-index: 10;
+  }
+  .a-multiselect-panel.is-open { display: block; }
+  .a-multiselect-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--ink);
+    padding: 9px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .a-multiselect-option:hover { background: #f5f5f5; }
+  .a-multiselect-option .box {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    border: 1.5px solid var(--hairline);
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 11px;
+  }
+  .a-multiselect-option.is-selected { color: var(--primary); font-weight: 600; }
+  .a-multiselect-option.is-selected .box {
+    background: var(--primary);
+    border-color: var(--primary);
+  }
+
+  .a-hero {
+    width: 100%;
+    border-radius: 0;
+    padding: 60px 32px;
+    position: relative;
+    color: var(--canvas);
+    font-family: "Inter", sans-serif;
+    background:
+      linear-gradient(180deg, rgba(20,8,30,0.15), rgba(20,8,30,0.55)),
+      radial-gradient(ellipse at 70% 30%, #c98a3a 0%, transparent 55%),
+      radial-gradient(ellipse at 20% 80%, #8a5a2e 0%, transparent 60%),
+      linear-gradient(135deg, #e0a95c, #7d5a3a 60%, #40302a);
+    text-align: center;
+  }
+  .a-hero h1 {
+    font-size: 44px;
+    font-weight: 700;
+    line-height: 1.05;
+    margin: 0 0 20px;
+    text-wrap: balance;
+  }
+
+  /* ---------- Do / Don't ---------- */
+  .dd-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .dd-card {
+    border-radius: 14px;
+    padding: 18px 20px;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .dd-card.do {
+    background: color-mix(in srgb, var(--primary) 8%, var(--docs-bg-raised));
+    border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--docs-border));
+  }
+  .dd-card.dont {
+    background: color-mix(in srgb, #e2493f 8%, var(--docs-bg-raised));
+    border: 1px solid color-mix(in srgb, #e2493f 30%, var(--docs-border));
+  }
+  .dd-card .tag {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .dd-card.do .tag { color: var(--docs-accent-ink); }
+  .dd-card.dont .tag { color: #e2493f; }
+
+  /* ---------- Known gaps ---------- */
+  .gap-list { display: grid; gap: 10px; font-size: 13.5px; }
+  .gap-item {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--docs-border);
+  }
+  .gap-item:last-child { border-bottom: none; }
+  .gap-item .k { font-weight: 600; color: var(--docs-accent-ink); }
+  .gap-item .v { color: var(--docs-text-dim); line-height: 1.6; }
+
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { position: relative; height: auto; }
+    .dd-grid { grid-template-columns: 1fr; }
+    .a-feature-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+</style>
+
+<div class="shell">
+  <nav class="sidebar" aria-label="Design system sections">
+    <div class="brandmark"><span class="swatch-dot"></span><span class="wordmark">Ally Voltage</span></div>
+    <p class="subtitle">Marketing design system · alpha</p>
+
+    <div class="nav-group">
+      <p class="nav-group-label">Foundations</p>
+      <a href="#overview">Overview</a>
+      <a href="#colors">Colors</a>
+      <a href="#typography">Typography</a>
+      <a href="#spacing">Spacing</a>
+      <a href="#radius">Shape &amp; radius</a>
+    </div>
+
+    <div class="nav-group">
+      <p class="nav-group-label">Components</p>
+      <a href="#buttons">Buttons</a>
+      <a href="#navigation">Navigation</a>
+      <a href="#segmented">Segmented control</a>
+      <a href="#panels">Panels</a>
+      <a href="#cards">Photo cards</a>
+      <a href="#forms">Form inputs</a>
+      <a href="#hero">Hero</a>
+    </div>
+
+    <div class="nav-group">
+      <p class="nav-group-label">Guidance</p>
+      <a href="#dos-donts">Do's &amp; don'ts</a>
+      <a href="#gaps">Known gaps</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="topbar">
+      <div class="theme-toggle" role="group" aria-label="Docs theme">
+        <button type="button" data-theme-choice="light">Light</button>
+        <button type="button" data-theme-choice="system" class="active">System</button>
+        <button type="button" data-theme-choice="dark">Dark</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <header class="intro" id="overview">
+        <p class="eyebrow">Documented from ally.com · marketing surface</p>
+        <h1>Two-tier purple voltage, in place of banking blue.</h1>
+        <p>Ally rejects the trust-blue convention every legacy US bank runs and builds instead on a saturated purple CTA fill layered against a deeper structural plum. This page catalogs the tokens and components captured from the live marketing site — 11 colors, 12 type styles, a 5-step radius scale with no pill, and 16 components — reproduced here with the real values.</p>
+        <div class="swatch-strip">
+          <div style="background: var(--primary)"></div>
+          <div style="background: var(--brand-plum)"></div>
+          <div style="background: var(--brand-plum-dark)"></div>
+          <div style="background: var(--brand-plum-deepest)"></div>
+          <div style="background: var(--brand-ultra-dark)"></div>
+        </div>
+        <div class="meta-row" style="margin-top:18px;">
+          <span><span class="k">Typeface</span><span class="v">TruthSans → Inter</span></span>
+          <span><span class="k">Signature radius</span><span class="v">24px, no pill</span></span>
+          <span><span class="k">Base unit</span><span class="v">8px</span></span>
+          <span><span class="k">Status</span><span class="v">Marketing surface only</span></span>
+        </div>
+      </header>
+
+      <!-- COLORS -->
+      <section class="doc-section" id="colors">
+        <h2>Colors</h2>
+        <p class="section-desc">The two purples carry different jobs: the saturated one is the action signal on CTAs; the deeper plum is the structural-type signal, carrying 87 captured occurrences as text, border, and panel fill.</p>
+
+        <h3 class="sub">Brand voltage</h3>
+        <div class="color-grid">
+          <div class="color-card">
+            <div class="color-swatch" style="background:#852ef2"></div>
+            <div class="color-body">
+              <p class="color-name">Primary</p>
+              <p class="color-hex mono">#852ef2</p>
+              <span class="color-freq">action signal · CTAs</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#954293"></div>
+            <div class="color-body">
+              <p class="color-name">Brand Plum</p>
+              <p class="color-hex mono">#954293</p>
+              <span class="color-freq">87 occurrences</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#7d2279"></div>
+            <div class="color-body">
+              <p class="color-name">Brand Plum Dark</p>
+              <p class="color-hex mono">#7d2279</p>
+              <span class="color-freq">gradient transition</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#300942"></div>
+            <div class="color-body">
+              <p class="color-name">Brand Plum Deepest</p>
+              <p class="color-hex mono">#300942</p>
+              <span class="color-freq">structural climax</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#16052b"></div>
+            <div class="color-body">
+              <p class="color-name">Ultra Dark</p>
+              <p class="color-hex mono">#16052b</p>
+              <span class="color-freq">1 occurrence</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="sub">Text</h3>
+        <div class="color-grid">
+          <div class="color-card">
+            <div class="color-swatch" style="background:#2a2a2a"></div>
+            <div class="color-body">
+              <p class="color-name">Ink</p>
+              <p class="color-hex mono">#2a2a2a</p>
+              <span class="color-freq">166 occurrences</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#0000ee"></div>
+            <div class="color-body">
+              <p class="color-name">Ink Link</p>
+              <p class="color-hex mono">#0000ee</p>
+              <span class="color-freq">semantic default</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#000000"></div>
+            <div class="color-body">
+              <p class="color-name">Ink Black</p>
+              <p class="color-hex mono">#000000</p>
+              <span class="color-freq">43 occurrences</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="sub">Surfaces &amp; hairline</h3>
+        <div class="color-grid">
+          <div class="color-card">
+            <div class="color-swatch" style="background:#ffffff; border-bottom:1px solid #eee"></div>
+            <div class="color-body">
+              <p class="color-name">Canvas</p>
+              <p class="color-hex mono">#ffffff</p>
+              <span class="color-freq">265 occurrences</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#e7eaf7"></div>
+            <div class="color-body">
+              <p class="color-name">Surface Lavender</p>
+              <p class="color-hex mono">#e7eaf7</p>
+              <span class="color-freq">segmented-tab wash</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#dddddd"></div>
+            <div class="color-body">
+              <p class="color-name">Hairline</p>
+              <p class="color-hex mono">#dddddd</p>
+              <span class="color-freq">shadow ink · 3×</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TYPOGRAPHY -->
+      <section class="doc-section" id="typography">
+        <h2>Typography</h2>
+        <p class="section-desc">TruthSans carries every spoken surface, wired as <code class="mono">--truth-sans = TruthSans, arial, helvetica, sans-serif</code>. Substitute shown here: Inter, at the same weights.</p>
+
+        <div>
+          <div class="type-row">
+            <div class="type-sample" style="font-size:64px; line-height:1.05;">Spend on Tacos.</div>
+            <div class="type-meta"><span class="token-name">display-xl</span>80px / 700 / 87px</div>
+          </div>
+          <div class="type-row">
+            <div class="type-sample" style="font-size:40px;">An Ally in every corner</div>
+            <div class="type-meta"><span class="token-name">display-lg</span>40px / 700 / 50px</div>
+          </div>
+          <div class="type-row">
+            <div class="type-sample" style="font-size:30px;">Inspiring stories &amp; information</div>
+            <div class="type-meta"><span class="token-name">display-md</span>30px / 700 / 37px</div>
+          </div>
+          <div class="type-row">
+            <div class="type-sample" style="font-size:24px;">Mortgage</div>
+            <div class="type-meta"><span class="token-name">heading-md</span>24px / 700 / 30px</div>
+          </div>
+          <div class="type-row">
+            <div class="type-sample" style="font-size:24px; font-weight:400;">A different kind of bank</div>
+            <div class="type-meta"><span class="token-name">heading-sm</span>24px / 400 / 32px</div>
+          </div>
+          <div class="type-row">
+            <div class="type-sample" style="font-size:16px; font-weight:400;">Checking, savings, and investing — all under one roof, built around the way you actually spend.</div>
+            <div class="type-meta"><span class="token-name">body-md</span>16px / 400 / 24px</div>
+          </div>
+          <div class="type-row">
+            <div class="type-sample" style="font-size:16px; font-weight:600;">Zero monthly maintenance fees.</div>
+            <div class="type-meta"><span class="token-name">body-emphasis</span>16px / 600 / 24px</div>
+          </div>
+          <div class="type-row">
+            <div class="type-sample" style="font-size:14px; font-weight:400; line-height:2;">Ally Bank Member FDIC. Rates subject to change.</div>
+            <div class="type-meta"><span class="token-name">body-sm</span>14px / 400 / 28px</div>
+          </div>
+          <div class="type-row">
+            <div class="type-sample" style="font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em;">Robo Portfolios</div>
+            <div class="type-meta"><span class="token-name">label-md</span>14px / 600 / 20px</div>
+          </div>
+          <div class="type-row">
+            <div class="type-sample" style="font-size:14px; font-weight:400;">Open Account · Bank · Invest · Auto</div>
+            <div class="type-meta"><span class="token-name">nav-link</span>14px / 400 / 20px</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SPACING -->
+      <section class="doc-section" id="spacing">
+        <h2>Spacing</h2>
+        <p class="section-desc">8px base unit, with a distinctive 10px sub-unit that pads stacked text blocks (39 captured occurrences).</p>
+        <table class="token-table">
+          <thead><tr><th>Token</th><th>Value</th><th style="width:180px">Scale</th></tr></thead>
+          <tbody id="spacing-rows"></tbody>
+        </table>
+      </section>
+
+      <!-- RADIUS -->
+      <section class="doc-section" id="radius">
+        <h2>Shape &amp; radius</h2>
+        <p class="section-desc">Stepped without a pill. 24px is the dominant CTA and panel radius — deliberately sub-pill, distinctly softer than traditional 8px banking corners.</p>
+        <table class="token-table">
+          <thead><tr><th>Token</th><th>Value</th><th style="width:80px">Shape</th></tr></thead>
+          <tbody id="radius-rows"></tbody>
+        </table>
+      </section>
+
+      <!-- BUTTONS -->
+      <section class="doc-section" id="buttons">
+        <h2>Buttons</h2>
+        <p class="section-desc">24px radius on every CTA — no fully-rounded pill anywhere on the marketing surface.</p>
+
+        <div class="preview-card">
+          <div class="preview-stage light-stage">
+            <button class="a-btn-primary">Open Account</button>
+            <button class="a-btn-secondary">Learn more</button>
+          </div>
+          <div class="preview-label">
+            <span class="name">button-primary / button-secondary</span>
+            <span class="desc mono">24px radius · 48px height · 8×22 padding</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- NAVIGATION -->
+      <section class="doc-section" id="navigation">
+        <h2>Navigation</h2>
+        <p class="section-desc">The lowercase "ally" wordmark stays voice-down at 14px, even beside an 80px hero display.</p>
+        <div class="preview-card">
+          <div class="preview-stage light-stage" style="padding:0;">
+            <nav class="a-nav">
+              <span class="wordmark">ally</span>
+              <div class="links">
+                <a href="#" onclick="return false">Bank</a>
+                <a href="#" onclick="return false">Invest</a>
+                <a href="#" onclick="return false">Auto</a>
+                <a href="#" onclick="return false">Mortgage</a>
+                <a href="#" onclick="return false" class="a-nav-link">Insurance</a>
+              </div>
+              <button class="cta">Open Account</button>
+            </nav>
+          </div>
+          <div class="preview-label">
+            <span class="name">top-nav</span>
+            <span class="desc mono">60px height · hairline bottom rule</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEGMENTED -->
+      <section class="doc-section" id="segmented">
+        <h2>Segmented control</h2>
+        <p class="section-desc">Lavender wash connects the tab strip to the purple voltage without competing with it.</p>
+        <div class="preview-card">
+          <div class="preview-stage lavender-stage">
+            <div class="a-segmented">
+              <button class="tab is-active">Checking, Money &amp; Savings</button>
+              <button class="tab">Stocks, Bonds &amp; Funds</button>
+              <button class="tab">Different kind of bank</button>
+            </div>
+          </div>
+          <div class="preview-label">
+            <span class="name">segmented-tab</span>
+            <span class="desc mono">active tab: purple border + white fill</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- PANELS -->
+      <section class="doc-section" id="panels">
+        <h2>Panels</h2>
+        <p class="section-desc">Two depths of dark-purple panel mark the page's structural climax — mid plum for "what we offer," deepest plum for "what we partner with."</p>
+
+        <div class="preview-card">
+          <div class="preview-stage light-stage">
+            <div class="a-feature-panel">
+              <h4>You've got an Ally in every corner.</h4>
+              <div class="a-feature-grid">
+                <div class="a-feature-cell">Mortgage</div>
+                <div class="a-feature-cell">Auto</div>
+                <div class="a-feature-cell">Credit Card</div>
+                <div class="a-feature-cell">Invest</div>
+                <div class="a-feature-cell">Robo Portfolios</div>
+                <div class="a-feature-cell">Money Market</div>
+              </div>
+            </div>
+          </div>
+          <div class="preview-label">
+            <span class="name">feature-panel</span>
+            <span class="desc mono">brand-plum #954293 · 24px radius</span>
+          </div>
+        </div>
+
+        <div class="preview-card">
+          <div class="preview-stage light-stage">
+            <div class="a-cta-dark">
+              <h4>Bank on Buckets.</h4>
+              <div class="partner">Ally × Tonal</div>
+            </div>
+          </div>
+          <div class="preview-label">
+            <span class="name">cta-panel-dark</span>
+            <span class="desc mono">brand-plum-deepest #300942 · 40px radius · used once</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- CARDS -->
+      <section class="doc-section" id="cards">
+        <h2>Photo cards</h2>
+        <p class="section-desc">Photography fills the tile edge-to-edge; depth comes from the 24px corner and the image alone — no drop shadow.</p>
+        <div class="preview-card">
+          <div class="preview-stage light-stage">
+            <div class="a-card-photo">
+              <div class="photo"></div>
+              <div class="caption"><strong>Building your Tulum fund</strong>Three habits that made saving feel less like sacrifice.</div>
+            </div>
+            <div class="a-card-photo">
+              <div class="photo" style="background: radial-gradient(circle at 70% 20%, rgba(255,255,255,0.3), transparent 45%), linear-gradient(135deg, var(--brand-plum), var(--ultra-dark, #16052b));"></div>
+              <div class="caption"><strong>A different kind of bank</strong>No physical branches — no minimum balance either.</div>
+            </div>
+          </div>
+          <div class="preview-label">
+            <span class="name">card-photo</span>
+            <span class="desc mono">24px radius · 0 padding</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- FORMS -->
+      <section class="doc-section" id="forms">
+        <h2>Form inputs</h2>
+        <p class="section-desc">The one place the radius scale drops to 8px — deliberately quieter than the CTA geometry.</p>
+        <div class="preview-card">
+          <div class="preview-stage light-stage">
+            <input class="a-text-input" type="text" placeholder="Email address" />
+          </div>
+          <div class="preview-label">
+            <span class="name">text-input</span>
+            <span class="desc mono">8px radius · 48px height</span>
+          </div>
+        </div>
+
+        <div class="preview-card">
+          <div class="preview-stage light-stage">
+            <div class="a-multiselect" id="a-multiselect">
+              <div class="a-multiselect-control" tabindex="0" id="ams-control">
+                <span class="a-multiselect-placeholder" id="ams-placeholder">Select accounts</span>
+                <span class="a-multiselect-caret">▾</span>
+              </div>
+              <div class="a-multiselect-panel" id="ams-panel">
+                <div class="a-multiselect-option" data-value="checking">
+                  <span class="box">✓</span>Checking
+                </div>
+                <div class="a-multiselect-option" data-value="savings">
+                  <span class="box">✓</span>Savings
+                </div>
+                <div class="a-multiselect-option" data-value="invest">
+                  <span class="box">✓</span>Invest
+                </div>
+                <div class="a-multiselect-option" data-value="auto">
+                  <span class="box">✓</span>Auto
+                </div>
+                <div class="a-multiselect-option" data-value="mortgage">
+                  <span class="box">✓</span>Mortgage
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="preview-label">
+            <span class="name">multi-select-dropdown</span>
+            <span class="desc mono">8px radius · lavender chip wash</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- HERO -->
+      <section class="doc-section" id="hero">
+        <h2>Hero</h2>
+        <p class="section-desc">The 80px display only reads as editorial confidence over full-bleed photography — without it, the same weight reads as a SaaS shout.</p>
+        <div class="preview-card">
+          <div class="preview-stage" style="padding:0;">
+            <div class="a-hero">
+              <h1>Spend on Tacos.<br>Save for Tulum.</h1>
+              <button class="a-btn-primary">Open Account</button>
+            </div>
+          </div>
+          <div class="preview-label">
+            <span class="name">hero-section / hero-heading</span>
+            <span class="desc mono">80px / 700 · white on photograph</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- DO/DONT -->
+      <section class="doc-section" id="dos-donts">
+        <h2>Do's &amp; don'ts</h2>
+        <div class="dd-grid">
+          <div class="dd-card do">
+            <span class="tag">Do</span>
+            Treat the two purples as functionally distinct — primary for CTAs, brand-plum for structural type and panel fills.
+          </div>
+          <div class="dd-card dont">
+            <span class="tag">Don't</span>
+            Collapse them into a single purple. It flattens the chromatic depth the deeper plum carries across 87 occurrences.
+          </div>
+          <div class="dd-card do">
+            <span class="tag">Do</span>
+            Keep every CTA at 24px radius — the brand's signature sub-pill action shape.
+          </div>
+          <div class="dd-card dont">
+            <span class="tag">Don't</span>
+            Escalate to a 999px pill. That reads as a neobank (Monzo, Nubank), not an online-but-traditional bank.
+          </div>
+          <div class="dd-card do">
+            <span class="tag">Do</span>
+            Use lifestyle photography as the hero canvas — the 80px display needs it to read as editorial, not a shout.
+          </div>
+          <div class="dd-card dont">
+            <span class="tag">Don't</span>
+            Introduce banking blue anywhere. Purple is the deliberate move against the legacy-bank convention.
+          </div>
+          <div class="dd-card do">
+            <span class="tag">Do</span>
+            Reserve brand-plum-deepest for the bottom co-brand panel only — the page's single structural climax.
+          </div>
+          <div class="dd-card dont">
+            <span class="tag">Don't</span>
+            Render the lowercase "ally" wordmark in uppercase or at display size — the identity is voice-down by design.
+          </div>
+        </div>
+      </section>
+
+      <!-- GAPS -->
+      <section class="doc-section" id="gaps">
+        <h2>Known gaps</h2>
+        <p class="section-desc">What the captured marketing surface doesn't expose.</p>
+        <div class="gap-list">
+          <div class="gap-item"><span class="k">Form states</span><span class="v">Error / validation styling isn't exposed on the captured surface.</span></div>
+          <div class="gap-item"><span class="k">Dark mode</span><span class="v">The marketing surface is light-only; the plum panels function as inversion bands but there's no full dark variant.</span></div>
+          <div class="gap-item"><span class="k">Hover / focus</span><span class="v">Button hover treatment and focus-ring color aren't declared.</span></div>
+          <div class="gap-item"><span class="k">Motion</span><span class="v">Segmented-tab transitions and photo-tile hovers exist but only end-state values are captured.</span></div>
+          <div class="gap-item"><span class="k">Product surfaces</span><span class="v">Banking app, Invest dashboard, and Auto financing flow carry their own token systems, not represented here.</span></div>
+          <div class="gap-item"><span class="k">Co-brand pattern</span><span class="v">Only the Ally × Tonal lockup is documented; other partnerships aren't.</span></div>
+          <div class="gap-item"><span class="k">Iconography</span><span class="v">Thin single-stroke category icons aren't exposed as named SVGs.</span></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  // Spacing + radius token tables
+  const spacing = [
+    ["xs", "4px", 4], ["sm", "8px", 8], ["md", "10px", 10], ["base", "16px", 16],
+    ["lg", "22px", 22], ["xl", "24px", 24], ["2xl", "32px", 32], ["3xl", "40px", 40], ["4xl", "80px", 80]
+  ];
+  const spacingRows = document.getElementById("spacing-rows");
+  const maxSpace = 80;
+  spacing.forEach(([name, val, px]) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="token-name mono">spacing.${name}</td><td class="mono">${val}</td>
+      <td><div class="bar-track"><div class="bar-fill" style="width:${(px/maxSpace*100).toFixed(0)}%"></div></div></td>`;
+    spacingRows.appendChild(tr);
+  });
+
+  const radii = [
+    ["none", "0px", "0"], ["sm", "8px", "8px"], ["md", "16px", "16px"],
+    ["lg", "20px", "20px"], ["cta", "24px", "24px"], ["xl", "40px", "40px"]
+  ];
+  const radiusRows = document.getElementById("radius-rows");
+  radii.forEach(([name, val, rad]) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="token-name mono">rounded.${name}</td><td class="mono">${val}</td>
+      <td><div class="radius-demo" style="border-radius:${rad}"></div></td>`;
+    radiusRows.appendChild(tr);
+  });
+
+  // Scroll spy
+  const navLinks = Array.from(document.querySelectorAll(".nav-group a"));
+  const sections = navLinks.map(a => document.querySelector(a.getAttribute("href")));
+  const spy = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const idx = sections.indexOf(entry.target);
+      if (idx === -1) return;
+      if (entry.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove("active"));
+        navLinks[idx].classList.add("active");
+      }
+    });
+  }, { rootMargin: "-20% 0px -70% 0px" });
+  sections.forEach(s => s && spy.observe(s));
+
+  // Multi-select dropdown
+  (() => {
+    const root = document.getElementById("a-multiselect");
+    if (!root) return;
+    const control = document.getElementById("ams-control");
+    const panel = document.getElementById("ams-panel");
+    const placeholder = document.getElementById("ams-placeholder");
+    const options = Array.from(panel.querySelectorAll(".a-multiselect-option"));
+    const selected = new Set();
+
+    const render = () => {
+      Array.from(control.querySelectorAll(".a-multiselect-chip")).forEach(c => c.remove());
+
+      options.forEach(opt => opt.classList.toggle("is-selected", selected.has(opt.dataset.value)));
+
+      if (selected.size === 0) {
+        placeholder.style.display = "";
+      } else {
+        placeholder.style.display = "none";
+        Array.from(selected).forEach(value => {
+          const opt = options.find(o => o.dataset.value === value);
+          const chip = document.createElement("span");
+          chip.className = "a-multiselect-chip";
+          chip.innerHTML = `${opt.textContent.trim()}<button type="button" aria-label="Remove ${opt.textContent.trim()}">✕</button>`;
+          chip.querySelector("button").addEventListener("click", (e) => {
+            e.stopPropagation();
+            selected.delete(value);
+            render();
+          });
+          control.insertBefore(chip, placeholder);
+        });
+      }
+    };
+
+    const setOpen = (open) => {
+      control.classList.toggle("is-open", open);
+      panel.classList.toggle("is-open", open);
+    };
+
+    control.addEventListener("click", () => setOpen(!panel.classList.contains("is-open")));
+    control.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(!panel.classList.contains("is-open")); }
+      if (e.key === "Escape") setOpen(false);
+    });
+
+    options.forEach(opt => {
+      opt.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const value = opt.dataset.value;
+        selected.has(value) ? selected.delete(value) : selected.add(value);
+        render();
+      });
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!root.contains(e.target)) setOpen(false);
+    });
+
+    render();
+  })();
+
+  // Theme toggle
+  const root = document.documentElement;
+  const toggle = document.querySelector(".theme-toggle");
+  toggle.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-theme-choice]");
+    if (!btn) return;
+    const choice = btn.dataset.themeChoice;
+    if (choice === "system") root.removeAttribute("data-theme");
+    else root.setAttribute("data-theme", choice);
+    toggle.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === btn));
+  });
+</script>
