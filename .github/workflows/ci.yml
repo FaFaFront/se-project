@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  lint-format-typecheck:
+    name: Lint, format, type check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Prepare api .env from example
+        run: cp apps/api/.env.example apps/api/.env
+
+      - name: Generate Prisma client
+        run: yarn workspace api db.generate
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Format check
+        run: yarn format:check
+
+      - name: API type check
+        run: yarn workspace api check
