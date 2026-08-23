@@ -4,10 +4,28 @@
 @tailwind components;
 @tailwind utilities;
 
+@theme {
+  --color-primary: var(--primary);
+  --color-brand-plum: var(--brand-plum);
+  --color-brand-plum-dark: var(--brand-plum-dark);
+  --color-brand-plum-deepest: var(--brand-plum-deepest);
+  --color-brand-ultra-dark: var(--brand-ultra-dark);
+  --color-ink: var(--ink);
+  --color-ink-link: var(--ink-link);
+  --color-ink-black: var(--ink-black);
+  --color-placeholder: var(--placeholder);
+  --color-canvas: var(--canvas);
+  --color-surface-lavender: var(--surface-lavender);
+  --color-hairline: var(--hairline);
+  --color-error: var(--error);
+  --color-success: var(--success);
+}
+
 @layer base {
   :root {
     /* Brand Theme */
     --primary: #852ef2;
+    --primary-rgb: 133 46 242;
     --brand-plum: #954293;
     --brand-plum-dark: #7d2279;
     --brand-plum-deepest: #300942;
@@ -15,8 +33,10 @@
 
     /* Text  */
     --ink: #2a2a2a;
+    --ink-rgb: 42 42 42;
     --ink-link: #0000ee;
     --ink-black: #000000;
+    --ink-black-rgb: 0 0 0;
     --placeholder: #acacac;
 
     /* Surfaces */
