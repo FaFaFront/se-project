@@ -27,11 +27,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, isLoading, disabled, children, ...props }, ref) => (
     <button
       ref={ref}
-      className={cn(
-      buttonVariants({ variant }),
-      disabled && "opacity-50",
-      className
-      )}
+      className={cn(buttonVariants({ variant }), disabled && "opacity-50", className)}
       aria-busy={isLoading ?? undefined}
       disabled={disabled || isLoading}
       {...props}

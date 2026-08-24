@@ -4,23 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@theme {
-  --color-primary: var(--primary);
-  --color-brand-plum: var(--brand-plum);
-  --color-brand-plum-dark: var(--brand-plum-dark);
-  --color-brand-plum-deepest: var(--brand-plum-deepest);
-  --color-brand-ultra-dark: var(--brand-ultra-dark);
-  --color-ink: var(--ink);
-  --color-ink-link: var(--ink-link);
-  --color-ink-black: var(--ink-black);
-  --color-placeholder: var(--placeholder);
-  --color-canvas: var(--canvas);
-  --color-surface-lavender: var(--surface-lavender);
-  --color-hairline: var(--hairline);
-  --color-error: var(--error);
-  --color-success: var(--success);
-}
-
 @layer base {
   :root {
     /* Brand Theme */

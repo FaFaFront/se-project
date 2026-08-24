@@ -116,14 +116,14 @@ export const AllStates: Story = {
         <div className="col-span-2 text-center text-xl font-semibold">Mobile</div>
 
         <div />
-        <div className="text-foreground-muted text-center text-sm">Primary</div>
-        <div className="text-foreground-muted text-center text-sm">Outline</div>
-        <div className="text-foreground-muted text-center text-sm">Primary</div>
-        <div className="text-foreground-muted text-center text-sm">Outline</div>
+        <div className="text-ink/60 text-center text-sm">Primary</div>
+        <div className="text-ink/60 text-center text-sm">Outline</div>
+        <div className="text-ink/60 text-center text-sm">Primary</div>
+        <div className="text-ink/60 text-center text-sm">Outline</div>
 
         {rows.map((row) => (
           <Fragment key={row.label}>
-            <div className="text-foreground-muted text-sm">{row.label}</div>
+            <div className="text-ink/60 text-sm">{row.label}</div>
             <div className="flex justify-center">
               {cell("primary", desktopSize, row.props, row.hoverFake)}
             </div>
