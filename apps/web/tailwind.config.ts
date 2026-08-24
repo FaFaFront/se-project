@@ -8,6 +8,7 @@ const config: Config = {
       fontFamily: {
         inter: ["var(--font-inter)"],
         outfit: ["var(--font-outfit)"],
+        "ibm-plex-thai": ["var(--font-ibm-plex-thai)"],
       },
       colors: {
         primary: "var(--primary)",
@@ -21,6 +22,7 @@ const config: Config = {
         placeholder: "var(--placeholder)",
         canvas: "var(--canvas)",
         "surface-lavender": "var(--surface-lavender)",
+        "surface-disabled": "var(--surface-disabled)",
         hairline: "var(--hairline)",
         error: "var(--error)",
         success: "var(--success)",
