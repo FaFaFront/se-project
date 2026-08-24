@@ -78,8 +78,8 @@ const MultiSelect = ({
               "border-border font-ibm-plex group flex h-10 w-full cursor-pointer items-center justify-between gap-2.5 rounded-lg border bg-white px-3 py-0 transition-colors outline-none",
               textSize,
               selected.length > 0 ? "text-foreground" : "text-placeholder",
-              "hover:border-primary-light data-[state=open]:border-primary",
-              "disabled:bg-border disabled:text-placeholder disabled:hover:border-border disabled:cursor-not-allowed",
+              "enabled:hover:border-primary data-[state=open]:border-primary",
+              "disabled:bg-hairline disabled:text-placeholder disabled:hover:border-border disabled:cursor-not-allowed",
               error && "border-error hover:border-error data-[state=open]:border-error",
               triggerClassName
             )}
@@ -108,7 +108,7 @@ const MultiSelect = ({
                   className={cn(
                     "group font-ibm-plex text-foreground relative flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 outline-none select-none",
                     textSize,
-                    "data-[highlighted]:bg-primary-lighter",
+                    "data-[highlighted]:bg-primary/10",
                     "data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
                   )}
                 >
