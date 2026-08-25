@@ -60,7 +60,7 @@ const MultiSelect = ({
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       {label && (
-        <span id={labelId} className={cn("font-inter text-ink-black font-medium", textSize)}>
+        <span id={labelId} className={cn("font-inter text-ink-black font-semibold", textSize)}>
           {label}
         </span>
       )}
@@ -85,7 +85,7 @@ const MultiSelect = ({
             )}
           >
             <span className="truncate">
-              {selected.length > 0 ? `เลือกแล้ว ${selected.length}` : placeholder}
+              {selected.length > 0 ? `${selected.length} selected` : placeholder}
             </span>
             <ChevronDown className="text-placeholder size-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
           </button>
@@ -94,7 +94,7 @@ const MultiSelect = ({
           <DropdownMenuPrimitive.Content
             align="start"
             sideOffset={4}
-            className="border-hairline data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 w-[var(--radix-dropdown-menu-trigger-width,12.5rem)] rounded-lg border bg-white p-1.5 shadow-black"
+            className="flex flex-col gap-1 border-hairline data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 w-[var(--radix-dropdown-menu-trigger-width,12.5rem)] rounded-lg border bg-white p-1.5 shadow-black"
           >
             {options.map((option) => {
               const checked = selected.includes(option);

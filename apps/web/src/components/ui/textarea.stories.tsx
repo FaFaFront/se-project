@@ -11,8 +11,8 @@ const meta = {
   },
   tags: ["autodocs"],
   args: {
-    label: "รายละเอียด",
-    placeholder: "กรอกรายละเอียด",
+    label: "Description",
+    placeholder: "Enter description",
   },
 } satisfies Meta<typeof Textarea>;
 
@@ -29,9 +29,9 @@ export const Disabled: Story = {
 
 export const WithError: Story = {
   args: {
-    defaultValue: "กรอกรายละเอียด",
+    defaultValue: "Enter description",
     error: true,
-    errorMessage: "เกิดข้อผิดพลาด",
+    errorMessage: "Something went wrong",
   },
 };
 
@@ -48,16 +48,16 @@ export const AllStates: Story = {
         label: "Default",
         desktop: (
           <Textarea
-            label="รายละเอียด"
-            placeholder="กรอกรายละเอียด"
+            label="Description"
+            placeholder="Enter description"
             wrapperClassName="w-[420px]"
             className={desktopSize}
           />
         ),
         mobile: (
           <Textarea
-            label="รายละเอียด"
-            placeholder="กรอกรายละเอียด"
+            label="Description"
+            placeholder="Enter description"
             wrapperClassName="w-[420px]"
             className={mobileSize}
           />
@@ -67,16 +67,16 @@ export const AllStates: Story = {
         label: "Hover",
         desktop: (
           <Textarea
-            label="รายละเอียด"
-            placeholder="กรอกรายละเอียด"
+            label="Description"
+            placeholder="Enter description"
             wrapperClassName="w-[420px]"
             className={cn(desktopSize, "border-primary")}
           />
         ),
         mobile: (
           <Textarea
-            label="รายละเอียด"
-            placeholder="กรอกรายละเอียด"
+            label="Description"
+            placeholder="Enter description"
             wrapperClassName="w-[420px]"
             className={cn(mobileSize, "border-primary")}
           />
@@ -86,16 +86,16 @@ export const AllStates: Story = {
         label: "Focus",
         desktop: (
           <Textarea
-            label="รายละเอียด"
-            placeholder="กรอกรายละเอียด"
+            label="Description"
+            placeholder="Enter description"
             wrapperClassName="w-[420px]"
             className={cn(desktopSize, "border-primary")}
           />
         ),
         mobile: (
           <Textarea
-            label="รายละเอียด"
-            placeholder="กรอกรายละเอียด"
+            label="Description"
+            placeholder="Enter description"
             wrapperClassName="w-[420px]"
             className={cn(mobileSize, "border-primary")}
           />
@@ -105,8 +105,8 @@ export const AllStates: Story = {
         label: "Disable",
         desktop: (
           <Textarea
-            label="รายละเอียด"
-            placeholder="กรอกรายละเอียด"
+            label="Description"
+            placeholder="Enter description"
             wrapperClassName="w-[420px]"
             className={desktopSize}
             disabled
@@ -114,8 +114,8 @@ export const AllStates: Story = {
         ),
         mobile: (
           <Textarea
-            label="รายละเอียด"
-            placeholder="กรอกรายละเอียด"
+            label="Description"
+            placeholder="Enter description"
             wrapperClassName="w-[420px]"
             className={mobileSize}
             disabled
@@ -126,22 +126,22 @@ export const AllStates: Story = {
         label: "Error",
         desktop: (
           <Textarea
-            label="รายละเอียด"
-            defaultValue="กรอกรายละเอียด"
+            label="Description"
+            defaultValue="Enter description"
             wrapperClassName="w-[420px]"
             className={desktopSize}
             error
-            errorMessage="เกิดข้อผิดพลาด"
+            errorMessage="Something went wrong"
           />
         ),
         mobile: (
           <Textarea
-            label="รายละเอียด"
-            defaultValue="กรอกรายละเอียด"
+            label="Description"
+            defaultValue="Enter description"
             wrapperClassName="w-[420px]"
             className={mobileSize}
             error
-            errorMessage="เกิดข้อผิดพลาด"
+            errorMessage="Something went wrong"
           />
         ),
       },

@@ -9,7 +9,7 @@ const meta = {
   },
   tags: ["autodocs"],
   args: {
-    label: "อีเมล",
+    label: "Email",
     placeholder: "example@gmail.com",
     type: "email",
     wrapperClassName: "w-[min(520px,calc(100vw-32px))]",
@@ -43,6 +43,6 @@ export const WithError: Story = {
   args: {
     defaultValue: "example@gmail.com",
     error: true,
-    errorMessage: "เกิดข้อผิดพลาด",
+    errorMessage: "Something went wrong",
   },
 };

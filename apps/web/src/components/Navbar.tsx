@@ -110,7 +110,7 @@ export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: 
               )}
               <div className="flex flex-col gap-[1px]">
                 <p className="text-sm font-semibold">{userName}</p>
-                <p className="text-xs">{userMoney}฿</p>
+                <p className="text-xs">${userMoney}</p>
               </div>
             </div>
             <Button variant="outline" className="text-sm font-semibold px-4 py-2">
@@ -128,7 +128,7 @@ export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: 
       <button
         ref={menuToggleRef}
         type="button"
-        aria-label="เปิดเมนู"
+        aria-label="Open menu"
         aria-expanded={isSidebarOpen}
         onClick={() => setIsSidebarOpen(true)}
         className="lg:hidden"
@@ -155,13 +155,13 @@ export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: 
           ref={sidebarRef}
           role="dialog"
           aria-modal={isSidebarOpen}
-          aria-label="เมนู"
+          aria-label="Menu"
           className={`z-50 ml-auto flex h-full w-[300px] flex-col bg-white px-5 transition-transform duration-300 ${
             isSidebarOpen ? "translate-x-0" : "translate-x-full"
           }`}
         >
           <div className="flex h-16 items-center justify-end">
-            <button type="button" aria-label="ปิดเมนู" onClick={() => setIsSidebarOpen(false)}>
+            <button type="button" aria-label="Close menu" onClick={() => setIsSidebarOpen(false)}>
               <X className="text-ink h-5 w-5" />
             </button>
           </div>
@@ -210,7 +210,7 @@ export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: 
                         </span>
                       )}
                       {userMoney && (
-                        <span className="font-inter text-ink text-[10px]">{userMoney}฿</span>
+                        <span className="font-inter text-ink text-[10px]">${userMoney}</span>
                       )}
                     </div>
                   </div>
