@@ -8,7 +8,6 @@ const config: Config = {
       fontFamily: {
         inter: ["var(--font-inter)"],
         outfit: ["var(--font-outfit)"],
-        "ibm-plex-thai": ["var(--font-ibm-plex-thai)"],
       },
       colors: {
         primary: "rgb(var(--primary-rgb) / <alpha-value>)",
