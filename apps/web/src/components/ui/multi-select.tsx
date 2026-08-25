@@ -60,7 +60,7 @@ const MultiSelect = ({
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       {label && (
-        <span id={labelId} className={cn("font-ibm-plex text-foreground font-medium", textSize)}>
+        <span id={labelId} className={cn("font-inter text-ink-black font-medium", textSize)}>
           {label}
         </span>
       )}
@@ -75,11 +75,11 @@ const MultiSelect = ({
             aria-labelledby={label ? `${labelId} ${triggerId}` : undefined}
             aria-describedby={error && errorMessage ? errorId : undefined}
             className={cn(
-              "border-border font-ibm-plex group flex h-10 w-full cursor-pointer items-center justify-between gap-2.5 rounded-lg border bg-white px-3 py-0 transition-colors outline-none",
+              "border-hairline font-inter group flex h-10 w-full cursor-pointer items-center justify-between gap-2.5 rounded-lg border bg-white px-3 py-0 transition-colors outline-none",
               textSize,
-              selected.length > 0 ? "text-foreground" : "text-placeholder",
+              selected.length > 0 ? "text-ink-black" : "text-placeholder",
               "enabled:hover:border-primary data-[state=open]:border-primary",
-              "disabled:bg-hairline disabled:text-placeholder disabled:hover:border-border disabled:cursor-not-allowed",
+              "disabled:bg-hairline disabled:text-placeholder disabled:hover:border-hairline disabled:cursor-not-allowed",
               error && "border-error hover:border-error data-[state=open]:border-error",
               triggerClassName
             )}
@@ -94,7 +94,7 @@ const MultiSelect = ({
           <DropdownMenuPrimitive.Content
             align="start"
             sideOffset={4}
-            className="border-border data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 w-[var(--radix-dropdown-menu-trigger-width,12.5rem)] rounded-lg border bg-white p-1.5 shadow-black"
+            className="border-hairline data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 w-[var(--radix-dropdown-menu-trigger-width,12.5rem)] rounded-lg border bg-white p-1.5 shadow-black"
           >
             {options.map((option) => {
               const checked = selected.includes(option);
@@ -106,7 +106,7 @@ const MultiSelect = ({
                   onCheckedChange={() => toggle(option)}
                   onSelect={(e) => e.preventDefault()}
                   className={cn(
-                    "group font-ibm-plex text-foreground relative flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 outline-none select-none",
+                    "group font-inter text-ink-black relative flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-2 outline-none select-none",
                     textSize,
                     "data-[highlighted]:bg-primary/10",
                     "data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
@@ -117,7 +117,7 @@ const MultiSelect = ({
                       "flex size-4 shrink-0 items-center justify-center rounded-[2px] border",
                       checked
                         ? "border-primary bg-primary"
-                        : "border-foreground-secondary/30 group-data-[highlighted]:border-primary"
+                        : "border-ink-black/30 group-data-[highlighted]:border-primary"
                     )}
                   >
                     {checked && <Check className="size-3.5 text-white" strokeWidth={3} />}
@@ -132,7 +132,7 @@ const MultiSelect = ({
       {name &&
         selected.map((option) => <input key={option} type="hidden" name={name} value={option} />)}
       {error && errorMessage && (
-        <span id={errorId} className="font-ibm-plex text-error text-xs leading-[23px] sm:text-sm">
+        <span id={errorId} className="font-inter text-error text-xs leading-[23px] sm:text-sm">
           {errorMessage}
         </span>
       )}

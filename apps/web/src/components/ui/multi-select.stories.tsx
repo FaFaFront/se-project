@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { MultiSelect } from "@/components/ui/MultiSelect";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 const options = ["หมวดหมู่ 1", "หมวดหมู่ 2", "หมวดหมู่ 3", "หมวดหมู่ 4"];
 
@@ -189,7 +189,7 @@ export const AllStates: Story = {
 
         {rows.map((row) => (
           <Fragment key={row.label}>
-            <div className="text-foreground-secondary pt-2 text-sm">{row.label}</div>
+            <div className="text-ink-black/60 pt-2 text-sm">{row.label}</div>
             <div>{row.desktop}</div>
             <div>{row.mobile}</div>
           </Fragment>

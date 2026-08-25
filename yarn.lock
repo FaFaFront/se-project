@@ -7442,7 +7442,6 @@ __metadata:
   dependencies:
     "@eslint/eslintrc": "npm:^3.2.0"
     "@eslint/js": "npm:^9.15.0"
-    "@radix-ui/react-dropdown-menu": "npm:^2.1.24"
     eslint: "npm:^9.15.0"
     eslint-config-next: "npm:^15.0.0"
     eslint-config-prettier: "npm:^9.1.0"
@@ -8677,6 +8676,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "web@workspace:apps/web"
   dependencies:
+    "@radix-ui/react-dropdown-menu": "npm:^2.1.24"
     "@storybook/addon-a11y": "npm:^9.1.0"
     "@storybook/addon-docs": "npm:^9.1.0"
     "@storybook/nextjs-vite": "npm:^9.1.0"

@@ -33,7 +33,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     const mergedAriaInvalid = error || ariaInvalid;
 
     return (
-      <div className={cn("font-ibm-plex-thai flex flex-col gap-1", wrapperClassName)}>
+      <div className={cn("font-inter flex flex-col gap-1", wrapperClassName)}>
         {label && (
           <label
             htmlFor={textareaId}

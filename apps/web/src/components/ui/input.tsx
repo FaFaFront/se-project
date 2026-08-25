@@ -36,7 +36,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="font-ibm-plex-sans-thai text-ink text-lg leading-[27px] font-semibold md:text-xl md:leading-[27px]"
+            className="font-inter text-ink text-lg leading-[27px] font-semibold md:text-xl md:leading-[27px]"
           >
             {label}
           </label>
@@ -48,7 +48,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           aria-invalid={error || ariaInvalid || undefined}
           aria-describedby={describedByIds || undefined}
           className={cn(
-            "border-hairline bg-canvas font-ibm-plex-sans-thai text-ink placeholder:text-placeholder flex h-[52px] w-full rounded-xl border px-4 text-lg leading-[27px] transition-colors outline-none md:text-xl md:leading-[30px]",
+            "border-hairline bg-canvas font-inter text-ink placeholder:text-placeholder flex h-[52px] w-full rounded-xl border px-4 text-lg leading-[27px] transition-colors outline-none md:text-xl md:leading-[30px]",
             "hover:border-primary focus:border-primary",
             "disabled:border-hairline disabled:bg-[#eeeeee] disabled:text-placeholder disabled:cursor-not-allowed disabled:hover:border-hairline",
             error && "border-error hover:border-error focus:border-error",
@@ -60,7 +60,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <span
             id={errorId}
             role="alert"
-            className="font-ibm-plex-sans-thai text-error text-base leading-6 md:text-lg md:leading-[27px]"
+            className="font-inter text-error text-base leading-6 md:text-lg md:leading-[27px]"
           >
             {errorMessage}
           </span>
