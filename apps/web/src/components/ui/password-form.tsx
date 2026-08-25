@@ -18,10 +18,10 @@ export interface PasswordFormProps extends Omit<
 const PasswordForm = React.forwardRef<HTMLInputElement, PasswordFormProps>(
   (
     {
-      label = "รหัสผ่าน",
-      placeholder = "กรอกรหัสผ่าน",
+      label = "Password",
+      placeholder = "Enter your password",
       error = false,
-      errorMessage = "เกิดข้อผิดพลาด",
+      errorMessage = "Something went wrong",
       size = "desktop",
       disabled = false,
       id,
@@ -89,7 +89,7 @@ const PasswordForm = React.forwardRef<HTMLInputElement, PasswordFormProps>(
           <button
             type="button"
             disabled={disabled}
-            aria-label={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+            aria-label={showPassword ? "Hide password" : "Show password"}
             aria-pressed={showPassword}
             onClick={() => setShowPassword((prev) => !prev)}
             className="flex h-4 w-4 flex-shrink-0 items-center justify-center disabled:cursor-not-allowed"

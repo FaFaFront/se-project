@@ -85,7 +85,7 @@ const MultiSelect = ({
             )}
           >
             <span className="truncate">
-              {selected.length > 0 ? `เลือกแล้ว ${selected.length}` : placeholder}
+              {selected.length > 0 ? `${selected.length} selected` : placeholder}
             </span>
             <ChevronDown className="text-placeholder size-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
           </button>

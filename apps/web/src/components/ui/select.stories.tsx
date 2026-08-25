@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { Select } from "./select";
 
-const options = ["ตัวเลือก 1", "ตัวเลือก 2", "ตัวเลือก 3", "ตัวเลือก 4"];
+const options = ["Option 1", "Option 2", "Option 3", "Option 4"];
 
 const meta = {
   title: "UI/Select",
@@ -9,8 +9,8 @@ const meta = {
   parameters: { layout: "centered" },
   tags: ["autodocs"],
   args: {
-    label: "คณะ",
-    placeholder: "เลือกคณะ",
+    label: "Faculty",
+    placeholder: "Select faculty",
     options,
   },
 } satisfies Meta<typeof Select>;
@@ -24,8 +24,8 @@ export const Disabled: Story = { args: { disabled: true } };
 
 export const Open: Story = { args: { defaultOpen: true } };
 
-export const Selected: Story = { args: { defaultValue: "ตัวเลือก 1" } };
+export const Selected: Story = { args: { defaultValue: "Option 1" } };
 
 export const Error: Story = {
-  args: { defaultValue: "ตัวเลือก 1", error: true, errorMessage: "เกิดข้อผิดพลาด" },
+  args: { defaultValue: "Option 1", error: true, errorMessage: "Something went wrong" },
 };

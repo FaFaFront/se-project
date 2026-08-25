@@ -27,7 +27,7 @@ export interface SelectProps {
 
 const Select = ({
   label,
-  placeholder = "เลือกคณะ",
+  placeholder = "Select an option",
   options,
   value,
   defaultValue = "",
