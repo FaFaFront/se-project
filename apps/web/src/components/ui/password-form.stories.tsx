@@ -21,7 +21,7 @@ export const Default: Story = {
   },
 };
 
-export const Hover: Story = {
+export const Focus: Story = {
   args: {
     size: "desktop",
     autoFocus: true,

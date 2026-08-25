@@ -24,23 +24,28 @@ const PasswordForm = React.forwardRef<HTMLInputElement, PasswordFormProps>(
       errorMessage = "เกิดข้อผิดพลาด",
       size = "desktop",
       disabled = false,
+      id,
       className,
       ...props
     },
     ref
   ) => {
     const [showPassword, setShowPassword] = React.useState(false);
+    const generatedId = React.useId();
+    const inputId = id ?? generatedId;
+    const errorId = `${inputId}-error`;
     const isDesktop = size === "desktop";
 
     return (
       <div
         className={cn(
-          "flex w-[400px] flex-col items-start justify-center gap-1 rounded-[10px]",
+          "flex w-full max-w-[400px] flex-col items-start justify-center gap-1 rounded-[10px]",
           className
         )}
       >
         {label && (
           <label
+            htmlFor={inputId}
             className={cn(
               "font-medium text-ink-black",
               isDesktop ? "text-base leading-[26px]" : "text-sm leading-[23px]"
@@ -63,9 +68,12 @@ const PasswordForm = React.forwardRef<HTMLInputElement, PasswordFormProps>(
         >
           <input
             ref={ref}
+            id={inputId}
             type={showPassword ? "text" : "password"}
             placeholder={placeholder}
             disabled={disabled}
+            aria-invalid={error || undefined}
+            aria-describedby={error && errorMessage ? errorId : undefined}
             className={cn(
               "flex-1 bg-transparent font-normal text-ink-black outline-none placeholder:text-placeholder disabled:cursor-not-allowed",
               isDesktop ? "text-base leading-[26px]" : "text-sm leading-[23px]"
@@ -76,8 +84,9 @@ const PasswordForm = React.forwardRef<HTMLInputElement, PasswordFormProps>(
 
           <button
             type="button"
-            tabIndex={-1}
             disabled={disabled}
+            aria-label={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+            aria-pressed={showPassword}
             onClick={() => setShowPassword((prev) => !prev)}
             className="flex h-4 w-4 flex-shrink-0 items-center justify-center disabled:cursor-not-allowed"
           >
@@ -91,6 +100,7 @@ const PasswordForm = React.forwardRef<HTMLInputElement, PasswordFormProps>(
 
         {error && errorMessage && (
           <span
+            id={errorId}
             className={cn(
               "font-medium text-error",
               isDesktop ? "text-sm leading-[23px]" : "text-xs leading-[20px]"
