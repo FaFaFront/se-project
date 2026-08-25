@@ -32,11 +32,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       .join(" ");
 
     return (
-      <div className={cn("flex flex-col gap-2", wrapperClassName)}>
+      <div className={cn("flex flex-col gap-1", wrapperClassName)}>
         {label && (
           <label
             htmlFor={inputId}
-            className="font-inter text-ink text-lg leading-[27px] font-semibold md:text-xl md:leading-[27px]"
+            className="font-inter text-ink-black text-sm leading-[23px] font-medium md:text-base md:leading-[26px]"
           >
             {label}
           </label>
@@ -48,9 +48,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           aria-invalid={error || ariaInvalid || undefined}
           aria-describedby={describedByIds || undefined}
           className={cn(
-            "border-hairline bg-canvas font-inter text-ink placeholder:text-placeholder flex h-[52px] w-full rounded-xl border px-4 text-lg leading-[27px] transition-colors outline-none md:text-xl md:leading-[30px]",
+            "border-hairline bg-canvas font-inter text-ink-black placeholder:text-placeholder flex h-10 w-full rounded-lg border px-3 text-sm leading-[23px] transition-colors outline-none md:text-base md:leading-[26px]",
             "hover:border-primary focus:border-primary",
-            "disabled:border-hairline disabled:bg-[#eeeeee] disabled:text-placeholder disabled:cursor-not-allowed disabled:hover:border-hairline",
+            "disabled:border-surface-disabled disabled:bg-surface-disabled disabled:text-placeholder disabled:hover:border-surface-disabled disabled:cursor-not-allowed",
             error && "border-error hover:border-error focus:border-error",
             className
           )}
@@ -60,7 +60,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <span
             id={errorId}
             role="alert"
-            className="font-inter text-error text-base leading-6 md:text-lg md:leading-[27px]"
+            className="font-inter text-error text-xs leading-[23px] sm:text-sm"
           >
             {errorMessage}
           </span>

@@ -61,7 +61,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           <span
             id={errorId}
             role="alert"
-            className="text-error text-xs font-medium leading-[20px] md:text-sm md:leading-[23px]"
+            className="text-error text-xs leading-[20px] md:text-sm md:leading-[23px]"
           >
             {errorMessage}
           </span>

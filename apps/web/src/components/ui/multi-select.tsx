@@ -78,8 +78,8 @@ const MultiSelect = ({
               "border-hairline font-inter group flex h-10 w-full cursor-pointer items-center justify-between gap-2.5 rounded-lg border bg-white px-3 py-0 transition-colors outline-none",
               textSize,
               selected.length > 0 ? "text-ink-black" : "text-placeholder",
-              "enabled:hover:border-primary data-[state=open]:border-primary",
-              "disabled:bg-hairline disabled:text-placeholder disabled:hover:border-hairline disabled:cursor-not-allowed",
+              "hover:border-primary data-[state=open]:border-primary",
+              "disabled:border-surface-disabled disabled:bg-surface-disabled disabled:text-placeholder disabled:cursor-not-allowed",
               error && "border-error hover:border-error data-[state=open]:border-error",
               triggerClassName
             )}
