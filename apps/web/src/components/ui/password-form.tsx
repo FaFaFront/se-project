@@ -37,12 +37,10 @@ const PasswordForm = React.forwardRef<HTMLInputElement, PasswordFormProps>(
     const inputId = id ?? generatedId;
     const errorId = `${inputId}-error`;
     const isDesktop = size === "desktop";
-    const ariaDescribedBy = [
-      error && errorMessage ? errorId : undefined,
-      ariaDescribedByProp,
-    ]
-      .filter(Boolean)
-      .join(" ") || undefined;
+    const ariaDescribedBy =
+      [error && errorMessage ? errorId : undefined, ariaDescribedByProp]
+        .filter(Boolean)
+        .join(" ") || undefined;
 
     return (
       <div
