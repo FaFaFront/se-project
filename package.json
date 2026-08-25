@@ -54,5 +54,8 @@
       "prettier --write"
     ]
   },
-  "packageManager": "yarn@4.17.0"
+  "packageManager": "yarn@4.17.0",
+  "dependencies": {
+    "@radix-ui/react-dropdown-menu": "^2.1.24"
+  }
 }
