@@ -53,7 +53,7 @@ const PasswordForm = React.forwardRef<HTMLInputElement, PasswordFormProps>(
           <label
             htmlFor={inputId}
             className={cn(
-              "font-inter font-medium text-ink-black",
+              "font-inter font-semibold text-ink-black",
               isDesktop ? "text-base leading-[26px]" : "text-sm leading-[23px]"
             )}
           >

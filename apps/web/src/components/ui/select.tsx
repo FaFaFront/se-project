@@ -95,7 +95,10 @@ const Select = ({
       className={cn("font-inter relative flex w-[200px] flex-col gap-1", className)}
     >
       {label && (
-        <label htmlFor={id} className="text-ink-black text-sm leading-[23px]">
+        <label
+          htmlFor={id}
+          className="text-ink-black text-sm leading-[23px] font-semibold md:text-base md:leading-[26px]"
+        >
           {label}
         </label>
       )}

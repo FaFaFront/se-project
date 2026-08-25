@@ -60,7 +60,7 @@ const MultiSelect = ({
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       {label && (
-        <span id={labelId} className={cn("font-inter text-ink-black font-medium", textSize)}>
+        <span id={labelId} className={cn("font-inter text-ink-black font-semibold", textSize)}>
           {label}
         </span>
       )}
