@@ -1,0 +1,1027 @@
+<title>Tutorist Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --docs-bg: #faf9fc;
+    --docs-bg-raised: #ffffff;
+    --docs-border: #e3dfec;
+    --docs-text: #241b2e;
+    --docs-text-dim: #6c637a;
+    --docs-accent: #852ef2;
+    --docs-accent-ink: #954293;
+    --docs-code-bg: #f2eef9;
+    --docs-shadow: 0 1px 2px rgba(36, 27, 46, 0.06);
+
+    /* Tutorist brand tokens — copied 1:1 from apps/web/src/app/globals.css */
+    --primary: #852ef2;
+    --brand-plum: #954293;
+    --brand-plum-dark: #7d2279;
+    --brand-plum-deepest: #300942;
+    --brand-ultra-dark: #16052b;
+    --ink: #2a2a2a;
+    --ink-link: #0000ee;
+    --ink-black: #000000;
+    --placeholder: #acacac;
+    --canvas: #ffffff;
+    --surface-lavender: #e7eaf7;
+    --surface-disabled: rgba(221, 221, 221, 0.5);
+    --hairline: #dddddd;
+    --error: #ff2a16;
+    --success: #22e3c2;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --docs-bg: #150c1f;
+      --docs-bg-raised: #1d1128;
+      --docs-border: #33253f;
+      --docs-text: #efeaf7;
+      --docs-text-dim: #a898b8;
+      --docs-accent: #b184f7;
+      --docs-accent-ink: #d199d0;
+      --docs-code-bg: #241633;
+      --docs-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --docs-bg: #150c1f;
+    --docs-bg-raised: #1d1128;
+    --docs-border: #33253f;
+    --docs-text: #efeaf7;
+    --docs-text-dim: #a898b8;
+    --docs-accent: #b184f7;
+    --docs-accent-ink: #d199d0;
+    --docs-code-bg: #241633;
+    --docs-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--docs-bg);
+    color: var(--docs-text);
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: var(--docs-accent); color: #fff; }
+
+  a { color: inherit; }
+
+  .mono {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+  }
+
+  .outfit {
+    font-family: "Outfit", "Inter", sans-serif;
+  }
+
+  /* ---------- Shell layout ---------- */
+  .shell {
+    display: grid;
+    grid-template-columns: 264px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    border-right: 1px solid var(--docs-border);
+    background: var(--docs-bg-raised);
+    padding: 28px 20px 40px;
+  }
+
+  .brandmark {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .brandmark .wordmark {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--docs-text);
+  }
+
+  .brandmark .swatch-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    background: var(--primary);
+    flex: none;
+  }
+
+  .sidebar .subtitle {
+    font-size: 11px;
+    color: var(--docs-text-dim);
+    margin: 0 0 28px;
+    letter-spacing: 0.02em;
+  }
+
+  .nav-group { margin-bottom: 22px; }
+
+  .nav-group-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--docs-text-dim);
+    margin: 0 0 8px 10px;
+  }
+
+  .nav-group a {
+    display: block;
+    font-size: 13.5px;
+    padding: 6px 10px;
+    border-radius: 7px;
+    text-decoration: none;
+    color: var(--docs-text-dim);
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+
+  .nav-group a:hover {
+    background: var(--docs-code-bg);
+    color: var(--docs-text);
+  }
+
+  .nav-group a.active {
+    background: var(--docs-code-bg);
+    color: var(--docs-accent-ink);
+    font-weight: 600;
+  }
+
+  main { min-width: 0; padding: 0 0 120px; }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    justify-content: flex-end;
+    padding: 14px 40px 0;
+    background: linear-gradient(var(--docs-bg) 60%, transparent);
+    pointer-events: none;
+  }
+  .topbar > * { pointer-events: auto; }
+
+  .theme-toggle {
+    display: inline-flex;
+    gap: 2px;
+    background: var(--docs-bg-raised);
+    border: 1px solid var(--docs-border);
+    border-radius: 999px;
+    padding: 3px;
+    box-shadow: var(--docs-shadow);
+  }
+  .theme-toggle button {
+    border: none;
+    background: transparent;
+    color: var(--docs-text-dim);
+    font-size: 11.5px;
+    font-family: inherit;
+    padding: 5px 11px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .theme-toggle button.active {
+    background: var(--docs-accent);
+    color: #fff;
+  }
+
+  .content {
+    max-width: 920px;
+    padding: 8px 40px 0;
+  }
+
+  /* ---------- Intro ---------- */
+  .intro {
+    padding: 56px 0 40px;
+    border-bottom: 1px solid var(--docs-border);
+    margin-bottom: 56px;
+  }
+  .intro .eyebrow {
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--docs-accent-ink);
+    margin: 0 0 14px;
+  }
+  .intro h1 {
+    font-size: 36px;
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    margin: 0 0 16px;
+    text-wrap: balance;
+    font-weight: 700;
+  }
+  .intro p {
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--docs-text-dim);
+    max-width: 62ch;
+    margin: 0 0 22px;
+  }
+  .intro .meta-row {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+  }
+  .intro .meta-row span.k {
+    color: var(--docs-text-dim);
+    margin-right: 6px;
+  }
+  .intro .meta-row span.v { font-weight: 600; }
+  .swatch-strip {
+    display: flex;
+    height: 8px;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 26px;
+    max-width: 420px;
+  }
+  .swatch-strip div { flex: 1; }
+
+  /* ---------- Sections ---------- */
+  section.doc-section {
+    margin-bottom: 64px;
+    scroll-margin-top: 24px;
+  }
+  section.doc-section > h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+  }
+  section.doc-section > .section-desc {
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--docs-text-dim);
+    max-width: 68ch;
+    margin: 0 0 28px;
+  }
+
+  h3.sub {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--docs-text-dim);
+    margin: 32px 0 14px;
+  }
+  h3.sub:first-of-type { margin-top: 0; }
+
+  /* ---------- Color swatches ---------- */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+  }
+  .color-card {
+    border: 1px solid var(--docs-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--docs-bg-raised);
+    box-shadow: var(--docs-shadow);
+  }
+  .color-swatch { height: 76px; position: relative; }
+  .color-body { padding: 10px 13px 13px; }
+  .color-name { font-size: 13px; font-weight: 600; margin: 0 0 3px; }
+  .color-hex { font-size: 12px; color: var(--docs-text-dim); margin: 0 0 6px; }
+  .color-freq {
+    font-size: 10.5px;
+    color: var(--docs-text-dim);
+    display: inline-block;
+    padding: 2px 7px;
+    background: var(--docs-code-bg);
+    border-radius: 999px;
+  }
+
+  /* ---------- Type specimens ---------- */
+  .type-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--docs-border);
+  }
+  .type-row:last-child { border-bottom: none; }
+  .type-sample {
+    color: var(--docs-text);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+  .type-meta {
+    flex: none;
+    text-align: right;
+    font-size: 11.5px;
+    color: var(--docs-text-dim);
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+  .type-meta .token-name {
+    display: block;
+    color: var(--docs-accent-ink);
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+
+  /* ---------- Token table (spacing/radius) ---------- */
+  .token-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  .token-table th {
+    text-align: left;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--docs-text-dim);
+    font-weight: 600;
+    padding: 0 12px 10px;
+    border-bottom: 1px solid var(--docs-border);
+  }
+  .token-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--docs-border);
+    vertical-align: middle;
+  }
+  .token-table tr:last-child td { border-bottom: none; }
+  .token-table .token-name { color: var(--docs-accent-ink); font-weight: 500; }
+  .radius-demo {
+    width: 44px; height: 44px;
+    background: var(--primary);
+    flex: none;
+  }
+
+  /* ---------- Component preview cards ---------- */
+  .preview-card {
+    border: 1px solid var(--docs-border);
+    border-radius: 14px;
+    background: var(--docs-bg-raised);
+    box-shadow: var(--docs-shadow);
+    margin-bottom: 22px;
+    overflow: hidden;
+  }
+  .preview-stage {
+    padding: 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .preview-stage.light-stage { background: #ffffff; }
+  .preview-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-top: 1px solid var(--docs-border);
+    font-size: 12px;
+  }
+  .preview-label .name { font-weight: 600; }
+  .preview-label .desc { color: var(--docs-text-dim); font-size: 11.5px; }
+
+  /* Real base-component styling, ported 1:1 from apps/web/src/components/ui/ */
+  .t-btn {
+    font-family: "Inter", sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    height: 40px;
+    border-radius: 9999px;
+    padding: 8px 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: background-color .15s ease, opacity .15s ease;
+  }
+  .t-btn-primary { background: var(--primary); color: var(--canvas); border: 1px solid var(--primary); }
+  .t-btn-primary:hover { background: color-mix(in srgb, var(--primary) 80%, transparent); }
+  .t-btn-outline { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+  .t-btn-outline:hover { background: color-mix(in srgb, var(--ink-black) 7%, transparent); }
+  .t-btn[disabled] { opacity: .5; cursor: not-allowed; }
+  .t-spinner {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.45);
+    border-top-color: #fff;
+    animation: t-spin .7s linear infinite;
+  }
+  .t-btn-outline .t-spinner { border: 2px solid rgba(42,42,42,0.35); border-top-color: var(--ink); }
+  @keyframes t-spin { to { transform: rotate(360deg); } }
+
+  .t-field { display: flex; flex-direction: column; gap: 4px; width: 260px; }
+  .t-field label { font-family: "Inter", sans-serif; font-size: 14px; font-weight: 600; color: var(--ink-black); }
+  .t-input, .t-textarea, .t-select-trigger, .t-pw-wrap {
+    font-family: "Inter", sans-serif;
+    background: var(--canvas);
+    color: var(--ink-black);
+    border: 1px solid var(--hairline);
+    outline: none;
+    transition: border-color .15s ease;
+    font-size: 16px;
+  }
+  .t-input { height: 40px; border-radius: 8px; padding: 0 12px; width: 100%; }
+  .t-textarea { border-radius: 10px; padding: 12px; min-height: 96px; width: 100%; resize: vertical; }
+  .t-input:hover, .t-textarea:hover, .t-select-trigger:hover, .t-pw-wrap:hover { border-color: var(--primary); }
+  .t-input:focus, .t-textarea:focus { border-color: var(--primary); }
+  .t-input::placeholder, .t-textarea::placeholder { color: var(--placeholder); }
+  .t-input.is-error, .t-textarea.is-error, .t-select-trigger.is-error, .t-pw-wrap.is-error { border-color: var(--error) !important; }
+  .t-input[disabled], .t-textarea[disabled] { background: var(--surface-disabled); border-color: var(--surface-disabled); color: var(--placeholder); cursor: not-allowed; }
+  .t-error-text { font-family: "Inter", sans-serif; font-size: 13px; color: var(--error); }
+
+  .t-select-trigger {
+    height: 40px; border-radius: 10px; padding: 0 12px; width: 200px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer;
+  }
+  .t-select-trigger .placeholder { color: var(--placeholder); }
+  .t-select-panel {
+    border: 1px solid var(--hairline); border-radius: 10px; background: var(--canvas);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.10); padding: 6px; width: 200px; margin-top: 6px;
+  }
+  .t-select-option {
+    font-family: "Inter", sans-serif; font-size: 16px; color: var(--ink-black);
+    padding: 6px 8px; border-radius: 6px; cursor: pointer;
+  }
+  .t-select-option.is-highlighted { background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--primary); }
+  .t-select-option.is-selected { background: var(--primary); color: var(--canvas); }
+
+  .t-ms-trigger {
+    height: 40px; border-radius: 8px; padding: 0 12px; width: 220px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer;
+    font-family: "Inter", sans-serif; font-size: 16px; color: var(--placeholder);
+  }
+  .t-ms-panel {
+    border: 1px solid var(--hairline); border-radius: 8px; background: var(--canvas);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.10); padding: 6px; width: 220px; margin-top: 6px;
+  }
+  .t-ms-option { display: flex; align-items: center; gap: 10px; font-family: "Inter", sans-serif; font-size: 14px; color: var(--ink-black); padding: 8px; border-radius: 6px; }
+  .t-ms-box { width: 16px; height: 16px; border: 1.5px solid var(--hairline); border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; flex: none; }
+  .t-ms-option.is-checked .t-ms-box { background: var(--primary); border-color: var(--primary); }
+
+  .t-pw-wrap {
+    height: 40px; border-radius: 10px; padding: 0 12px; width: 260px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .t-pw-wrap input { flex: 1; border: none; outline: none; background: transparent; font-family: "Inter", sans-serif; font-size: 16px; color: var(--ink-black); }
+  .t-pw-wrap .eye { color: var(--ink-black); font-size: 13px; cursor: pointer; user-select: none; }
+
+  /* ---------- Do / Don't ---------- */
+  .dd-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .dd-card {
+    border-radius: 14px;
+    padding: 18px 20px;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .dd-card.do {
+    background: color-mix(in srgb, var(--primary) 8%, var(--docs-bg-raised));
+    border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--docs-border));
+  }
+  .dd-card.dont {
+    background: color-mix(in srgb, #e2493f 8%, var(--docs-bg-raised));
+    border: 1px solid color-mix(in srgb, #e2493f 30%, var(--docs-border));
+  }
+  .dd-card .tag {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .dd-card.do .tag { color: var(--docs-accent-ink); }
+  .dd-card.dont .tag { color: #e2493f; }
+
+  /* ---------- Known gaps ---------- */
+  .gap-list { display: grid; gap: 10px; font-size: 13.5px; }
+  .gap-item {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--docs-border);
+  }
+  .gap-item:last-child { border-bottom: none; }
+  .gap-item .k { font-weight: 600; color: var(--docs-accent-ink); }
+  .gap-item .v { color: var(--docs-text-dim); line-height: 1.6; }
+
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { position: relative; height: auto; }
+    .dd-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .t-spinner { animation: none; }
+  }
+</style>
+
+<div class="shell">
+  <nav class="sidebar" aria-label="Design system sections">
+    <div class="brandmark"><span class="swatch-dot"></span><span class="wordmark outfit">tutorist.</span></div>
+    <p class="subtitle">Base component library · alpha</p>
+
+    <div class="nav-group">
+      <p class="nav-group-label">Foundations</p>
+      <a href="#overview">Overview</a>
+      <a href="#colors">Colors</a>
+      <a href="#typography">Typography</a>
+      <a href="#spacing">Spacing</a>
+      <a href="#radius">Shape &amp; radius</a>
+    </div>
+
+    <div class="nav-group">
+      <p class="nav-group-label">Components</p>
+      <a href="#buttons">Button</a>
+      <a href="#input">Input</a>
+      <a href="#textarea">Textarea</a>
+      <a href="#select">Select</a>
+      <a href="#multiselect">Multi-select</a>
+      <a href="#password">Password field</a>
+    </div>
+
+    <div class="nav-group">
+      <p class="nav-group-label">Guidance</p>
+      <a href="#dos-donts">Do's &amp; don'ts</a>
+      <a href="#gaps">Known gaps</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="topbar">
+      <div class="theme-toggle" role="group" aria-label="Docs theme">
+        <button type="button" data-theme-choice="light">Light</button>
+        <button type="button" data-theme-choice="system" class="active">System</button>
+        <button type="button" data-theme-choice="dark">Dark</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <header class="intro" id="overview">
+        <p class="eyebrow">Documented from apps/web/src/components/ui/ · base components</p>
+        <h1>One purple. One pill. Everything else stays quiet.</h1>
+        <p>Tutorist is a tutor-marketplace app — students book paid sessions with tutors by subject. Every base component shares one action color (<code class="mono">--primary</code>) as its hover/focus/active signal, one shared 40px control height, and a deliberate radius split: buttons are the system's only pill, every form control sits at a quieter 8–10px corner. This page catalogs the real tokens and the six base components that ship today, reproduced from the live Tailwind classes.</p>
+        <div class="swatch-strip">
+          <div style="background: var(--primary)"></div>
+          <div style="background: var(--brand-plum)"></div>
+          <div style="background: var(--brand-plum-dark)"></div>
+          <div style="background: var(--brand-plum-deepest)"></div>
+          <div style="background: var(--brand-ultra-dark)"></div>
+        </div>
+        <div class="meta-row" style="margin-top:18px;">
+          <span><span class="k">Typeface</span><span class="v">Inter (UI) + Outfit (wordmark)</span></span>
+          <span><span class="k">Control height</span><span class="v">40px, shared</span></span>
+          <span><span class="k">Button radius</span><span class="v">pill (9999px)</span></span>
+          <span><span class="k">Form-control radius</span><span class="v">8–10px</span></span>
+        </div>
+      </header>
+
+      <!-- COLORS -->
+      <section class="doc-section" id="colors">
+        <h2>Colors</h2>
+        <p class="section-desc"><code class="mono">--primary</code> is the only action color wired into a base component today — it's the hover/focus/open/active signal on every interactive control. The plum range exists as tokens but has exactly one real usage: the nav wordmark.</p>
+
+        <h3 class="sub">Brand</h3>
+        <div class="color-grid">
+          <div class="color-card">
+            <div class="color-swatch" style="background:#852ef2"></div>
+            <div class="color-body">
+              <p class="color-name">Primary</p>
+              <p class="color-hex mono">#852ef2</p>
+              <span class="color-freq">action signal · every control</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#954293"></div>
+            <div class="color-body">
+              <p class="color-name">Brand Plum</p>
+              <p class="color-hex mono">#954293</p>
+              <span class="color-freq">reserved · not wired up</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#7d2279"></div>
+            <div class="color-body">
+              <p class="color-name">Brand Plum Dark</p>
+              <p class="color-hex mono">#7d2279</p>
+              <span class="color-freq">reserved · not wired up</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#300942"></div>
+            <div class="color-body">
+              <p class="color-name">Brand Plum Deepest</p>
+              <p class="color-hex mono">#300942</p>
+              <span class="color-freq">nav wordmark color</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#16052b"></div>
+            <div class="color-body">
+              <p class="color-name">Ultra Dark</p>
+              <p class="color-hex mono">#16052b</p>
+              <span class="color-freq">reserved · not wired up</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="sub">Text</h3>
+        <div class="color-grid">
+          <div class="color-card">
+            <div class="color-swatch" style="background:#2a2a2a"></div>
+            <div class="color-body">
+              <p class="color-name">Ink</p>
+              <p class="color-hex mono">#2a2a2a</p>
+              <span class="color-freq">default body / label text</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#000000"></div>
+            <div class="color-body">
+              <p class="color-name">Ink Black</p>
+              <p class="color-hex mono">#000000</p>
+              <span class="color-freq">button outline border/text</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#acacac"></div>
+            <div class="color-body">
+              <p class="color-name">Placeholder</p>
+              <p class="color-hex mono">#acacac</p>
+              <span class="color-freq">placeholder + disabled text</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#0000ee"></div>
+            <div class="color-body">
+              <p class="color-name">Ink Link</p>
+              <p class="color-hex mono">#0000ee</p>
+              <span class="color-freq">reserved · not wired up</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="sub">Surfaces &amp; status</h3>
+        <div class="color-grid">
+          <div class="color-card">
+            <div class="color-swatch" style="background:#ffffff; border-bottom:1px solid #eee"></div>
+            <div class="color-body">
+              <p class="color-name">Canvas</p>
+              <p class="color-hex mono">#ffffff</p>
+              <span class="color-freq">every control's fill</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#dddddd"></div>
+            <div class="color-body">
+              <p class="color-name">Hairline</p>
+              <p class="color-hex mono">#dddddd</p>
+              <span class="color-freq">resting border · every control</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:rgba(221,221,221,0.5)"></div>
+            <div class="color-body">
+              <p class="color-name">Surface Disabled</p>
+              <p class="color-hex mono">rgba(221,221,221,.5)</p>
+              <span class="color-freq">disabled fill + border</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#ff2a16"></div>
+            <div class="color-body">
+              <p class="color-name">Error</p>
+              <p class="color-hex mono">#ff2a16</p>
+              <span class="color-freq">error border + message</span>
+            </div>
+          </div>
+          <div class="color-card">
+            <div class="color-swatch" style="background:#22e3c2"></div>
+            <div class="color-body">
+              <p class="color-name">Success</p>
+              <p class="color-hex mono">#22e3c2</p>
+              <span class="color-freq">reserved · no success state yet</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TYPOGRAPHY -->
+      <section class="doc-section" id="typography">
+        <h2>Typography</h2>
+        <p class="section-desc">Inter carries every UI surface. Outfit is reserved for the wordmark only — it never appears in body copy, labels, or button text.</p>
+
+        <div>
+          <div class="type-row">
+            <div class="type-sample outfit" style="font-size:28px; font-weight:700;">tutorist.</div>
+            <div class="type-meta"><span class="token-name">wordmark</span>Outfit · 20/28px · 700</div>
+          </div>
+          <div class="type-row">
+            <div class="type-sample" style="font-size:16px; font-weight:600;">Password</div>
+            <div class="type-meta"><span class="token-name">label</span>14/16px · 600</div>
+          </div>
+          <div class="type-row">
+            <div class="type-sample" style="font-size:16px; font-weight:400;">Body / field value text</div>
+            <div class="type-meta"><span class="token-name">body</span>14/16px · 400</div>
+          </div>
+          <div class="type-row">
+            <div class="type-sample" style="font-size:16px; font-weight:600;">Button label</div>
+            <div class="type-meta"><span class="token-name">button</span>14/16px · 600</div>
+          </div>
+          <div class="type-row">
+            <div class="type-sample" style="font-size:14px; font-weight:400; color:var(--error);">Something went wrong</div>
+            <div class="type-meta"><span class="token-name">error-text</span>12/14px · 400</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SPACING -->
+      <section class="doc-section" id="spacing">
+        <h2>Spacing</h2>
+        <p class="section-desc">Every form control shares the same 40px height and 4px label gap, so a form row of mixed control types (input next to select next to button) stays aligned without per-component tweaking.</p>
+        <table class="token-table">
+          <thead><tr><th>Token</th><th>Value</th><th>Use</th></tr></thead>
+          <tbody>
+            <tr><td class="token-name mono">control-height</td><td class="mono">40px</td><td>Button, Input, Select, MultiSelect, PasswordForm</td></tr>
+            <tr><td class="token-name mono">control-px</td><td class="mono">12px</td><td>Input / Select / Textarea / MultiSelect horizontal padding</td></tr>
+            <tr><td class="token-name mono">button-px</td><td class="mono">24px</td><td>Button horizontal padding</td></tr>
+            <tr><td class="token-name mono">gap-label</td><td class="mono">4px</td><td>Label-to-control gap on every labeled component</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- RADIUS -->
+      <section class="doc-section" id="radius">
+        <h2>Shape &amp; radius</h2>
+        <p class="section-desc">Buttons are the system's one pill. Every form control sits at a quieter 8px or 10px corner — matched to each component's existing implementation, not a single shared value.</p>
+        <table class="token-table">
+          <thead><tr><th>Token</th><th>Value</th><th style="width:80px">Shape</th><th>Used by</th></tr></thead>
+          <tbody>
+            <tr><td class="token-name mono">rounded.sm</td><td class="mono">8px</td><td><div class="radius-demo" style="border-radius:8px"></div></td><td>Input, Textarea, MultiSelect</td></tr>
+            <tr><td class="token-name mono">rounded.md</td><td class="mono">10px</td><td><div class="radius-demo" style="border-radius:10px"></div></td><td>Select, PasswordForm</td></tr>
+            <tr><td class="token-name mono">rounded.full</td><td class="mono">9999px</td><td><div class="radius-demo" style="border-radius:9999px"></div></td><td>Button (primary + outline)</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- BUTTON -->
+      <section class="doc-section" id="buttons">
+        <h2>Button</h2>
+        <p class="section-desc"><code class="mono">apps/web/src/components/ui/button.tsx</code> — the system's only pill-shaped surface. <code class="mono">primary</code> and <code class="mono">outline</code> variants, an <code class="mono">isLoading</code> state that swaps the label for a spinner while keeping it for screen readers, and a disabled state at 50% opacity.</p>
+
+        <div class="preview-card">
+          <div class="preview-stage light-stage">
+            <button class="t-btn t-btn-primary">Sign up</button>
+            <button class="t-btn t-btn-outline">Sign in</button>
+            <button class="t-btn t-btn-primary" disabled><span class="t-spinner"></span></button>
+            <button class="t-btn t-btn-outline" disabled>Disabled</button>
+          </div>
+          <div class="preview-label">
+            <span class="name">button — primary / outline / loading / disabled</span>
+            <span class="desc mono">40px height · pill radius · 8×24 padding</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- INPUT -->
+      <section class="doc-section" id="input">
+        <h2>Input</h2>
+        <p class="section-desc"><code class="mono">input.tsx</code> — labeled text field. Hairline border at rest, primary border on hover/focus, error-red border with an inline message when <code class="mono">error</code> is set, disabled uses the shared surface-disabled fill.</p>
+
+        <div class="preview-card">
+          <div class="preview-stage light-stage">
+            <div class="t-field">
+              <label>Email</label>
+              <input class="t-input" placeholder="you@example.com" />
+            </div>
+            <div class="t-field">
+              <label>Email</label>
+              <input class="t-input is-error" value="not-an-email" />
+              <span class="t-error-text">Please enter a valid email</span>
+            </div>
+            <div class="t-field">
+              <label>Email</label>
+              <input class="t-input" placeholder="Disabled" disabled />
+            </div>
+          </div>
+          <div class="preview-label">
+            <span class="name">input — default / error / disabled</span>
+            <span class="desc mono">8px radius · 40px height</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- TEXTAREA -->
+      <section class="doc-section" id="textarea">
+        <h2>Textarea</h2>
+        <p class="section-desc"><code class="mono">textarea.tsx</code> — same color/state contract as Input, at 10px radius with a 96px minimum height. Resizes vertically only; disabled removes resize entirely.</p>
+
+        <div class="preview-card">
+          <div class="preview-stage light-stage">
+            <div class="t-field">
+              <label>Bio</label>
+              <textarea class="t-textarea" placeholder="Tell students about yourself…"></textarea>
+            </div>
+          </div>
+          <div class="preview-label">
+            <span class="name">textarea</span>
+            <span class="desc mono">10px radius · 96px min height</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- SELECT -->
+      <section class="doc-section" id="select">
+        <h2>Select</h2>
+        <p class="section-desc"><code class="mono">select.tsx</code> — a custom combobox (<code class="mono">role="combobox"</code> + listbox), not a native <code class="mono">&lt;select&gt;</code>. Keyboard-highlighted option gets a primary/10 wash; the selected option gets a solid primary fill.</p>
+
+        <div class="preview-card">
+          <div class="preview-stage light-stage" style="align-items:flex-start;">
+            <div class="t-field" style="width:auto;">
+              <label>Faculty</label>
+              <div class="t-select-trigger"><span class="placeholder">Select an option</span><span>▾</span></div>
+            </div>
+            <div class="t-field" style="width:auto;">
+              <label>Faculty</label>
+              <div>
+                <div class="t-select-trigger" style="border-color:var(--primary);"><span>Engineering</span><span>▾</span></div>
+                <div class="t-select-panel">
+                  <div class="t-select-option is-selected">Engineering</div>
+                  <div class="t-select-option is-highlighted">Science</div>
+                  <div class="t-select-option">Education</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="preview-label">
+            <span class="name">select — closed / open</span>
+            <span class="desc mono">10px radius · 200px default width</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- MULTI-SELECT -->
+      <section class="doc-section" id="multiselect">
+        <h2>Multi-select</h2>
+        <p class="section-desc"><code class="mono">multi-select.tsx</code> — built on Radix <code class="mono">DropdownMenu</code> with checkbox items. The trigger shows an English count label rather than removable chips.</p>
+
+        <div class="preview-card">
+          <div class="preview-stage light-stage" style="align-items:flex-start;">
+            <div class="t-field" style="width:auto;">
+              <label>Subjects taught</label>
+              <div class="t-ms-trigger"><span>Select subjects</span><span>▾</span></div>
+            </div>
+            <div class="t-field" style="width:auto;">
+              <label>Subjects taught</label>
+              <div>
+                <div class="t-ms-trigger" style="color:var(--ink-black); border-color:var(--primary);"><span>2 selected</span><span>▾</span></div>
+                <div class="t-ms-panel">
+                  <div class="t-ms-option is-checked"><span class="t-ms-box">✓</span>Mathematics</div>
+                  <div class="t-ms-option is-checked"><span class="t-ms-box">✓</span>Physics</div>
+                  <div class="t-ms-option"><span class="t-ms-box"></span>Chemistry</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="preview-label">
+            <span class="name">multi-select — closed / open</span>
+            <span class="desc mono">8px radius · count-label trigger, no chips</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- PASSWORD -->
+      <section class="doc-section" id="password">
+        <h2>Password field</h2>
+        <p class="section-desc"><code class="mono">password-form.tsx</code> — a text field with a built-in show/hide toggle. Defaults to English label/placeholder/error copy; ships <code class="mono">desktop</code> / <code class="mono">mobile</code> size presets. Max width 400px — built for auth forms.</p>
+
+        <div class="preview-card">
+          <div class="preview-stage light-stage">
+            <div class="t-field">
+              <label>Password</label>
+              <div class="t-pw-wrap">
+                <input type="password" placeholder="Enter your password" />
+                <span class="eye">👁</span>
+              </div>
+            </div>
+            <div class="t-field">
+              <label>Password</label>
+              <div class="t-pw-wrap is-error">
+                <input type="password" value="123" />
+                <span class="eye">👁</span>
+              </div>
+              <span class="t-error-text">Something went wrong</span>
+            </div>
+          </div>
+          <div class="preview-label">
+            <span class="name">password-form — default / error</span>
+            <span class="desc mono">10px radius · max-width 400px</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- DO/DONT -->
+      <section class="doc-section" id="dos-donts">
+        <h2>Do's &amp; don'ts</h2>
+        <div class="dd-grid">
+          <div class="dd-card do">
+            <span class="tag">Do</span>
+            Keep <code class="mono">--primary</code> as the single hover/focus/active signal across every control — that consistency is what makes a mixed form read as one system.
+          </div>
+          <div class="dd-card dont">
+            <span class="tag">Don't</span>
+            Introduce brand-plum as a second action color. Today it has exactly one usage — the nav wordmark.
+          </div>
+          <div class="dd-card do">
+            <span class="tag">Do</span>
+            Keep buttons as the one pill-shaped surface, and every form control at its existing 8px or 10px radius.
+          </div>
+          <div class="dd-card dont">
+            <span class="tag">Don't</span>
+            Round a button down to match a form control, or round a form control up to a pill.
+          </div>
+          <div class="dd-card do">
+            <span class="tag">Do</span>
+            Reuse the shared 40px control height when adding a new form component, so it aligns on a row with Input/Select/Button.
+          </div>
+          <div class="dd-card dont">
+            <span class="tag">Don't</span>
+            Hardcode copy at call sites — override the components' existing English defaults via props instead of duplicating strings.
+          </div>
+          <div class="dd-card do">
+            <span class="tag">Do</span>
+            Match the existing error contract (red border + inline message via an <code class="mono">error</code>/<code class="mono">errorMessage</code> prop pair) on any new form control.
+          </div>
+          <div class="dd-card dont">
+            <span class="tag">Don't</span>
+            Invent a success/valid visual state ad hoc — <code class="mono">--success</code> is a reserved token with no defined component usage yet.
+          </div>
+        </div>
+      </section>
+
+      <!-- GAPS -->
+      <section class="doc-section" id="gaps">
+        <h2>Known gaps</h2>
+        <p class="section-desc">What the base component set doesn't cover yet.</p>
+        <div class="gap-list">
+          <div class="gap-item"><span class="k">Success state</span><span class="v"><code class="mono">--success</code> is a defined token but no component has a success/valid visual state — only <code class="mono">error</code> exists.</span></div>
+          <div class="gap-item"><span class="k">Focus ring</span><span class="v">Form controls change border color on focus but don't declare a separate focus-visible ring.</span></div>
+          <div class="gap-item"><span class="k">Brand-plum usage</span><span class="v">The plum range has tokens and Tailwind classes wired up but only one real usage (the nav wordmark) — no documented rule for when to use it.</span></div>
+          <div class="gap-item"><span class="k">Dark mode</span><span class="v"><code class="mono">tailwind.config.ts</code> sets <code class="mono">darkMode: "class"</code> but no base component branches on it yet.</span></div>
+          <div class="gap-item"><span class="k">Icon set</span><span class="v">Icons come ad hoc from <code class="mono">lucide-react</code> — no curated subset or naming convention.</span></div>
+          <div class="gap-item"><span class="k">Layout components</span><span class="v"><code class="mono">Navbar.tsx</code> / <code class="mono">Footer.tsx</code> consume these primitives but aren't themselves reusable base components — out of scope here.</span></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  // Scroll spy
+  const navLinks = Array.from(document.querySelectorAll(".nav-group a"));
+  const sections = navLinks.map(a => document.querySelector(a.getAttribute("href")));
+  const spy = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      const idx = sections.indexOf(entry.target);
+      if (idx === -1) return;
+      if (entry.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove("active"));
+        navLinks[idx].classList.add("active");
+      }
+    });
+  }, { rootMargin: "-20% 0px -70% 0px" });
+  sections.forEach(s => s && spy.observe(s));
+
+  // Theme toggle
+  const root = document.documentElement;
+  const toggle = document.querySelector(".theme-toggle");
+  toggle.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-theme-choice]");
+    if (!btn) return;
+    const choice = btn.dataset.themeChoice;
+    if (choice === "system") root.removeAttribute("data-theme");
+    else root.setAttribute("data-theme", choice);
+    toggle.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === btn));
+  });
+</script>
