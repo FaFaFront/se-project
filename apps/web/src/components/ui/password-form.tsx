@@ -26,6 +26,8 @@ const PasswordForm = React.forwardRef<HTMLInputElement, PasswordFormProps>(
       disabled = false,
       id,
       className,
+      "aria-invalid": ariaInvalidProp,
+      "aria-describedby": ariaDescribedByProp,
       ...props
     },
     ref
@@ -35,6 +37,12 @@ const PasswordForm = React.forwardRef<HTMLInputElement, PasswordFormProps>(
     const inputId = id ?? generatedId;
     const errorId = `${inputId}-error`;
     const isDesktop = size === "desktop";
+    const ariaDescribedBy = [
+      error && errorMessage ? errorId : undefined,
+      ariaDescribedByProp,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined;
 
     return (
       <div
@@ -72,8 +80,8 @@ const PasswordForm = React.forwardRef<HTMLInputElement, PasswordFormProps>(
             type={showPassword ? "text" : "password"}
             placeholder={placeholder}
             disabled={disabled}
-            aria-invalid={error || undefined}
-            aria-describedby={error && errorMessage ? errorId : undefined}
+            aria-invalid={error ? true : (ariaInvalidProp ?? undefined)}
+            aria-describedby={ariaDescribedBy}
             className={cn(
               "flex-1 bg-transparent font-normal text-ink-black outline-none placeholder:text-placeholder disabled:cursor-not-allowed",
               isDesktop ? "text-base leading-[26px]" : "text-sm leading-[23px]"
