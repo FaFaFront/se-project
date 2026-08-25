@@ -53,10 +53,9 @@ const PasswordForm = React.forwardRef<HTMLInputElement, PasswordFormProps>(
           <label
             htmlFor={inputId}
             className={cn(
-              "font-medium text-ink-black",
+              "font-inter font-medium text-ink-black",
               isDesktop ? "text-base leading-[26px]" : "text-sm leading-[23px]"
             )}
-            style={{ fontFamily: "'IBM Plex Sans Thai', sans-serif" }}
           >
             {label}
           </label>
@@ -81,10 +80,9 @@ const PasswordForm = React.forwardRef<HTMLInputElement, PasswordFormProps>(
             aria-invalid={error ? true : (ariaInvalidProp ?? undefined)}
             aria-describedby={ariaDescribedBy}
             className={cn(
-              "flex-1 bg-transparent font-normal text-ink-black outline-none placeholder:text-placeholder disabled:cursor-not-allowed",
+              "font-inter flex-1 bg-transparent font-normal text-ink-black outline-none placeholder:text-placeholder disabled:cursor-not-allowed",
               isDesktop ? "text-base leading-[26px]" : "text-sm leading-[23px]"
             )}
-            style={{ fontFamily: "'IBM Plex Sans Thai', sans-serif" }}
             {...props}
           />
 
@@ -108,10 +106,9 @@ const PasswordForm = React.forwardRef<HTMLInputElement, PasswordFormProps>(
           <span
             id={errorId}
             className={cn(
-              "font-medium text-error",
+              "font-inter font-medium text-error",
               isDesktop ? "text-sm leading-[23px]" : "text-xs leading-[20px]"
             )}
-            style={{ fontFamily: "'IBM Plex Sans Thai', sans-serif" }}
           >
             {errorMessage}
           </span>

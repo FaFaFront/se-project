@@ -92,11 +92,10 @@ const Select = ({
   return (
     <div
       ref={rootRef}
-      className={cn("relative flex w-[200px] flex-col gap-1", className)}
-      style={{ fontFamily: '"IBM Plex Sans Thai", Inter, sans-serif' }}
+      className={cn("font-inter relative flex w-[200px] flex-col gap-1", className)}
     >
       {label && (
-        <label htmlFor={id} className="text-sm leading-[23px] text-ink">
+        <label htmlFor={id} className="text-ink-black text-sm leading-[23px]">
           {label}
         </label>
       )}
@@ -114,9 +113,9 @@ const Select = ({
         onClick={() => setOpen((state) => !state)}
         onKeyDown={handleKeyDown}
         className={cn(
-          "flex h-10 w-full cursor-pointer items-center justify-between gap-2.5 rounded-[10px] border border-hairline bg-white px-3 text-left text-base leading-[26px] text-ink outline-none transition-colors",
+          "border-hairline text-ink-black flex h-10 w-full cursor-pointer items-center justify-between gap-2.5 rounded-[10px] border bg-white px-3 text-left text-base leading-[26px] outline-none transition-colors",
           "hover:border-primary focus-visible:border-primary",
-          "disabled:cursor-not-allowed disabled:bg-hairline/50 disabled:text-placeholder",
+          "disabled:border-surface-disabled disabled:bg-surface-disabled disabled:text-placeholder disabled:cursor-not-allowed",
           open && "border-primary",
           error && "border-error hover:border-error focus-visible:border-error"
         )}
@@ -127,7 +126,7 @@ const Select = ({
         <ChevronDown
           aria-hidden="true"
           className={cn(
-            "size-4 shrink-0 text-placeholder transition-transform",
+            "text-placeholder size-4 shrink-0 transition-transform",
             open && "rotate-180"
           )}
         />
@@ -137,7 +136,7 @@ const Select = ({
         <ul
           id={`${id}-options`}
           role="listbox"
-          className="absolute left-0 top-full z-50 mt-1 max-h-64 w-full overflow-auto rounded-[10px] border border-hairline bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.10)]"
+          className="border-hairline absolute left-0 top-full z-50 mt-1 max-h-64 w-full overflow-auto rounded-[10px] border bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.10)]"
         >
           {items.map((item, index) => (
             <li
@@ -149,7 +148,7 @@ const Select = ({
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => choose(item)}
               className={cn(
-                "cursor-pointer select-none rounded-md px-2 py-1.5 text-base leading-[26px] text-ink",
+                "text-ink-black cursor-pointer select-none rounded-md px-2 py-1.5 text-base leading-[26px]",
                 highlighted === index && "bg-primary/10 text-primary",
                 item.value === currentValue && "bg-primary text-white",
                 item.disabled && "pointer-events-none opacity-50"
@@ -162,7 +161,7 @@ const Select = ({
       )}
 
       {error && errorMessage && (
-        <span id={errorId} role="alert" className="text-xs leading-[18px] text-error">
+        <span id={errorId} role="alert" className="text-error text-xs leading-[18px]">
           {errorMessage}
         </span>
       )}
