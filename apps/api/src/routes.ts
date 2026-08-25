@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { taskRouter } from "./router/task.router.js";
+import { subjectRouter } from "./router/subject.router.js";
 
 export const apiRoutes = Router();
 
-apiRoutes.use("/tasks", taskRouter);
+apiRoutes.use("/subjects", subjectRouter);

@@ -1,0 +1,21 @@
+model Subject {
+  id   String @id @default(uuid())
+  name String @unique
+
+  tutorSubjects TutorSubject[]
+  classrooms    Classroom[]
+
+  @@map("subjects")
+}
+
+model TutorSubject {
+  tutorId   String
+  subjectId String
+
+  tutor   User    @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@id([tutorId, subjectId])
+  @@index([subjectId])
+  @@map("tutor_subjects")
+}

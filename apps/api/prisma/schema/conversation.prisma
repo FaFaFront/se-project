@@ -1,0 +1,27 @@
+model Conversation {
+  id             String   @id @default(uuid())
+  participantAId String
+  participantBId String
+  createdAt      DateTime @default(now())
+
+  participantA User      @relation("ConversationParticipantA", fields: [participantAId], references: [id])
+  participantB User      @relation("ConversationParticipantB", fields: [participantBId], references: [id])
+  messages     Message[]
+
+  @@unique([participantAId, participantBId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  senderId       String
+  text           String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}

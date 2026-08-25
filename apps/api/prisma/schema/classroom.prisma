@@ -1,0 +1,39 @@
+enum ClassroomStatus {
+  active
+  completed
+}
+
+model Classroom {
+  id           String          @id @default(uuid())
+  tutorId      String
+  studentId    String
+  subjectId    String
+  pricePerHour Decimal         @db.Decimal(10, 2)
+  status       ClassroomStatus @default(active)
+  createdAt    DateTime        @default(now())
+
+  tutor     User                @relation("ClassroomTutor", fields: [tutorId], references: [id])
+  student   User                @relation("ClassroomStudent", fields: [studentId], references: [id])
+  subject   Subject             @relation(fields: [subjectId], references: [id])
+  documents ClassroomDocument[]
+  sessions  MeetSession[]
+  review    Review?
+
+  @@index([tutorId])
+  @@index([studentId])
+  @@map("classrooms")
+}
+
+model ClassroomDocument {
+  id          String   @id @default(uuid())
+  classroomId String
+  name        String
+  uploadedBy  String
+  createdAt   DateTime @default(now())
+
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  uploader  User      @relation(fields: [uploadedBy], references: [id])
+
+  @@index([classroomId])
+  @@map("classroom_documents")
+}

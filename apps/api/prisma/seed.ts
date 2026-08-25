@@ -3,8 +3,9 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  await prisma.task.createMany({
-    data: [{ title: "Set up the project" }, { title: "Read the docs" }],
+  await prisma.subject.createMany({
+    data: [{ name: "Mathematics" }, { name: "English" }, { name: "Physics" }],
+    skipDuplicates: true,
   });
 }
 

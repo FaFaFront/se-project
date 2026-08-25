@@ -1,0 +1,24 @@
+enum MeetSessionStatus {
+  scheduled
+  ongoing
+  completed
+  cancelled
+}
+
+model MeetSession {
+  id            String            @id @default(uuid())
+  classroomId   String
+  scheduledAt   DateTime
+  durationHours Decimal           @db.Decimal(4, 2)
+  status        MeetSessionStatus @default(scheduled)
+  meetLink      String
+  startedAt     DateTime?
+  endedAt       DateTime?
+  amountCharged Decimal?          @db.Decimal(10, 2)
+
+  classroom    Classroom     @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([classroomId])
+  @@map("meet_sessions")
+}
