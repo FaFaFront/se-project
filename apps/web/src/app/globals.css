@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -38,6 +38,7 @@
     /* Fonts */
     --font-inter: "Inter", arial, helvetica, sans-serif;
     --font-outfit: "Outfit", "Inter", sans-serif;
+    --font-ibm-plex-sans-thai: "IBM Plex Sans Thai", "Inter", sans-serif;
   }
 }
 
