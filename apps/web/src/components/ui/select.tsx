@@ -139,7 +139,7 @@ const Select = ({
         <ul
           id={`${id}-options`}
           role="listbox"
-          className="border-hairline absolute left-0 top-full z-50 mt-1 max-h-64 w-full overflow-auto rounded-[10px] border bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.10)]"
+          className="flex flex-col gap-1 border-hairline absolute left-0 top-full z-50 mt-1 max-h-64 w-full overflow-auto rounded-[10px] border bg-white p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.10)]"
         >
           {items.map((item, index) => (
             <li
