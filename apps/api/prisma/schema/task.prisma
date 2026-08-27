@@ -1,6 +1,0 @@
-model Task {
-  id        String   @id @default(uuid())
-  title     String
-  done      Boolean  @default(false)
-  createdAt DateTime @default(now())
-}

@@ -1,0 +1,16 @@
+model Review {
+  id          String   @id @default(uuid())
+  classroomId String   @unique
+  studentId   String
+  tutorId     String
+  rating      Int
+  comment     String
+  createdAt   DateTime @default(now())
+
+  classroom Classroom @relation(fields: [classroomId], references: [id])
+  student   User      @relation("ReviewStudent", fields: [studentId], references: [id])
+  tutor     User      @relation("ReviewTutor", fields: [tutorId], references: [id])
+
+  @@index([tutorId])
+  @@map("reviews")
+}

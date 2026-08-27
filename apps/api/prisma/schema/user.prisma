@@ -1,0 +1,33 @@
+enum Role {
+  student
+  tutor
+}
+
+model User {
+  id              String   @id @default(uuid())
+  name            String
+  email           String   @unique
+  passwordHash    String
+  role            Role
+  profileUrl      String
+  bio             String?
+  hourlyRate      Decimal? @db.Decimal(10, 2) // tutor only
+  gradeLevel      String? // student only
+  goals           String? // student only
+  walletBalance   Decimal  @default(0) @db.Decimal(12, 2)
+  profileComplete Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  tutorSubjects       TutorSubject[]
+  conversationsAsA    Conversation[]      @relation("ConversationParticipantA")
+  conversationsAsB    Conversation[]      @relation("ConversationParticipantB")
+  messages            Message[]
+  classroomsAsTutor   Classroom[]         @relation("ClassroomTutor")
+  classroomsAsStudent Classroom[]         @relation("ClassroomStudent")
+  uploadedDocuments   ClassroomDocument[]
+  transactions        Transaction[]
+  reviewsAsStudent    Review[]            @relation("ReviewStudent")
+  reviewsAsTutor      Review[]            @relation("ReviewTutor")
+
+  @@map("users")
+}
