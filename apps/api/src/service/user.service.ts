@@ -1,4 +1,4 @@
-import { Role, User } from "@prisma/client";
+import { Role, User, Prisma } from "@prisma/client";
 import { userRepository } from "../repository/user.repository.js";
 import { BadRequestError } from "../common/errors/app-error.js";
 
@@ -21,7 +21,7 @@ export const userService = {
       if (!data.hourlyRate) {
         throw new BadRequestError("Hourly rate is required for tutors");
       }
-      updateData = { ...updateData, hourlyRate: data.hourlyRate };
+      updateData = { ...updateData, hourlyRate: new Prisma.Decimal(data.hourlyRate) };
     } else {
       throw new BadRequestError("Invalid user role");
     }
