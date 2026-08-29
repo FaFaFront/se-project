@@ -18,7 +18,12 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, env.JWT_SECRET) as { sub: string; role: string };
+    let decoded: { sub: string; role: string };
+    try {
+      decoded = jwt.verify(token, env.JWT_SECRET) as { sub: string; role: string };
+    } catch {
+      throw new UnauthorizedError("Invalid or expired token");
+    }
 
     req.user = {
       id: decoded.sub,

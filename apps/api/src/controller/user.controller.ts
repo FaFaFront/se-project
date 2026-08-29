@@ -4,6 +4,7 @@ import { successResponse } from "../common/utils/response.js";
 import { userService } from "../service/user.service.js";
 import type { AuthRequest } from "../common/middleware/auth.middleware.js";
 import { Role } from "@prisma/client";
+import { BadRequestError, UnauthorizedError } from "../common/errors/app-error.js";
 
 const studentProfileSchema = z.object({
   gradeLevel: z.string().trim().min(1, "Grade level is required"),
@@ -21,7 +22,7 @@ export const userController = {
     try {
       const user = req.user;
       if (!user) {
-        throw new Error("User not found in request");
+        throw new UnauthorizedError("User not found in request");
       }
 
       const role = user.role as Role;
@@ -32,7 +33,7 @@ export const userController = {
       } else if (role === "tutor") {
         validatedData = tutorProfileSchema.parse(req.body);
       } else {
-        throw new Error("Invalid role");
+        throw new BadRequestError("Invalid role");
       }
 
       const updatedUser = await userService.completeProfile(user.id, role, validatedData);
