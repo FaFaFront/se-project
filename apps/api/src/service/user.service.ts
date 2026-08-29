@@ -1,10 +1,16 @@
-import { Role } from "@prisma/client";
+import { Role, User } from "@prisma/client";
 import { userRepository } from "../repository/user.repository.js";
 import { BadRequestError } from "../common/errors/app-error.js";
 
+type ProfileData = {
+  gradeLevel?: string;
+  goals?: string;
+  hourlyRate?: number;
+};
+
 export const userService = {
-  async completeProfile(userId: string, role: Role, data: any) {
-    let updateData: any = { profileComplete: true };
+  async completeProfile(userId: string, role: Role, data: ProfileData) {
+    let updateData: Partial<User> = { profileComplete: true };
 
     if (role === "student") {
       if (!data.gradeLevel || !data.goals) {

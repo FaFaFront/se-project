@@ -14,6 +14,8 @@ const tutorProfileSchema = z.object({
   hourlyRate: z.number().positive("Hourly rate must be positive"),
 });
 
+type ProfileData = z.infer<typeof studentProfileSchema> | z.infer<typeof tutorProfileSchema>;
+
 export const userController = {
   async submitProfile(req: AuthRequest, res: Response, next: NextFunction) {
     try {
@@ -23,12 +25,14 @@ export const userController = {
       }
 
       const role = user.role as Role;
-      let validatedData: any;
+      let validatedData: ProfileData;
 
       if (role === "student") {
         validatedData = studentProfileSchema.parse(req.body);
       } else if (role === "tutor") {
         validatedData = tutorProfileSchema.parse(req.body);
+      } else {
+        throw new Error("Invalid role");
       }
 
       const updatedUser = await userService.completeProfile(user.id, role, validatedData);
