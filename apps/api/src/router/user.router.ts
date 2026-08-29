@@ -3,6 +3,34 @@ import { userController } from "../controller/user.controller.js";
 import { authMiddleware } from "../common/middleware/auth.middleware.js";
 import type { AuthRequest } from "../common/middleware/auth.middleware.js";
 
+/**
+ * @swagger
+ * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ *   schemas:
+ *     StudentProfile:
+ *       type: object
+ *       required: [gradeLevel, goals]
+ *       properties:
+ *         gradeLevel:
+ *           type: string
+ *           example: "10th Grade"
+ *         goals:
+ *           type: string
+ *           example: "Improve my math skills"
+ *     TutorProfile:
+ *       type: object
+ *       required: [hourlyRate]
+ *       properties:
+ *         hourlyRate:
+ *           type: number
+ *           example: 25.0
+ */
+
 // Cast router to use AuthRequest
 const router = Router();
 router.use((req, res, next) => {
