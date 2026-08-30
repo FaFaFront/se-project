@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { apiClient } from "@/lib/api-client";
 
 type UserRole = "student" | "tutor";
 
@@ -33,6 +34,8 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
   const [hourlyRate, setHourlyRate] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const isStudent = role === "student";
   const gradeLevelError = showErrors && !gradeLevel;
@@ -41,15 +44,31 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
   const hourlyRateError =
     showErrors && (!hourlyRate || !Number.isFinite(hourlyRateNumber) || hourlyRateNumber <= 0);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setShowErrors(true);
+    setSubmitError("");
 
     const isValid = isStudent
       ? Boolean(gradeLevel && goals.trim())
       : Boolean(hourlyRate && Number.isFinite(hourlyRateNumber) && hourlyRateNumber > 0);
 
-    if (isValid) setSubmitted(true);
+    if (!isValid) return;
+
+    const profileData = isStudent
+      ? { gradeLevel, goals: goals.trim() }
+      : { hourlyRate: hourlyRateNumber };
+
+    try {
+      setIsPending(true);
+      await apiClient.post<unknown>("/users/profile", profileData);
+      router.refresh();
+      setSubmitted(true);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Unable to save your profile.");
+    } finally {
+      setIsPending(false);
+    }
   };
 
   if (submitted) {
@@ -147,7 +166,7 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
               />
             </>
           ) : (
-            <div>
+            <div className="relative">
               <Input
                 name="hourlyRate"
                 type="number"
@@ -164,17 +183,27 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
               />
               <span
                 aria-hidden="true"
-                className="pointer-events-none relative -top-[33px] left-3 block w-fit text-sm text-ink/60"
+                className="pointer-events-none absolute left-3 top-9 text-sm text-ink/60"
               >
                 $
               </span>
-              <p className="-mt-4 text-xs leading-5 text-ink/55">
+              <p className="mt-1 text-xs leading-5 text-ink/55">
                 This is the amount students will see for a one-hour lesson.
               </p>
             </div>
           )}
 
-          <Button type="submit" className="mt-2 w-full shadow-cta sm:w-auto sm:min-w-48">
+          {submitError && (
+            <p role="alert" className="text-sm leading-5 text-error">
+              {submitError}
+            </p>
+          )}
+
+          <Button
+            type="submit"
+            isLoading={isPending}
+            className="mt-2 w-full shadow-cta sm:w-auto sm:min-w-48"
+          >
             Complete profile
           </Button>
         </form>
