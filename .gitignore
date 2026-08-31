@@ -18,5 +18,3 @@ apps/api/generated/
 # Misc
 .DS_Store
 *.pem
-memory.md
-docs/registration-design.html
