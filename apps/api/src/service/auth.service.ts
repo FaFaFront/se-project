@@ -8,7 +8,7 @@ import { authRepository } from "../repository/auth.repository.js";
 const SALT_ROUNDS = 12;
 
 export const authService = {
-  async register(name: string, email: string, password: string, role: Role, profileUrl: string) {
+  async register(email: string, password: string, role: Role) {
     const existingUser = await authRepository.findByEmail(email);
     if (existingUser) {
       throw new ConflictError("An account with this email already exists");
@@ -17,7 +17,7 @@ export const authService = {
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
     try {
-      const user = await authRepository.create(name, email, passwordHash, role, profileUrl);
+      const user = await authRepository.create(email, passwordHash, role);
       const token = jwt.sign({ sub: user.id, role: user.role }, env.JWT_SECRET, {
         expiresIn: "7d",
       });

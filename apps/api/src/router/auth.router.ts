@@ -15,13 +15,11 @@ export const authRouter = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [name, email, password, role, profileUrl]
+ *             required: [email, password, role]
  *             properties:
- *               name: { type: string, minLength: 1, maxLength: 100 }
  *               email: { type: string, format: email }
  *               password: { type: string, minLength: 8, format: password }
  *               role: { type: string, enum: [student, tutor] }
- *               profileUrl: { type: string, format: uri }
  *     responses:
  *       201: { description: Registration successful }
  *       400: { description: Invalid registration details }

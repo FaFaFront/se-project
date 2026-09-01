@@ -9,16 +9,13 @@ const delay = (milliseconds: number) =>
 async function fillForm(
   canvasElement: HTMLElement,
   values: {
-    name?: string;
     email?: string;
     password?: string;
     confirmPassword?: string;
-    profileUrl?: string;
   } = {}
 ) {
   const canvas = within(canvasElement);
 
-  await userEvent.type(canvas.getByRole("textbox", { name: "Name" }), values.name ?? "Jane Doe");
   await userEvent.type(
     canvas.getByRole("textbox", { name: "Gmail" }),
     values.email ?? "user@gmail.com"
@@ -27,10 +24,6 @@ async function fillForm(
   await userEvent.type(
     canvas.getByLabelText("Confirm password"),
     values.confirmPassword ?? "password"
-  );
-  await userEvent.type(
-    canvas.getByRole("textbox", { name: "Profile URL" }),
-    values.profileUrl ?? "https://example.com/profile.jpg"
   );
 
   return canvas;
@@ -98,12 +91,10 @@ export const RoleSwitchPreservesFields: Story = {
 
     await userEvent.click(canvas.getByRole("button", { name: "Sign up" }));
     await expect(args.onSubmit).toHaveBeenCalledWith({
-      name: "Jane Doe",
       role: "student",
       email: "user@gmail.com",
       password: "password",
       confirmPassword: "password",
-      profileUrl: "https://example.com/profile.jpg",
     });
   },
 };
@@ -113,20 +104,9 @@ export const EmptyFieldErrors: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Sign up" }));
 
-    await expect(canvas.getByText("Name is required")).toBeVisible();
     await expect(canvas.getByText("Gmail is required")).toBeVisible();
     await expect(canvas.getByText("Password is required")).toBeVisible();
     await expect(canvas.getByText("Please confirm your password")).toBeVisible();
-    await expect(canvas.getByText("Profile URL is required")).toBeVisible();
-  },
-};
-
-export const InvalidProfileUrl: Story = {
-  play: async ({ canvasElement }) => {
-    const canvas = await fillForm(canvasElement, { profileUrl: "not-a-url" });
-    await userEvent.click(canvas.getByRole("button", { name: "Sign up" }));
-
-    await expect(canvas.getByText("Please enter a valid profile image URL")).toBeVisible();
   },
 };
 

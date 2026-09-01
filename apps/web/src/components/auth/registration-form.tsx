@@ -22,12 +22,10 @@ const ROLE_OPTIONS: SelectOption[] = [
 export type RegistrationRole = "student" | "tutor";
 
 export interface RegistrationFormValues {
-  name: string;
   role: RegistrationRole;
   email: string;
   password: string;
   confirmPassword: string;
-  profileUrl: string;
 }
 
 export interface RegistrationFormProps {
@@ -36,23 +34,11 @@ export interface RegistrationFormProps {
   className?: string;
 }
 
-type FieldName = "name" | "email" | "password" | "confirmPassword" | "profileUrl";
+type FieldName = "email" | "password" | "confirmPassword";
 type FieldErrors = Partial<Record<FieldName, string>>;
 
-function validate({
-  name,
-  email,
-  password,
-  confirmPassword,
-  profileUrl,
-}: RegistrationFormValues): FieldErrors {
+function validate({ email, password, confirmPassword }: RegistrationFormValues): FieldErrors {
   const errors: FieldErrors = {};
-
-  if (!name) {
-    errors.name = "Name is required";
-  } else if (name.length > 100) {
-    errors.name = "Name is too long";
-  }
 
   if (!email) {
     errors.email = "Gmail is required";
@@ -72,16 +58,6 @@ function validate({
     errors.confirmPassword = "Passwords do not match";
   }
 
-  if (!profileUrl) {
-    errors.profileUrl = "Profile URL is required";
-  } else {
-    try {
-      new URL(profileUrl);
-    } catch {
-      errors.profileUrl = "Please enter a valid profile image URL";
-    }
-  }
-
   return errors;
 }
 
@@ -91,11 +67,9 @@ export function RegistrationForm({
   className,
 }: RegistrationFormProps) {
   const [role, setRole] = useState<RegistrationRole>(defaultRole);
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [profileUrl, setProfileUrl] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,14 +77,7 @@ export function RegistrationForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const values = {
-      name: name.trim(),
-      role,
-      email: email.trim(),
-      password,
-      confirmPassword,
-      profileUrl: profileUrl.trim(),
-    };
+    const values = { role, email: email.trim(), password, confirmPassword };
     const errors = validate(values);
     setFieldErrors(errors);
     setFormError(null);
@@ -137,19 +104,6 @@ export function RegistrationForm({
       className={cn("flex w-full max-w-[400px] flex-col gap-base", className)}
     >
       <h1 className="font-inter text-heading-md text-ink-black">Sign up</h1>
-
-      <Input
-        label="Name"
-        name="name"
-        autoComplete="name"
-        maxLength={100}
-        placeholder="Enter your name"
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-        disabled={isSubmitting}
-        error={Boolean(fieldErrors.name)}
-        errorMessage={fieldErrors.name}
-      />
 
       <Select
         label="Signing up as"
@@ -195,20 +149,6 @@ export function RegistrationForm({
         disabled={isSubmitting}
         error={Boolean(fieldErrors.confirmPassword)}
         errorMessage={fieldErrors.confirmPassword}
-      />
-
-      <Input
-        label="Profile URL"
-        name="profileUrl"
-        type="url"
-        inputMode="url"
-        autoComplete="url"
-        placeholder="https://example.com/profile.jpg"
-        value={profileUrl}
-        onChange={(event) => setProfileUrl(event.target.value)}
-        disabled={isSubmitting}
-        error={Boolean(fieldErrors.profileUrl)}
-        errorMessage={fieldErrors.profileUrl}
       />
 
       {formError && (
