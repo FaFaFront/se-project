@@ -2,7 +2,7 @@ import { Router } from "express";
 import { authRouter } from "./router/auth.router.js";
 import { subjectRouter } from "./router/subject.router.js";
 import { userRouter } from "./router/user.router.js";
-import { authRouter } from "./router/auth.router.js";
+
 
 export const apiRoutes = Router();
 
