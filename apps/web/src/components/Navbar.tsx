@@ -120,7 +120,9 @@ export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: 
         ) : (
           <>
             <Button variant="outline">Sign in</Button>
-            <Button variant="primary">Sign up</Button>
+            <Button variant="primary" onClick={() => router.push("/register")}>
+              Sign up
+            </Button>
           </>
         )}
       </div>
@@ -222,7 +224,14 @@ export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: 
             </>
           ) : (
             <div className="flex flex-col gap-3">
-              <Button variant="primary" className="w-full">
+              <Button
+                variant="primary"
+                className="w-full"
+                onClick={() => {
+                  router.push("/register");
+                  setIsSidebarOpen(false);
+                }}
+              >
                 Sign up
               </Button>
               <Button variant="outline" className="w-full">
