@@ -3262,7 +3262,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bcryptjs@npm:^3.0.3":
+"bcryptjs@npm:*, bcryptjs@npm:^3.0.3":
   version: 3.0.3
   resolution: "bcryptjs@npm:3.0.3"
   bin:

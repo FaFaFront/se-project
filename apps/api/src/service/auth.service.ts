@@ -1,7 +1,7 @@
 import { Prisma, type Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { ConflictError , UnauthorizedError } from "../common/errors/app-error.js";
+import { ConflictError, UnauthorizedError } from "../common/errors/app-error.js";
 import { env } from "../config/env.js";
 import { authRepository } from "../repository/auth.repository.js";
 
@@ -67,4 +67,3 @@ export const authService = {
     };
   },
 };
-
