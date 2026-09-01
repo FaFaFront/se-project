@@ -8,7 +8,11 @@ const delay = (milliseconds: number) =>
 
 async function fillForm(
   canvasElement: HTMLElement,
-  values: { email?: string; password?: string; confirmPassword?: string } = {}
+  values: {
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  } = {}
 ) {
   const canvas = within(canvasElement);
 

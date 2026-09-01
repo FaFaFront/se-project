@@ -4,10 +4,10 @@ export type LoginResponse = {
   token: string;
   user: {
     id: string;
-    name: string;
+    name: string | null;
     email: string;
     role: UserRole;
-    profileUrl: string;
+    profileUrl: string | null;
   };
 };
 
@@ -15,9 +15,9 @@ export type RegistrationResponse = {
   token: string;
   user: {
     id: string;
-    name: string;
+    name: string | null;
     email: string;
     role: UserRole;
-    profileUrl: string;
+    profileUrl: string | null;
   };
 };
