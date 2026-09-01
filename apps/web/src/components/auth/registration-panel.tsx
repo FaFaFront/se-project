@@ -1,14 +1,30 @@
 "use client";
 
-import { RegistrationForm } from "@/components/auth/registration-form";
+import { useRouter } from "next/navigation";
 
-/**
- * Provides the temporary frontend-only submission boundary until the
- * registration API is available.
- */
+import { RegistrationForm, type RegistrationFormValues } from "@/components/auth/registration-form";
+import { apiClient } from "@/lib/api-client";
+import type { RegistrationResponse } from "@/types/auth";
+
 export function RegistrationPanel() {
-  function handleRegistration() {
-    return Promise.resolve();
+  const router = useRouter();
+
+  async function handleRegistration({
+    name,
+    email,
+    password,
+    role,
+    profileUrl,
+  }: RegistrationFormValues) {
+    const registration = await apiClient.post<RegistrationResponse>("/auth/register", {
+      name,
+      email,
+      password,
+      role,
+      profileUrl,
+    });
+
+    router.push(`/complete-profile?role=${registration.user.role}`);
   }
 
   return <RegistrationForm onSubmit={handleRegistration} />;
