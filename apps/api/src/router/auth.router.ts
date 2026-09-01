@@ -28,3 +28,4 @@ export const authRouter = Router();
  *       409: { description: Email already registered }
  */
 authRouter.post("/register", authController.register);
+authRouter.post("/login", authController.login);
