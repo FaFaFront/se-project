@@ -19,6 +19,11 @@ export function errorHandler(
     return;
   }
 
+  if (err instanceof SyntaxError && "body" in err) {
+    res.status(400).json(errorResponse("Invalid request body"));
+    return;
+  }
+
   console.error(err);
   res.status(500).json(errorResponse("Internal server error"));
 }
