@@ -61,4 +61,19 @@ router.use((req, res, next) => {
  */
 router.post("/profile", authMiddleware, userController.submitProfile);
 
+/**
+ * @swagger
+ * /users/me:
+ *  get:
+ *    summary: Get the authenticated user's profile
+ *    tags: [User]
+ *    security:
+ *      - bearerAuth: []
+ *    responses:
+ *      200: { description: Profile retrived successfully }
+ *      401: { description: Unauthorized }
+ *      404: { description: User not found }
+ */
+router.get("/me", authMiddleWare, userController.getProfile);
+
 export const userRouter = router;

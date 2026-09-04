@@ -42,4 +42,18 @@ export const userController = {
       next(error);
     }
   },
+
+  async getProfile(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const user = req.user;
+      if (!user) {
+        throw new UnauthorizedError("User not found in request");
+      }
+
+      const profile = await userService.getProfile(user.id);
+      res.status(200).json(successResponse(profile, "Profile retrived successfully."));
+    } catch (error) {
+      next(error);
+    }
+  },
 };
