@@ -29,6 +29,32 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *         hourlyRate:
  *           type: number
  *           example: 25.0
+ *     UserProfile:
+ *       type: object
+ *       properties:
+ *         id: { type: string, format: uuid }
+ *         name: { type: string, example: Student Name }
+ *         email: { type: string, format: email }
+ *         role: { type: string, enum: [student, tutor]}
+ *         profileUrl: { type: string, format: uri }
+ *         bio: { type: string, nullable: true }
+ *         hourlyRate:
+ *           type: number
+ *           nullable: true
+ *           description: Tutor only; null for students
+ *           example: 25
+ *         gradeLevel: { type: string, nullable: true, description: Student only }
+ *         goals: { type: string, nullable: true, description: Student only }
+ *         walletBalance: { type: number, example: 150.5 }
+ *         createdAt: { type: string, format: date-time, example: "2026-01-15T08:30:00.000Z" }
+ *         subjects:
+ *           type: array
+ *           description: Subjects the tutor teaches; empty array for students
+ *           items:
+ *             type: object
+ *             properties:
+ *               id: { type: string, format: uuid }
+ *               name: { type: string, example: Mathematics }
  */
 
 // Cast router to use AuthRequest
@@ -70,7 +96,17 @@ router.post("/profile", authMiddleware, userController.submitProfile);
  *    security:
  *      - bearerAuth: []
  *    responses:
- *      200: { description: Profile retrived successfully }
+ *      200:
+ *        description: Profile retrieved successfully
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                success: { type: boolean, example: true }
+ *                message: { type: string, example: Profile retrieved successfully. }
+ *                data:
+ *                  $ref: '#/components/schemas/UserProfile'
  *      401: { description: Unauthorized }
  *      404: { description: User not found }
  */
