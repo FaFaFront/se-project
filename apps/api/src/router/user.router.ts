@@ -74,6 +74,6 @@ router.post("/profile", authMiddleware, userController.submitProfile);
  *      401: { description: Unauthorized }
  *      404: { description: User not found }
  */
-router.get("/me", authMiddleWare, userController.getProfile);
+router.get("/me", authMiddleware, userController.getProfile);
 
 export const userRouter = router;

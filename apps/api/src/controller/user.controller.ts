@@ -51,7 +51,7 @@ export const userController = {
       }
 
       const profile = await userService.getProfile(user.id);
-      res.status(200).json(successResponse(profile, "Profile retrived successfully."));
+      res.status(200).json(successResponse(profile, "Profile retrieved successfully."));
     } catch (error) {
       next(error);
     }

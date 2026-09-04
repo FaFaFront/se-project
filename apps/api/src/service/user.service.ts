@@ -1,6 +1,6 @@
 import { Role, User, Prisma } from "@prisma/client";
 import { userRepository } from "../repository/user.repository.js";
-import { BadRequestError } from "../common/errors/app-error.js";
+import { NotFoundError, BadRequestError } from "../common/errors/app-error.js";
 
 type ProfileData = {
   gradeLevel?: string;

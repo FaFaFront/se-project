@@ -1,5 +1,5 @@
 import { prisma } from "../config/prisma.js";
-import type { User } from "@prisma/client";
+import type { Prisma, User } from "@prisma/client";
 
 const publicUserSelect = {
   id: true,
