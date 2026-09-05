@@ -6,6 +6,10 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { getToken, getUser } from "@/lib/auth-storage";
+import { apiClient } from "@/lib/api-client";
+import type { WalletBalance } from "@/types/wallet";
 
 const NAV_LINKS = [
   { label: "Find tutors", href: "/tutors" },
@@ -23,12 +27,46 @@ type NavbarProps = {
   profileUrl?: string;
 };
 
-export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: NavbarProps) {
+export function Navbar(props: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const menuToggleRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const [sessionUser, setSessionUser] = useState<ReturnType<typeof getUser>>(null);
+  const [balance, setBalance] = useState<string>();
+  const isLoggedIn = props.isLoggedIn ?? Boolean(sessionUser);
+  const userName = props.userName ?? sessionUser?.name;
+  const profileUrl = props.profileUrl ?? sessionUser?.profileUrl;
+  const userMoney = props.userMoney ?? balance;
+  const isStudent = sessionUser?.role === "student";
+
+  useEffect(() => {
+    let active = true;
+    function updateAccount() {
+      const user = getToken() ? getUser() : null;
+      setSessionUser(user);
+      setBalance(undefined);
+      if (user?.role === "student") {
+        apiClient.get<WalletBalance>("/wallet").then(
+          (wallet) => {
+            if (active) setBalance(Number(wallet.walletBalance).toFixed(2));
+          },
+          () => {
+            /* The top-up page displays wallet loading errors. */
+          }
+        );
+      }
+    }
+    updateAccount();
+    window.addEventListener("wallet-updated", updateAccount);
+    window.addEventListener("storage", updateAccount);
+    return () => {
+      active = false;
+      window.removeEventListener("wallet-updated", updateAccount);
+      window.removeEventListener("storage", updateAccount);
+    };
+  }, [pathname]);
 
   useEffect(() => {
     if (!isSidebarOpen) return;
@@ -110,7 +148,12 @@ export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: 
               )}
               <div className="flex flex-col gap-[1px]">
                 <p className="text-sm font-semibold">{userName}</p>
-                <p className="text-xs">${userMoney}</p>
+                {userMoney !== undefined && <p className="text-xs">${userMoney}</p>}
+                {isStudent && (
+                  <Link href="/balance/top-up" className="text-xs font-semibold text-primary">
+                    Top up balance
+                  </Link>
+                )}
               </div>
             </div>
             <Button variant="outline" className="text-sm font-semibold px-4 py-2">
@@ -119,7 +162,9 @@ export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: 
           </div>
         ) : (
           <>
-            <Button variant="outline">Sign in</Button>
+            <Button variant="outline" onClick={() => router.push("/login")}>
+              Sign in
+            </Button>
             <Button variant="primary" onClick={() => router.push("/register")}>
               Sign up
             </Button>
@@ -214,6 +259,15 @@ export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: 
                       {userMoney && (
                         <span className="font-inter text-ink text-[10px]">${userMoney}</span>
                       )}
+                      {isStudent && (
+                        <Link
+                          href="/balance/top-up"
+                          onClick={() => setIsSidebarOpen(false)}
+                          className="text-xs font-semibold text-primary"
+                        >
+                          Top up balance
+                        </Link>
+                      )}
                     </div>
                   </div>
                   <Button variant="outline" className="text-xs font-semibold px-4 py-2">
@@ -234,7 +288,14 @@ export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: 
               >
                 Sign up
               </Button>
-              <Button variant="outline" className="w-full">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  router.push("/login");
+                  setIsSidebarOpen(false);
+                }}
+              >
                 Sign in
               </Button>
             </div>
