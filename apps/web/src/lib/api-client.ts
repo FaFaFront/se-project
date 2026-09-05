@@ -1,3 +1,5 @@
+import { getToken } from "@/lib/auth-storage";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 const AUTH_TOKEN_KEY = "tutorist_auth_token";
 
@@ -5,17 +7,16 @@ type ApiResponse<T> =
   { success: true; message: string; data: T } | { success: false; message: string };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers);
-  headers.set("Content-Type", "application/json");
-
-  const token = getAuthToken();
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
+  // Null during SSR and before login; the header is omitted in both cases.
+  const token = getToken();
 
   const res = await fetch(`${API_URL}${path}`, {
     ...init,
-    headers,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...init?.headers,
+    },
   });
   const body: ApiResponse<T> = await res.json();
 
@@ -23,19 +24,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(body.message);
   }
   return body.data;
-}
-
-export function getAuthToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(AUTH_TOKEN_KEY);
-}
-
-export function setAuthToken(token: string): void {
-  window.localStorage.setItem(AUTH_TOKEN_KEY, token);
-}
-
-export function clearAuthToken(): void {
-  window.localStorage.removeItem(AUTH_TOKEN_KEY);
 }
 
 export const apiClient = {
