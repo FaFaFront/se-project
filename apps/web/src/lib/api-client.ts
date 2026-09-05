@@ -1,7 +1,6 @@
 import { getToken } from "@/lib/auth-storage";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
-const AUTH_TOKEN_KEY = "tutorist_auth_token";
 
 type ApiResponse<T> =
   { success: true; message: string; data: T } | { success: false; message: string };

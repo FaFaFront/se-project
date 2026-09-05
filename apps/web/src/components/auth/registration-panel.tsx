@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 
 import { RegistrationForm, type RegistrationFormValues } from "@/components/auth/registration-form";
-import { apiClient, setAuthToken } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
+import { saveSession } from "@/lib/auth-storage";
 import type { RegistrationResponse } from "@/types/auth";
 
 export function RegistrationPanel() {
@@ -16,8 +17,9 @@ export function RegistrationPanel() {
       role,
     });
 
-    setAuthToken(registration.token);
+    saveSession(registration);
     router.push(`/complete-profile?role=${registration.user.role}`);
+    router.refresh();
   }
 
   return <RegistrationForm onSubmit={handleRegistration} />;
