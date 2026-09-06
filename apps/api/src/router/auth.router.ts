@@ -70,3 +70,26 @@ authRouter.post("/register", authController.register);
  *       401: { description: Invalid email or password }
  */
 authRouter.post("/login", authController.login);
+/**
+ * @openapi
+ * /auth/logout:
+ *   post:
+ *     summary: Log out the current user
+ *     tags: [Authentication]
+ *     description: >
+ *       Stateless logout. The JWT is not stored server-side, so the client ends
+ *       the session by discarding its token. This endpoint always succeeds — even
+ *       without an active session — and is safe to call repeatedly.
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Logout successful }
+ *                 data: { type: object, nullable: true, example: null }
+ */
+authRouter.post("/logout", authController.logout);
