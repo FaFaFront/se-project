@@ -8,4 +8,3 @@ export const apiRoutes = Router();
 apiRoutes.use("/auth", authRouter);
 apiRoutes.use("/subjects", subjectRouter);
 apiRoutes.use("/users", userRouter);
-apiRoutes.use("/auth", authRouter);
