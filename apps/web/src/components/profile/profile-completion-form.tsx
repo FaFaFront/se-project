@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { Check, GraduationCap } from "lucide-react";
+import { FormEvent, useEffect, useId, useState } from "react";
+import { Camera, Check, GraduationCap, UserRound } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,11 @@ const GRADE_LEVELS = [
 
 export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
   const router = useRouter();
+  const photoInputId = useId();
+  const [name, setName] = useState("");
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [profilePreview, setProfilePreview] = useState("");
+  const [profileImageError, setProfileImageError] = useState("");
   const [gradeLevel, setGradeLevel] = useState("");
   const [goals, setGoals] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
@@ -36,6 +42,17 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
   const [showErrors, setShowErrors] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+  useEffect(() => {
+    if (!profileImage) {
+      setProfilePreview("");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(profileImage);
+    setProfilePreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [profileImage]);
 
   const isStudent = role === "student";
   const gradeLevelError = showErrors && !gradeLevel;
@@ -75,7 +92,7 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
     return (
       <section
         aria-live="polite"
-        className="flex min-h-[360px] flex-col items-center justify-center px-6 text-center"
+        className="flex min-h-[440px] flex-col items-center justify-center rounded-3xl border border-hairline/70 bg-white px-6 py-12 text-center shadow-sm"
       >
         <span className="mb-5 flex size-16 items-center justify-center rounded-full bg-success/15">
           <Check className="size-8 text-[#0a9f87]" strokeWidth={2.5} />
@@ -92,55 +109,143 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
   }
 
   return (
-    <div className="grid overflow-hidden rounded-3xl border border-hairline bg-white shadow-[0_18px_50px_rgba(48,9,66,0.08)] lg:grid-cols-[0.8fr_1.2fr]">
-      <aside className="relative overflow-hidden bg-brand-plum-deepest px-6 py-10 text-white sm:px-10 lg:px-12 lg:py-14">
+    <div className="grid overflow-hidden rounded-3xl border border-hairline/70 bg-white shadow-[0_20px_70px_-24px_rgba(48,9,66,0.18)] lg:grid-cols-[0.85fr_1.4fr]">
+      <aside className="relative overflow-hidden bg-gradient-to-br from-brand-plum-deepest via-brand-plum-deepest to-brand-plum-dark px-6 py-8 text-white sm:px-10 sm:py-10 lg:px-10 lg:py-12">
         <div className="absolute -right-24 -top-24 size-64 rounded-full bg-primary/30 blur-2xl" />
         <div className="absolute -bottom-32 -left-24 size-72 rounded-full bg-brand-plum/30 blur-2xl" />
-        <div className="relative">
+        <div className="relative flex h-full flex-col">
           <span className="flex size-12 items-center justify-center rounded-2xl bg-white/10">
             <GraduationCap className="size-6" aria-hidden="true" />
           </span>
-          <p className="mt-10 text-sm font-semibold uppercase tracking-[0.18em] text-white/65">
+          <p className="mt-6 text-xs font-semibold uppercase tracking-[0.2em] text-white/80 lg:mt-10">
             One last step
           </p>
-          <h1 className="font-outfit mt-3 text-3xl font-bold leading-tight sm:text-4xl">
+          <h1 className="font-outfit mt-3 max-w-xs text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
             Complete your profile
           </h1>
-          <p className="mt-4 max-w-sm text-sm leading-6 text-white/75 md:text-base">
+          <p className="mt-4 max-w-sm text-sm leading-7 text-white/80">
             {isStudent
               ? "Tell us where you are in your learning journey so we can help you find the right tutor."
               : "Set your teaching rate so students know what to expect before booking a lesson."}
           </p>
 
-          <ol className="mt-10 space-y-5" aria-label="Registration progress">
-            <li className="flex items-center gap-3 text-sm text-white/70">
-              <span className="flex size-7 items-center justify-center rounded-full bg-success text-brand-ultra-dark">
+          <ol
+            className="relative mt-8 space-y-6 before:absolute before:bottom-8 before:left-[19px] before:top-8 before:w-px before:bg-white/25 lg:mt-12"
+            aria-label="Registration progress"
+          >
+            <li className="relative flex items-center gap-4 text-sm text-white/85">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-success text-brand-ultra-dark">
                 <Check className="size-4" strokeWidth={3} />
               </span>
-              Account created
+              <span className="space-y-1">
+                <span className="block font-semibold">Account created</span>
+                <span className="block text-xs text-white/70">Step 1 ? Completed</span>
+              </span>
             </li>
-            <li className="flex items-center gap-3 text-sm font-semibold">
-              <span className="flex size-7 items-center justify-center rounded-full bg-white text-brand-plum-deepest">
+            <li
+              aria-current="step"
+              className="relative flex items-center gap-4 text-sm font-semibold"
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white text-brand-plum-deepest ring-4 ring-white/15">
                 2
               </span>
-              Complete your profile
+              <span className="space-y-1">
+                <span className="block">Complete your profile</span>
+                <span className="block text-xs font-normal text-white/80">
+                  Step 2 ? In progress
+                </span>
+              </span>
             </li>
           </ol>
         </div>
       </aside>
 
-      <section className="px-6 py-10 sm:px-10 lg:px-14 lg:py-14">
-        <div className="mb-8">
-          <p className="text-sm font-medium text-primary">
+      <section className="min-w-0 px-6 py-8 sm:px-10 sm:py-10 lg:px-12 lg:py-12">
+        <div className="mb-6">
+          <p className="inline-flex rounded-full bg-primary/5 px-3 py-1 text-xs font-semibold tracking-wide text-primary">
             {isStudent ? "Student profile" : "Tutor profile"}
           </p>
-          <h2 className="font-outfit mt-1 text-2xl font-bold text-ink">Tell us about yourself</h2>
-          <p className="mt-2 text-sm leading-6 text-ink/60">
-            All fields are required before you can continue to Tutorist.
-          </p>
+          <h2 className="font-outfit mt-3 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+            Tell us about yourself
+          </h2>
         </div>
 
-        <form noValidate onSubmit={handleSubmit} className="space-y-6">
+        <form
+          noValidate
+          onSubmit={handleSubmit}
+          className="space-y-5 [&_label]:text-sm [&_label]:leading-6"
+        >
+          <div className="flex flex-col items-center gap-3 py-2 text-center">
+            <label
+              htmlFor={photoInputId}
+              className="group relative flex w-full min-w-0 cursor-pointer flex-col items-center gap-3"
+            >
+              <div className="relative shrink-0">
+                <div className="flex size-40 items-center justify-center overflow-hidden rounded-full border-2 border-primary/20 bg-surface-lavender/50 transition-colors group-hover:border-primary group-focus-within:outline group-focus-within:outline-2 group-focus-within:outline-offset-4 group-focus-within:outline-primary">
+                  {profilePreview ? (
+                    <Image
+                      src={profilePreview}
+                      alt="Selected profile photo"
+                      width={160}
+                      height={160}
+                      unoptimized
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    <UserRound className="size-14 text-brand-plum/60" aria-hidden="true" />
+                  )}
+                </div>
+                <span className="absolute bottom-0 right-0 flex size-9 items-center justify-center rounded-full border-2 border-white bg-primary text-white">
+                  <Camera className="size-4" aria-hidden="true" />
+                </span>
+              </div>
+              <div className="w-full min-w-0 space-y-1 text-center">
+                <span className="inline-flex min-h-9 items-center rounded-full px-4 text-sm font-semibold text-primary transition-colors group-hover:bg-primary/5 group-hover:underline group-active:bg-primary/10 underline-offset-4">
+                  {profileImage ? "Change photo" : "Choose photo"}
+                </span>
+              </div>
+              <input
+                id={photoInputId}
+                name="profile_image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                aria-label="Choose profile photo"
+                aria-invalid={Boolean(profileImageError)}
+                aria-describedby={profileImageError ? `${photoInputId}-error` : undefined}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+
+                  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+                    setProfileImageError("Please choose a JPG, PNG, or WebP image.");
+                    event.target.value = "";
+                    setProfileImage(null);
+                    return;
+                  }
+
+                  setProfileImageError("");
+                  setProfileImage(file);
+                }}
+              />
+            </label>
+            {profileImageError && (
+              <p id={`${photoInputId}-error`} role="alert" className="text-sm text-error">
+                {profileImageError}
+              </p>
+            )}
+          </div>
+          <Input
+            name="name"
+            label="Name"
+            autoComplete="name"
+            placeholder="Enter your name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            maxLength={100}
+            wrapperClassName="gap-2"
+            className="h-12 rounded-xl px-4 focus:ring-4 focus:ring-primary/10"
+          />
           {isStudent ? (
             <>
               <Select
@@ -152,7 +257,7 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
                 onValueChange={setGradeLevel}
                 error={gradeLevelError}
                 errorMessage="Please select your grade level."
-                className="w-full"
+                className="w-full gap-2 [&>button]:h-12 [&>button]:rounded-xl [&>button]:px-4 [&>button]:text-sm [&>button:focus-visible]:ring-4 [&>button:focus-visible]:ring-primary/10"
               />
               <Textarea
                 name="goals"
@@ -162,11 +267,12 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
                 onChange={(event) => setGoals(event.target.value)}
                 error={goalsError}
                 errorMessage="Please tell us about your learning goals."
-                className="min-h-32"
+                wrapperClassName="gap-2"
+                className="min-h-32 rounded-xl px-4 py-3 text-sm leading-6 focus:ring-4 focus:ring-primary/10 md:text-sm md:leading-6"
               />
             </>
           ) : (
-            <div className="relative">
+            <div className="relative flex h-full flex-col">
               <Input
                 name="hourlyRate"
                 type="number"
@@ -179,11 +285,12 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
                 onChange={(event) => setHourlyRate(event.target.value)}
                 error={hourlyRateError}
                 errorMessage="Enter an hourly rate greater than 0."
-                className="pl-9"
+                wrapperClassName="gap-2"
+                className="h-12 rounded-xl pl-9 focus:ring-4 focus:ring-primary/10"
               />
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-9 text-sm text-ink/60"
+                className="pointer-events-none absolute left-4 top-11 text-sm text-ink/60"
               >
                 $
               </span>
@@ -202,7 +309,7 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
           <Button
             type="submit"
             isLoading={isPending}
-            className="mt-2 w-full shadow-cta sm:w-auto sm:min-w-48"
+            className="mt-2 h-12 w-full rounded-xl shadow-cta transition-all hover:bg-primary/90 hover:shadow-lg active:translate-y-px active:shadow-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:ring-offset-2 disabled:opacity-60"
           >
             Complete profile
           </Button>
