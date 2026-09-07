@@ -1,11 +1,17 @@
 import { Role, User, Prisma } from "@prisma/client";
 import { userRepository } from "../repository/user.repository.js";
-import { BadRequestError } from "../common/errors/app-error.js";
+import { BadRequestError, ConflictError, UnauthorizedError } from "../common/errors/app-error.js";
 
 type ProfileData = {
   gradeLevel?: string;
   goals?: string;
   hourlyRate?: number;
+};
+
+type ProfileUpdateData = ProfileData & {
+  name: string;
+  profileUrl: string;
+  bio: string | null;
 };
 
 export const userService = {
@@ -27,5 +33,58 @@ export const userService = {
     }
 
     return userRepository.updateProfile(userId, updateData);
+  },
+
+  async updateProfile(userId: string, role: Role, data: ProfileUpdateData) {
+    const profileOwner = await userRepository.findProfileOwnerById(userId);
+
+    if (!profileOwner) {
+      throw new UnauthorizedError("Authenticated user no longer exists");
+    }
+
+    if (profileOwner.role !== role) {
+      throw new UnauthorizedError("Authentication role does not match the user account");
+    }
+
+    if (!profileOwner.profileComplete) {
+      throw new ConflictError("Initial profile completion is required before updating the profile");
+    }
+
+    const commonData = {
+      name: data.name,
+      profileUrl: data.profileUrl,
+      bio: data.bio,
+    };
+
+    let updateData;
+    if (role === Role.student) {
+      if (!data.gradeLevel || !data.goals) {
+        throw new BadRequestError("Grade level and goals are required for students");
+      }
+      updateData = {
+        ...commonData,
+        gradeLevel: data.gradeLevel,
+        goals: data.goals,
+      };
+    } else if (role === Role.tutor) {
+      if (data.hourlyRate === undefined) {
+        throw new BadRequestError("Hourly rate is required for tutors");
+      }
+      updateData = {
+        ...commonData,
+        hourlyRate: new Prisma.Decimal(data.hourlyRate),
+      };
+    } else {
+      throw new UnauthorizedError("Invalid authentication role");
+    }
+
+    try {
+      return await userRepository.updateExistingProfile(userId, updateData);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+        throw new UnauthorizedError("Authenticated user no longer exists");
+      }
+      throw error;
+    }
   },
 };
