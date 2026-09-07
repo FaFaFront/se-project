@@ -28,10 +28,17 @@ const editableProfileFields = {
 } as const;
 
 const studentProfileUpdateSchema = z
-  .object({ ...editableProfileFields, ...studentProfileFields })
+  .object({
+    ...editableProfileFields,
+    gradeLevel: studentProfileFields.gradeLevel.optional(),
+    goals: studentProfileFields.goals.optional(),
+  })
   .strict();
 const tutorProfileUpdateSchema = z
-  .object({ ...editableProfileFields, ...tutorProfileFields })
+  .object({
+    ...editableProfileFields,
+    hourlyRate: tutorProfileFields.hourlyRate.optional(),
+  })
   .strict();
 
 type ProfileData = z.infer<typeof studentProfileSchema> | z.infer<typeof tutorProfileSchema>;

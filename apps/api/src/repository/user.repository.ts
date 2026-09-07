@@ -37,14 +37,13 @@ export type ProfileOwner = Pick<User, "id" | "role" | "profileComplete">;
 type CommonProfileUpdate = Pick<User, "name" | "profileUrl" | "bio">;
 
 export type ExistingProfileUpdate =
-  | (CommonProfileUpdate &
-      Pick<User, "gradeLevel" | "goals"> & {
-        gradeLevel: string;
-        goals: string;
-        hourlyRate?: never;
-      })
   | (CommonProfileUpdate & {
-      hourlyRate: Prisma.Decimal;
+      gradeLevel?: string;
+      goals?: string;
+      hourlyRate?: never;
+    })
+  | (CommonProfileUpdate & {
+      hourlyRate?: Prisma.Decimal;
       gradeLevel?: never;
       goals?: never;
     });

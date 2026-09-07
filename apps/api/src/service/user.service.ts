@@ -1,6 +1,11 @@
 import { Role, User, Prisma } from "@prisma/client";
 import { userRepository } from "../repository/user.repository.js";
-import { NotFoundError, BadRequestError, ConflictError, UnauthorizedError } from "../common/errors/app-error.js";
+import {
+  NotFoundError,
+  BadRequestError,
+  ConflictError,
+  UnauthorizedError,
+} from "../common/errors/app-error.js";
 
 type ProfileData = {
   gradeLevel?: string;
@@ -80,21 +85,17 @@ export const userService = {
 
     let updateData;
     if (role === Role.student) {
-      if (!data.gradeLevel || !data.goals) {
-        throw new BadRequestError("Grade level and goals are required for students");
-      }
       updateData = {
         ...commonData,
-        gradeLevel: data.gradeLevel,
-        goals: data.goals,
+        ...(data.gradeLevel !== undefined && { gradeLevel: data.gradeLevel }),
+        ...(data.goals !== undefined && { goals: data.goals }),
       };
     } else if (role === Role.tutor) {
-      if (data.hourlyRate === undefined) {
-        throw new BadRequestError("Hourly rate is required for tutors");
-      }
       updateData = {
         ...commonData,
-        hourlyRate: new Prisma.Decimal(data.hourlyRate),
+        ...(data.hourlyRate !== undefined && {
+          hourlyRate: new Prisma.Decimal(data.hourlyRate),
+        }),
       };
     } else {
       throw new UnauthorizedError("Invalid authentication role");

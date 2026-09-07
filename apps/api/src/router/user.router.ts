@@ -61,7 +61,7 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *     StudentProfileUpdate:
  *       type: object
  *       additionalProperties: false
- *       required: [name, profileUrl, bio, gradeLevel, goals]
+ *       required: [name, profileUrl, bio]
  *       properties:
  *         name:
  *           type: string
@@ -80,15 +80,17 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *         gradeLevel:
  *           type: string
  *           minLength: 1
+ *           description: Optional; retains its current value when omitted
  *           example: "Grade 10"
  *         goals:
  *           type: string
  *           minLength: 1
+ *           description: Optional; retains its current value when omitted
  *           example: "Prepare for my final examination."
  *     TutorProfileUpdate:
  *       type: object
  *       additionalProperties: false
- *       required: [name, profileUrl, bio, hourlyRate]
+ *       required: [name, profileUrl, bio]
  *       properties:
  *         name:
  *           type: string
@@ -107,6 +109,7 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *         hourlyRate:
  *           type: number
  *           exclusiveMinimum: 0
+ *           description: Optional; retains its current value when omitted
  *           example: 750.0
  */
 
@@ -170,7 +173,7 @@ router.get("/me", authMiddleware, userController.getProfile);
  * /users/profile:
  *   put:
  *     summary: Replace the authenticated user's editable profile
- *     description: Updates all editable profile fields for the authenticated role. Email, password, and role cannot be changed through this endpoint.
+ *     description: Updates the common profile fields and any supplied role-specific fields. Omitted role-specific fields retain their current values. Email, password, and role cannot be changed through this endpoint.
  *     tags: [User]
  *     security:
  *       - bearerAuth: []
@@ -179,7 +182,7 @@ router.get("/me", authMiddleware, userController.getProfile);
  *       content:
  *         application/json:
  *           schema:
- *             oneOf:
+ *             anyOf:
  *               - $ref: '#/components/schemas/StudentProfileUpdate'
  *               - $ref: '#/components/schemas/TutorProfileUpdate'
  *     responses:
