@@ -76,7 +76,7 @@ export function RegistrationForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    
+
     const values = { role, email: email.trim(), password, confirmPassword };
     const errors = validate(values);
     setFieldErrors(errors);
