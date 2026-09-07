@@ -66,4 +66,10 @@ export const authService = {
       },
     };
   },
+  async logout() {
+    // Auth is stateless: the JWT is not persisted server-side, so there is
+    // nothing to invalidate here — the client ends the session by discarding
+    // its token. This method exists so logout is an explicit, idempotent step
+    // and gives us one place to add token revocation later if that's needed.
+  },
 };
