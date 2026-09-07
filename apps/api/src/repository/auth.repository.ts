@@ -8,13 +8,7 @@ export const authRepository = {
     });
   },
 
-  async create(
-    name: string,
-    email: string,
-    passwordHash: string,
-    role: Role,
-    profileUrl: string
-  ): Promise<User> {
-    return prisma.user.create({ data: { name, email, passwordHash, role, profileUrl } });
+  async create(email: string, passwordHash: string, role: Role): Promise<User> {
+    return prisma.user.create({ data: { email, passwordHash, role } });
   },
 };
