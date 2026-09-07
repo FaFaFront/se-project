@@ -168,7 +168,6 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
           <h2 className="font-outfit mt-3 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
             Tell us about yourself
           </h2>
-          
         </div>
 
         <form
