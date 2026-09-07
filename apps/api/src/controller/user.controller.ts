@@ -51,7 +51,10 @@ export const userController = {
       }
 
       const profile = await userService.getProfile(user.id);
-      res.status(200).json(successResponse(profile, "Profile retrieved successfully."));
+      res
+        .set("Cache-Control", "no-store")
+        .status(200)
+        .json(successResponse(profile, "Profile retrieved successfully."));
     } catch (error) {
       next(error);
     }
