@@ -10,4 +10,4 @@ apiRoutes.use("/auth", authRouter);
 apiRoutes.use("/subjects", subjectRouter);
 apiRoutes.use("/users", userRouter);
 apiRoutes.use("/wallet", walletRouter);
-apiRoutes.use("/auth", authRouter);
+

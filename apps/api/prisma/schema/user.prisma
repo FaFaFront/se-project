@@ -5,11 +5,11 @@ enum Role {
 
 model User {
   id              String   @id @default(uuid())
-  name            String
+  name            String?
   email           String   @unique
   passwordHash    String
   role            Role
-  profileUrl      String
+  profileUrl      String?
   bio             String?
   hourlyRate      Decimal? @db.Decimal(10, 2) // tutor only
   gradeLevel      String? // student only

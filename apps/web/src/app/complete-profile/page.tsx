@@ -17,8 +17,8 @@ export default async function CompleteProfilePage({ searchParams }: CompleteProf
   const profileRole = normalizedRole === "tutor" ? "tutor" : "student";
 
   return (
-    <main className="min-h-[calc(100vh-64px)] bg-[linear-gradient(145deg,#faf8ff_0%,#ffffff_50%,#f6f0ff_100%)] px-4 py-10 sm:px-6 lg:px-12 lg:py-16">
-      <div className="mx-auto max-w-5xl">
+    <main className="flex min-h-[calc(100vh-64px)] items-center bg-[#faf9fc] px-4 py-6 sm:px-6 sm:py-10 lg:px-10">
+      <div className="mx-auto w-full max-w-6xl">
         <ProfileCompletionForm role={profileRole} />
       </div>
     </main>

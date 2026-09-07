@@ -15,13 +15,11 @@ export const authRouter = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [name, email, password, role, profileUrl]
+ *             required: [email, password, role]
  *             properties:
- *               name: { type: string, minLength: 1, maxLength: 100 }
  *               email: { type: string, format: email }
  *               password: { type: string, minLength: 8, format: password }
  *               role: { type: string, enum: [student, tutor] }
- *               profileUrl: { type: string, format: uri }
  *     responses:
  *       201: { description: Registration successful }
  *       400: { description: Invalid registration details }
@@ -70,3 +68,26 @@ authRouter.post("/register", authController.register);
  *       401: { description: Invalid email or password }
  */
 authRouter.post("/login", authController.login);
+/**
+ * @openapi
+ * /auth/logout:
+ *   post:
+ *     summary: Log out the current user
+ *     tags: [Authentication]
+ *     description: >
+ *       Stateless logout. The JWT is not stored server-side, so the client ends
+ *       the session by discarding its token. This endpoint always succeeds — even
+ *       without an active session — and is safe to call repeatedly.
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Logout successful }
+ *                 data: { type: object, nullable: true, example: null }
+ */
+authRouter.post("/logout", authController.logout);
