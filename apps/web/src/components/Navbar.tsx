@@ -3,10 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { getUser } from "@/lib/auth-storage";
+import { getToken, getUser } from "@/lib/auth-storage";
+import { apiClient } from "@/lib/api-client";
+import type { WalletBalance } from "@/types/wallet";
 import type { LoginResponse } from "@/types/auth";
 
 const NAV_LINKS = [
@@ -31,6 +34,7 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [session, setSession] = useState<LoginResponse["user"] | null>(null);
+  const [balance, setBalance] = useState<string>();
   const menuToggleRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -38,11 +42,42 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
   // the first paint always renders signed-out. Re-reading on navigation is what
   // makes logging in or out update the header, since this component never
   // unmounts during client-side routing.
-  useEffect(() => setSession(getUser()), [pathname]);
+  useEffect(() => {
+    let active = true;
+    let accountVersion = 0;
+    function updateAccount() {
+      const version = ++accountVersion;
+      const user = getToken() ? getUser() : null;
+      setSession(user);
+      setBalance(undefined);
+      if (user?.role === "student") {
+        apiClient.get<WalletBalance>("/wallet").then(
+          (wallet) => {
+            if (active && version === accountVersion) {
+              setBalance(Number(wallet.walletBalance).toFixed(2));
+            }
+          },
+          () => {
+            /* The top-up page displays wallet loading errors. */
+          }
+        );
+      }
+    }
+    updateAccount();
+    window.addEventListener("wallet-updated", updateAccount);
+    window.addEventListener("storage", updateAccount);
+    return () => {
+      active = false;
+      window.removeEventListener("wallet-updated", updateAccount);
+      window.removeEventListener("storage", updateAccount);
+    };
+  }, [pathname]);
 
   const signedIn = isLoggedIn ?? session !== null;
   const displayName = userName ?? session?.name ?? session?.email;
   const displayPhoto = profileUrl ?? session?.profileUrl ?? undefined;
+  const displayBalance = userMoney ?? balance;
+  const isStudent = session?.role === "student";
 
   useEffect(() => {
     if (!isSidebarOpen) return;
@@ -113,29 +148,36 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
       <div className={`hidden items-center justify-end lg:flex ${signedIn ? "gap-6" : "gap-3"}`}>
         {signedIn ? (
           <div className="flex gap-6 items-center">
-            <button
-              type="button"
-              onClick={() => router.push("/profile")}
-              aria-label="View your profile"
-              className="flex gap-4 items-center rounded-full transition-opacity hover:opacity-80"
-            >
-              {displayPhoto ? (
-                <Image
-                  src={displayPhoto}
-                  alt="Profile"
-                  width={40}
-                  height={40}
-                  unoptimized
-                  className="h-10 w-10 rounded-full object-cover"
-                />
-              ) : (
-                <div className="h-10 w-10 rounded-full bg-primary"></div>
+            <div className="flex flex-col gap-[1px]">
+              <button
+                type="button"
+                onClick={() => router.push("/profile")}
+                aria-label="View your profile"
+                className="flex gap-4 items-center rounded-full transition-opacity hover:opacity-80"
+              >
+                {displayPhoto ? (
+                  <Image
+                    src={displayPhoto}
+                    alt="Profile"
+                    width={40}
+                    height={40}
+                    unoptimized
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded-full bg-primary"></div>
+                )}
+                <div className="flex flex-col gap-[1px] text-left">
+                  <p className="text-sm font-semibold">{displayName}</p>
+                  {displayBalance !== undefined && <p className="text-xs">${displayBalance}</p>}
+                </div>
+              </button>
+              {isStudent && (
+                <Link href="/balance/top-up" className="pl-14 text-xs font-semibold text-primary">
+                  Top up balance
+                </Link>
               )}
-              <div className="flex flex-col gap-[1px] text-left">
-                <p className="text-sm font-semibold">{displayName}</p>
-                {userMoney && <p className="text-xs">${userMoney}</p>}
-              </div>
-            </button>
+            </div>
             <Button
               variant="outline"
               className="text-sm font-semibold px-4 py-2"
@@ -239,8 +281,17 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
                       {displayName}
                     </span>
                   )}
-                  {userMoney && (
-                    <span className="font-inter text-ink text-[10px]">${userMoney}</span>
+                  {displayBalance !== undefined && (
+                    <span className="font-inter text-ink text-[10px]">${displayBalance}</span>
+                  )}
+                  {isStudent && (
+                    <Link
+                      href="/balance/top-up"
+                      onClick={() => setIsSidebarOpen(false)}
+                      className="text-xs font-semibold text-primary"
+                    >
+                      Top up balance
+                    </Link>
                   )}
                 </div>
               </div>
