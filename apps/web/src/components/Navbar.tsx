@@ -10,6 +10,7 @@ import Link from "next/link";
 import { getToken, getUser } from "@/lib/auth-storage";
 import { apiClient } from "@/lib/api-client";
 import type { WalletBalance } from "@/types/wallet";
+import type { LoginResponse } from "@/types/auth";
 
 const NAV_LINKS = [
   { label: "Find tutors", href: "/tutors" },
@@ -21,6 +22,7 @@ const FOCUSABLE_SELECTOR =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 type NavbarProps = {
+  /** Omit to follow the stored session; pass a value to force the state (Storybook, tests). */
   isLoggedIn?: boolean;
   userName?: string;
   userMoney?: string;
@@ -31,6 +33,7 @@ export function Navbar(props: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [session, setSession] = useState<LoginResponse["user"] | null>(null);
   const menuToggleRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [sessionUser, setSessionUser] = useState<ReturnType<typeof getUser>>(null);
@@ -72,6 +75,9 @@ export function Navbar(props: NavbarProps) {
     if (!isSidebarOpen) return;
 
     const sidebar = sidebarRef.current;
+    // Captured now rather than read in the cleanup: focus has to return to the
+    // button that opened the menu, which is the node as it is on this run.
+    const menuToggle = menuToggleRef.current;
     const firstFocusable = sidebar?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
     firstFocusable?.focus();
 
@@ -101,7 +107,7 @@ export function Navbar(props: NavbarProps) {
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      menuToggleRef.current?.focus();
+      menuToggle?.focus();
     };
   }, [isSidebarOpen]);
 
@@ -134,14 +140,20 @@ export function Navbar(props: NavbarProps) {
       <div className={`hidden items-center justify-end lg:flex ${isLoggedIn ? "gap-6" : "gap-3"}`}>
         {isLoggedIn ? (
           <div className="flex gap-6 items-center">
-            <div className="flex gap-4 items-center">
+            <button
+              type="button"
+              onClick={() => router.push("/profile")}
+              aria-label="View your profile"
+              className="flex gap-4 items-center rounded-full transition-opacity hover:opacity-80"
+            >
               {profileUrl ? (
                 <Image
                   src={profileUrl}
                   alt="Profile"
                   width={40}
                   height={40}
-                  className="h-10 w-10 rounded-full"
+                  unoptimized
+                  className="h-10 w-10 rounded-full object-cover"
                 />
               ) : (
                 <div className="h-10 w-10 rounded-full bg-primary"></div>
@@ -155,13 +167,20 @@ export function Navbar(props: NavbarProps) {
                   </Link>
                 )}
               </div>
-            </div>
-            <Button variant="outline" className="text-sm font-semibold px-4 py-2">
+            </button>
+            <Button
+              variant="outline"
+              className="text-sm font-semibold px-4 py-2"
+              onClick={() => router.push("/profile")}
+            >
               Edit Profile
             </Button>
           </div>
         ) : (
           <>
+            <Button variant="outline" onClick={() => router.push("/login")}>
+              Sign in
+            </Button>
             <Button variant="outline" onClick={() => router.push("/login")}>
               Sign in
             </Button>
@@ -234,48 +253,45 @@ export function Navbar(props: NavbarProps) {
           <div className="border-hairline my-6 border-t" />
 
           {isLoggedIn ? (
-            <>
-              {(userName ?? userMoney) && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {profileUrl ? (
-                      <Image
-                        src={profileUrl}
-                        alt="Profile"
-                        width={36}
-                        height={36}
-                        className="h-9 w-9 rounded-full"
-                      />
-                    ) : (
-                      <div className="h-9 w-9 rounded-full bg-primary"></div>
-                    )}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {profileUrl ? (
+                  <Image
+                    src={profileUrl}
+                    alt="Profile"
+                    width={36}
+                    height={36}
+                    unoptimized
+                    className="h-9 w-9 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-9 w-9 rounded-full bg-primary"></div>
+                )}
 
-                    <div className="flex flex-col">
-                      {userName && (
-                        <span className="font-inter text-ink-black text-xs font-semibold">
-                          {userName}
-                        </span>
-                      )}
-                      {userMoney && (
-                        <span className="font-inter text-ink text-[10px]">${userMoney}</span>
-                      )}
-                      {isStudent && (
-                        <Link
-                          href="/balance/top-up"
-                          onClick={() => setIsSidebarOpen(false)}
-                          className="text-xs font-semibold text-primary"
-                        >
-                          Top up balance
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                  <Button variant="outline" className="text-xs font-semibold px-4 py-2">
-                    Edit Profile
-                  </Button>
+                <div className="flex flex-col">
+                  {userName && (
+                    <span className="font-inter text-ink-black text-xs font-semibold">
+                      {userName}
+                    </span>
+                  )}
+                  {userMoney && (
+                    <span className="font-inter text-ink text-[10px]">${userMoney}</span>
+                  )}
+                  {isStudent && (
+                    <Link
+                      href="/balance/top-up"
+                      onClick={() => setIsSidebarOpen(false)}
+                      className="text-xs font-semibold text-primary"
+                    >
+                      Top up balance
+                    </Link>
+                  )}
                 </div>
-              )}
-            </>
+              </div>
+              <Button variant="outline" className="text-xs font-semibold px-4 py-2">
+                Edit Profile
+              </Button>
+            </div>
           ) : (
             <div className="flex flex-col gap-3">
               <Button
@@ -288,6 +304,14 @@ export function Navbar(props: NavbarProps) {
               >
                 Sign up
               </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  router.push("/login");
+                  setIsSidebarOpen(false);
+                }}
+              ></Button>
               <Button
                 variant="outline"
                 className="w-full"

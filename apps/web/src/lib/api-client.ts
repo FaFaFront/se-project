@@ -5,6 +5,21 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 type ApiResponse<T> =
   { success: true; message: string; data: T } | { success: false; message: string };
 
+/**
+ * A failure the API reported in its `{ success: false }` envelope. The status
+ * rides along so callers can tell an expired session (401) apart from a
+ * validation error, while `message` stays the API's own text for display.
+ */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // Null during SSR and before login; the header is omitted in both cases.
   const token = getToken();
@@ -20,7 +35,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const body: ApiResponse<T> = await res.json();
 
   if (!body.success) {
-    throw new Error(body.message);
+    throw new ApiError(body.message, res.status);
   }
   return body.data;
 }
