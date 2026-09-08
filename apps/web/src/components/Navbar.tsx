@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { getToken, getUser } from "@/lib/auth-storage";
 import { apiClient } from "@/lib/api-client";
 import type { WalletBalance } from "@/types/wallet";
@@ -29,31 +29,33 @@ type NavbarProps = {
   profileUrl?: string;
 };
 
-export function Navbar(props: NavbarProps) {
+export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [session, setSession] = useState<LoginResponse["user"] | null>(null);
+  const [balance, setBalance] = useState<string>();
   const menuToggleRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const [sessionUser, setSessionUser] = useState<ReturnType<typeof getUser>>(null);
-  const [balance, setBalance] = useState<string>();
-  const isLoggedIn = props.isLoggedIn ?? Boolean(sessionUser);
-  const userName = props.userName ?? sessionUser?.name;
-  const profileUrl = props.profileUrl ?? sessionUser?.profileUrl;
-  const userMoney = props.userMoney ?? balance;
-  const isStudent = sessionUser?.role === "student";
 
+  // The session lives in localStorage, so it can only be read after mount —
+  // the first paint always renders signed-out. Re-reading on navigation is what
+  // makes logging in or out update the header, since this component never
+  // unmounts during client-side routing.
   useEffect(() => {
     let active = true;
+    let accountVersion = 0;
     function updateAccount() {
+      const version = ++accountVersion;
       const user = getToken() ? getUser() : null;
-      setSessionUser(user);
+      setSession(user);
       setBalance(undefined);
       if (user?.role === "student") {
         apiClient.get<WalletBalance>("/wallet").then(
           (wallet) => {
-            if (active) setBalance(Number(wallet.walletBalance).toFixed(2));
+            if (active && version === accountVersion) {
+              setBalance(Number(wallet.walletBalance).toFixed(2));
+            }
           },
           () => {
             /* The top-up page displays wallet loading errors. */
@@ -70,6 +72,12 @@ export function Navbar(props: NavbarProps) {
       window.removeEventListener("storage", updateAccount);
     };
   }, [pathname]);
+
+  const signedIn = isLoggedIn ?? session !== null;
+  const displayName = userName ?? session?.name ?? session?.email;
+  const displayPhoto = profileUrl ?? session?.profileUrl ?? undefined;
+  const displayBalance = userMoney ?? balance;
+  const isStudent = session?.role === "student";
 
   useEffect(() => {
     if (!isSidebarOpen) return;
@@ -137,37 +145,39 @@ export function Navbar(props: NavbarProps) {
         })}
       </div>
 
-      <div className={`hidden items-center justify-end lg:flex ${isLoggedIn ? "gap-6" : "gap-3"}`}>
-        {isLoggedIn ? (
+      <div className={`hidden items-center justify-end lg:flex ${signedIn ? "gap-6" : "gap-3"}`}>
+        {signedIn ? (
           <div className="flex gap-6 items-center">
-            <button
-              type="button"
-              onClick={() => router.push("/profile")}
-              aria-label="View your profile"
-              className="flex gap-4 items-center rounded-full transition-opacity hover:opacity-80"
-            >
-              {profileUrl ? (
-                <Image
-                  src={profileUrl}
-                  alt="Profile"
-                  width={40}
-                  height={40}
-                  unoptimized
-                  className="h-10 w-10 rounded-full object-cover"
-                />
-              ) : (
-                <div className="h-10 w-10 rounded-full bg-primary"></div>
-              )}
-              <div className="flex flex-col gap-[1px]">
-                <p className="text-sm font-semibold">{userName}</p>
-                {userMoney !== undefined && <p className="text-xs">${userMoney}</p>}
-                {isStudent && (
-                  <Link href="/balance/top-up" className="text-xs font-semibold text-primary">
-                    Top up balance
-                  </Link>
+            <div className="flex flex-col gap-[1px]">
+              <button
+                type="button"
+                onClick={() => router.push("/profile")}
+                aria-label="View your profile"
+                className="flex gap-4 items-center rounded-full transition-opacity hover:opacity-80"
+              >
+                {displayPhoto ? (
+                  <Image
+                    src={displayPhoto}
+                    alt="Profile"
+                    width={40}
+                    height={40}
+                    unoptimized
+                    className="h-10 w-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded-full bg-primary"></div>
                 )}
-              </div>
-            </button>
+                <div className="flex flex-col gap-[1px] text-left">
+                  <p className="text-sm font-semibold">{displayName}</p>
+                  {displayBalance !== undefined && <p className="text-xs">${displayBalance}</p>}
+                </div>
+              </button>
+              {isStudent && (
+                <Link href="/balance/top-up" className="pl-14 text-xs font-semibold text-primary">
+                  Top up balance
+                </Link>
+              )}
+            </div>
             <Button
               variant="outline"
               className="text-sm font-semibold px-4 py-2"
@@ -178,9 +188,6 @@ export function Navbar(props: NavbarProps) {
           </div>
         ) : (
           <>
-            <Button variant="outline" onClick={() => router.push("/login")}>
-              Sign in
-            </Button>
             <Button variant="outline" onClick={() => router.push("/login")}>
               Sign in
             </Button>
@@ -252,12 +259,12 @@ export function Navbar(props: NavbarProps) {
 
           <div className="border-hairline my-6 border-t" />
 
-          {isLoggedIn ? (
+          {signedIn ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {profileUrl ? (
+                {displayPhoto ? (
                   <Image
-                    src={profileUrl}
+                    src={displayPhoto}
                     alt="Profile"
                     width={36}
                     height={36}
@@ -269,13 +276,13 @@ export function Navbar(props: NavbarProps) {
                 )}
 
                 <div className="flex flex-col">
-                  {userName && (
+                  {displayName && (
                     <span className="font-inter text-ink-black text-xs font-semibold">
-                      {userName}
+                      {displayName}
                     </span>
                   )}
-                  {userMoney && (
-                    <span className="font-inter text-ink text-[10px]">${userMoney}</span>
+                  {displayBalance !== undefined && (
+                    <span className="font-inter text-ink text-[10px]">${displayBalance}</span>
                   )}
                   {isStudent && (
                     <Link
@@ -288,7 +295,14 @@ export function Navbar(props: NavbarProps) {
                   )}
                 </div>
               </div>
-              <Button variant="outline" className="text-xs font-semibold px-4 py-2">
+              <Button
+                variant="outline"
+                className="text-xs font-semibold px-4 py-2"
+                onClick={() => {
+                  router.push("/profile");
+                  setIsSidebarOpen(false);
+                }}
+              >
                 Edit Profile
               </Button>
             </div>
@@ -304,14 +318,6 @@ export function Navbar(props: NavbarProps) {
               >
                 Sign up
               </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  router.push("/login");
-                  setIsSidebarOpen(false);
-                }}
-              ></Button>
               <Button
                 variant="outline"
                 className="w-full"
