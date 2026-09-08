@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { label: "Find tutors", href: "/tutors" },
   { label: "My classroom", href: "/classroom" },
   { label: "Message", href: "/message" },
+  { label: "My profile", href: "/profile" },
 ];
 
 const FOCUSABLE_SELECTOR =
@@ -113,7 +114,11 @@ export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: 
                 <p className="text-xs">${userMoney}</p>
               </div>
             </div>
-            <Button variant="outline" className="text-sm font-semibold px-4 py-2">
+            <Button
+              variant="outline"
+              className="text-sm font-semibold px-4 py-2"
+              onClick={() => router.push("/profile")}
+            >
               Edit Profile
             </Button>
           </div>
@@ -216,7 +221,14 @@ export function Navbar({ isLoggedIn = false, userName, userMoney, profileUrl }: 
                       )}
                     </div>
                   </div>
-                  <Button variant="outline" className="text-xs font-semibold px-4 py-2">
+                  <Button
+                    variant="outline"
+                    className="text-xs font-semibold px-4 py-2"
+                    onClick={() => {
+                      router.push("/profile");
+                      setIsSidebarOpen(false);
+                    }}
+                  >
                     Edit Profile
                   </Button>
                 </div>
