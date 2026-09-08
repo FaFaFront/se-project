@@ -36,10 +36,10 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *       type: object
  *       properties:
  *         id: { type: string, format: uuid }
- *         name: { type: string, example: Student Name }
+ *         name: { type: string, nullable: true, example: Student Name }
  *         email: { type: string, format: email }
  *         role: { type: string, enum: [student, tutor]}
- *         profileUrl: { type: string, format: uri }
+ *         profileUrl: { type: string, format: uri, nullable: true }
  *         bio: { type: string, nullable: true }
  *         hourlyRate:
  *           type: number
