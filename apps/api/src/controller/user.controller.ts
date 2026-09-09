@@ -7,11 +7,13 @@ import { Role } from "@prisma/client";
 import { BadRequestError, UnauthorizedError } from "../common/errors/app-error.js";
 
 const studentProfileFields = {
+  name: z.string().trim().min(1, "Name is required").max(100, "Name is too long").optional(),
   gradeLevel: z.string().trim().min(1, "Grade level is required"),
   goals: z.string().trim().min(1, "Goals are required"),
 } as const;
 
 const tutorProfileFields = {
+  name: z.string().trim().min(1, "Name is required").max(100, "Name is too long").optional(),
   hourlyRate: z
     .number()
     .finite("Hourly rate must be finite")

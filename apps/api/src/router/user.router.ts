@@ -17,6 +17,11 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *       additionalProperties: false
  *       required: [gradeLevel, goals]
  *       properties:
+ *         name:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 100
+ *           example: "Student Name"
  *         gradeLevel:
  *           type: string
  *           example: "10th Grade"
@@ -28,6 +33,11 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *       additionalProperties: false
  *       required: [hourlyRate]
  *       properties:
+ *         name:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 100
+ *           example: "Tutor Name"
  *         hourlyRate:
  *           type: number
  *           exclusiveMinimum: 0

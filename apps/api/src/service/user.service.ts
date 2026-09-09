@@ -8,6 +8,7 @@ import {
 } from "../common/errors/app-error.js";
 
 type ProfileData = {
+  name?: string;
   gradeLevel?: string;
   goals?: string;
   hourlyRate?: number;
@@ -22,6 +23,10 @@ type ProfileUpdateData = ProfileData & {
 export const userService = {
   async completeProfile(userId: string, role: Role, data: ProfileData) {
     let updateData: Partial<User> = { profileComplete: true };
+
+    if (data.name) {
+      updateData.name = data.name;
+    }
 
     if (role === "student") {
       if (!data.gradeLevel || !data.goals) {

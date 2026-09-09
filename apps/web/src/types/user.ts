@@ -20,3 +20,19 @@ export type UserProfile = {
   /** Subjects the tutor teaches; always empty for students. */
   subjects: Subject[];
 };
+
+/** Shape returned by `POST /users/profile` on completion. */
+export type PublicUser = {
+  id: string;
+  name: string | null;
+  email: string;
+  role: UserRole;
+  profileUrl: string | null;
+  bio: string | null;
+  hourlyRate: number | null;
+  gradeLevel: string | null;
+  goals: string | null;
+  walletBalance: number;
+  profileComplete: boolean;
+  createdAt: string;
+};
