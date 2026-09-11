@@ -1,7 +1,7 @@
 "use client";
 
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { Camera, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -28,13 +28,9 @@ function fieldsFromProfile(profile: UserProfile): Fields {
 export function ProfileEditForm() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  // Name, photo and about are local UI drafts until connected to the update API.
   const [name, setName] = useState("");
   const [about, setAbout] = useState("");
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState("");
-  const [photoError, setPhotoError] = useState("");
-  const photoInput = useRef<HTMLInputElement>(null);
+  const [profileUrl, setProfileUrl] = useState("");
   const [fields, setFields] = useState<Fields>({ gradeLevel: "", goals: "", hourlyRate: "" });
   const [touched, setTouched] = useState<Partial<Record<keyof Fields, boolean>>>({});
   const [loading, setLoading] = useState(true);
@@ -45,16 +41,6 @@ export function ProfileEditForm() {
   const [saveError, setSaveError] = useState("");
   const [saved, setSaved] = useState(false);
   const submitting = useRef(false);
-
-  useEffect(() => {
-    if (!photo) {
-      setPhotoPreview("");
-      return;
-    }
-    const url = URL.createObjectURL(photo);
-    setPhotoPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [photo]);
 
   useEffect(() => {
     let active = true;
@@ -72,6 +58,7 @@ export function ProfileEditForm() {
         setProfile(current);
         setName(current.name ?? "");
         setAbout(current.bio ?? "");
+        setProfileUrl(current.profileUrl ?? "");
         setFields(fieldsFromProfile(current));
       })
       .catch((error: unknown) => {
@@ -98,13 +85,28 @@ export function ProfileEditForm() {
         ? ""
         : "Enter an hourly rate greater than 0.",
   };
-  const valid = isStudent ? !errors.gradeLevel && !errors.goals : !errors.hourlyRate;
+  let validProfileUrl = false;
+  try {
+    new URL(profileUrl.trim());
+    validProfileUrl = true;
+  } catch {
+    // The update API requires an absolute profile image URL.
+  }
+  const valid =
+    Boolean(name.trim()) &&
+    name.trim().length <= 100 &&
+    about.trim().length <= 1000 &&
+    validProfileUrl &&
+    (isStudent ? !errors.gradeLevel && !errors.goals : !errors.hourlyRate);
   const changed = Boolean(
     profile &&
-    (isStudent
-      ? fields.gradeLevel.trim() !== (profile.gradeLevel ?? "").trim() ||
-        fields.goals.trim() !== (profile.goals ?? "").trim()
-      : fields.hourlyRate.trim() !== "" && rate !== profile.hourlyRate)
+    (name.trim() !== (profile.name ?? "").trim() ||
+      about.trim() !== (profile.bio ?? "").trim() ||
+      profileUrl.trim() !== (profile.profileUrl ?? "").trim() ||
+      (isStudent
+        ? fields.gradeLevel.trim() !== (profile.gradeLevel ?? "").trim() ||
+          fields.goals.trim() !== (profile.goals ?? "").trim()
+        : fields.hourlyRate.trim() !== "" && rate !== profile.hourlyRate))
   );
 
   function edit(field: keyof Fields, value: string) {
@@ -125,12 +127,14 @@ export function ProfileEditForm() {
     setSaveError("");
     setSaved(false);
     try {
-      const updated = await apiClient.post<ProfileUpdateResponse>(
-        "/users/profile",
-        isStudent
+      const updated = await apiClient.put<ProfileUpdateResponse>("/users/profile", {
+        name: name.trim(),
+        profileUrl: profileUrl.trim(),
+        bio: about.trim() || null,
+        ...(isStudent
           ? { gradeLevel: fields.gradeLevel.trim(), goals: fields.goals.trim() }
-          : { hourlyRate: rate }
-      );
+          : { hourlyRate: rate }),
+      });
       // Refresh from the persisted response, including database decimal rounding.
       const current: UserProfile = {
         ...profile,
@@ -139,6 +143,9 @@ export function ProfileEditForm() {
         walletBalance: Number(updated.walletBalance),
       };
       setProfile(current);
+      setName(current.name ?? "");
+      setAbout(current.bio ?? "");
+      setProfileUrl(current.profileUrl ?? "");
       setFields(fieldsFromProfile(current));
       setTouched({});
       const token = getToken();
@@ -208,10 +215,10 @@ export function ProfileEditForm() {
             <legend className="sr-only">Profile information</legend>
             <div className="flex flex-col items-center gap-3 border-b border-hairline pb-4 sm:col-span-2 sm:flex-row sm:flex-wrap sm:gap-5">
               <div className="flex size-32 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-primary/20 bg-primary/5 sm:size-40">
-                {photoPreview || profile.profileUrl ? (
+                {profile.profileUrl ? (
                   <Image
-                    src={photoPreview || profile.profileUrl!}
-                    alt="Selected profile photo"
+                    src={profile.profileUrl}
+                    alt="Profile photo"
                     width={160}
                     height={160}
                     unoptimized
@@ -221,40 +228,20 @@ export function ProfileEditForm() {
                   <UserRound aria-hidden="true" className="size-16 text-primary/60 sm:size-20" />
                 )}
               </div>
-              <div className="flex flex-col items-center gap-2 sm:items-start">
-                <Button type="button" variant="outline" onClick={() => photoInput.current?.click()}>
-                  <Camera aria-hidden="true" className="size-4" />
-                  Change photo
-                </Button>
-                <p className="text-xs text-ink/60">JPG, PNG or WebP. Maximum 5 MB.</p>
-              </div>
-              <input
-                ref={photoInput}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                aria-label="Choose profile photo"
-                className="hidden"
+              <Input
+                name="profileUrl"
+                label="Profile photo URL"
+                type="url"
+                required
+                value={profileUrl}
                 onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (!file) return;
-                  event.target.value = "";
-                  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-                    setPhotoError("Please choose a JPG, PNG, or WebP image.");
-                    return;
-                  }
-                  if (file.size > 5 * 1024 * 1024) {
-                    setPhotoError("Please choose an image smaller than 5 MB.");
-                    return;
-                  }
-                  setPhotoError("");
-                  setPhoto(file);
+                  setProfileUrl(event.target.value);
+                  setSaved(false);
+                  setSaveError("");
                 }}
+                error={!validProfileUrl}
+                errorMessage="Enter a valid profile image URL."
               />
-              {photoError && (
-                <p role="alert" className="text-sm text-error">
-                  {photoError}
-                </p>
-              )}
             </div>
             <Input
               name="name"
@@ -263,7 +250,14 @@ export function ProfileEditForm() {
               placeholder="Enter your name"
               maxLength={100}
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              required
+              error={!name.trim()}
+              errorMessage="Please enter your name."
+              onChange={(event) => {
+                setName(event.target.value);
+                setSaved(false);
+                setSaveError("");
+              }}
               className="h-10 rounded-xl"
             />
             <Textarea
@@ -273,7 +267,11 @@ export function ProfileEditForm() {
               placeholder="Tell us a little about yourself."
               maxLength={1000}
               value={about}
-              onChange={(event) => setAbout(event.target.value)}
+              onChange={(event) => {
+                setAbout(event.target.value);
+                setSaved(false);
+                setSaveError("");
+              }}
               className="h-24 min-h-24 rounded-xl"
             />
             {isStudent ? (
