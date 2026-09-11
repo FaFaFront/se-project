@@ -1,7 +1,7 @@
 "use client";
 
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { UserRound } from "lucide-react";
+import { Camera, UserRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -30,7 +30,6 @@ export function ProfileEditForm() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState("");
   const [about, setAbout] = useState("");
-  const [profileUrl, setProfileUrl] = useState("");
   const [fields, setFields] = useState<Fields>({ gradeLevel: "", goals: "", hourlyRate: "" });
   const [touched, setTouched] = useState<Partial<Record<keyof Fields, boolean>>>({});
   const [loading, setLoading] = useState(true);
@@ -58,7 +57,6 @@ export function ProfileEditForm() {
         setProfile(current);
         setName(current.name ?? "");
         setAbout(current.bio ?? "");
-        setProfileUrl(current.profileUrl ?? "");
         setFields(fieldsFromProfile(current));
       })
       .catch((error: unknown) => {
@@ -85,6 +83,7 @@ export function ProfileEditForm() {
         ? ""
         : "Enter an hourly rate greater than 0.",
   };
+  const profileUrl = profile?.profileUrl ?? "";
   let validProfileUrl = false;
   try {
     new URL(profileUrl.trim());
@@ -102,7 +101,6 @@ export function ProfileEditForm() {
     profile &&
     (name.trim() !== (profile.name ?? "").trim() ||
       about.trim() !== (profile.bio ?? "").trim() ||
-      profileUrl.trim() !== (profile.profileUrl ?? "").trim() ||
       (isStudent
         ? fields.gradeLevel.trim() !== (profile.gradeLevel ?? "").trim() ||
           fields.goals.trim() !== (profile.goals ?? "").trim()
@@ -145,7 +143,6 @@ export function ProfileEditForm() {
       setProfile(current);
       setName(current.name ?? "");
       setAbout(current.bio ?? "");
-      setProfileUrl(current.profileUrl ?? "");
       setFields(fieldsFromProfile(current));
       setTouched({});
       const token = getToken();
@@ -228,20 +225,13 @@ export function ProfileEditForm() {
                   <UserRound aria-hidden="true" className="size-16 text-primary/60 sm:size-20" />
                 )}
               </div>
-              <Input
-                name="profileUrl"
-                label="Profile photo URL"
-                type="url"
-                required
-                value={profileUrl}
-                onChange={(event) => {
-                  setProfileUrl(event.target.value);
-                  setSaved(false);
-                  setSaveError("");
-                }}
-                error={!validProfileUrl}
-                errorMessage="Enter a valid profile image URL."
-              />
+              <div className="flex flex-col items-center gap-2 sm:items-start">
+                <Button type="button" variant="outline" disabled>
+                  <Camera aria-hidden="true" className="size-4" />
+                  Change photo
+                </Button>
+                <p className="text-xs text-ink/60">JPG, PNG or WebP. Maximum 5 MB.</p>
+              </div>
             </div>
             <Input
               name="name"
@@ -339,6 +329,12 @@ export function ProfileEditForm() {
           <p role="status" className="text-sm text-ink empty:hidden">
             {saving ? "Saving your profile..." : saved ? "Your profile has been saved." : ""}
           </p>
+          {!validProfileUrl && (
+            <p role="alert" className="mt-4 text-sm text-error">
+              Your profile needs a valid photo URL before changes can be saved. Photo uploads are
+              not available yet.
+            </p>
+          )}
           {saveError && (
             <p role="alert" className="mt-4 text-sm text-error">
               {saveError}
