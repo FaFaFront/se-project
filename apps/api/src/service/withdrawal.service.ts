@@ -10,6 +10,7 @@ import {
 } from "../common/errors/app-error.js";
 import { env } from "../config/env.js";
 import { withdrawalRepository } from "../repository/withdrawal.repository.js";
+import { userRepository } from "../repository/user.repository.js";
 import {
   readWithdrawalMetadata,
   type WithdrawalMetadata,
@@ -39,8 +40,7 @@ function present(withdrawal: Transaction) {
   };
 }
 
-async function requireTutor(userId: string) {
-  const user = await withdrawalRepository.findUser(userId);
+function requireTutor<T extends { role: string }>(user: T | null): T {
   if (!user) throw new UnauthorizedError("User no longer exists");
   if (user.role !== "tutor") throw new ForbiddenError("Only tutors can withdraw balance");
   return user;
@@ -48,7 +48,7 @@ async function requireTutor(userId: string) {
 
 export const withdrawalService = {
   async submit(userId: string, input: SubmitWithdrawal) {
-    const user = await requireTutor(userId);
+    const user = requireTutor(await userRepository.findForPasswordVerification(userId));
     if (!(await bcrypt.compare(input.password, user.passwordHash))) {
       throw new ForbiddenError("Incorrect confirmation password");
     }
@@ -101,7 +101,7 @@ export const withdrawalService = {
   },
 
   async get(userId: string, id: string) {
-    await requireTutor(userId);
+    requireTutor(await userRepository.findRoleById(userId));
     const withdrawal = await withdrawalRepository.findOwned(userId, id);
     if (!withdrawal) throw new NotFoundError("Withdrawal not found");
     return present(withdrawal);

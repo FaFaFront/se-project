@@ -32,8 +32,39 @@ const profileSelect = {
 
 export type PublicUser = Omit<User, "passwordHash">;
 export type UserProfileRow = Prisma.UserGetPayload<{ select: typeof profileSelect }>;
+export type ProfileOwner = Pick<User, "id" | "role" | "profileComplete">;
+
+type CommonProfileUpdate = Pick<User, "name" | "profileUrl" | "bio">;
+
+export type ExistingProfileUpdate =
+  | (CommonProfileUpdate & {
+      gradeLevel?: string;
+      goals?: string;
+      hourlyRate?: never;
+    })
+  | (CommonProfileUpdate & {
+      hourlyRate?: Prisma.Decimal;
+      gradeLevel?: never;
+      goals?: never;
+    });
 
 export const userRepository = {
+  async findForPasswordVerification(
+    userId: string
+  ): Promise<Pick<User, "role" | "passwordHash"> | null> {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, passwordHash: true },
+    });
+  },
+
+  async findRoleById(userId: string): Promise<Pick<User, "role"> | null> {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+  },
+
   async updateProfile(userId: string, data: Partial<User>): Promise<PublicUser> {
     return prisma.user.update({
       where: { id: userId },
@@ -45,6 +76,25 @@ export const userRepository = {
     return prisma.user.findUnique({
       where: { id: userId },
       select: profileSelect,
+    });
+  },
+
+  async findProfileOwnerById(userId: string): Promise<ProfileOwner | null> {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+        profileComplete: true,
+      },
+    });
+  },
+
+  async updateExistingProfile(userId: string, data: ExistingProfileUpdate): Promise<PublicUser> {
+    return prisma.user.update({
+      where: { id: userId },
+      data,
+      select: publicUserSelect,
     });
   },
 };

@@ -19,13 +19,6 @@ type WithdrawalInput = {
 };
 
 export const withdrawalRepository = {
-  findUser(userId: string) {
-    return prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true, passwordHash: true },
-    });
-  },
-
   findOwned(userId: string, id: string) {
     return prisma.transaction.findFirst({ where: { id, userId, type: "withdrawal" } });
   },
