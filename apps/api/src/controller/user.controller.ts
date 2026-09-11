@@ -23,7 +23,7 @@ const tutorProfileSchema = z.object(tutorProfileFields).strict();
 
 const editableProfileFields = {
   name: z.string().trim().min(1, "Name is required").max(100, "Name is too long"),
-  profileUrl: z.string().trim().url("Please enter a valid profile image URL"),
+  profileUrl: z.string().trim().url("Please enter a valid profile image URL").nullable(),
   bio: z.string().trim().max(1000, "Bio must be at most 1000 characters").nullable(),
 } as const;
 

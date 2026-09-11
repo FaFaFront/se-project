@@ -10,10 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { apiClient } from "@/lib/api-client";
-import { getToken, saveSession } from "@/lib/auth-storage";
+import { ApiError, apiClient } from "@/lib/api-client";
+import { clearSession, getToken, saveSession } from "@/lib/auth-storage";
 import { GRADE_LEVELS } from "@/lib/grade-levels";
-import type { ProfileUpdateResponse, UserProfile } from "@/types/profile";
+import type { ProfileUpdateResponse, UserProfile } from "@/types/user";
 
 type Fields = { gradeLevel: string; goals: string; hourlyRate: string };
 
@@ -61,6 +61,11 @@ export function ProfileEditForm() {
       })
       .catch((error: unknown) => {
         if (active) {
+          if (error instanceof ApiError && error.status === 401) {
+            clearSession();
+            setNeedsLogin(true);
+            return;
+          }
           setLoadError(error instanceof Error ? error.message : "Unable to load your profile.");
         }
       })
@@ -83,19 +88,10 @@ export function ProfileEditForm() {
         ? ""
         : "Enter an hourly rate greater than 0.",
   };
-  const profileUrl = profile?.profileUrl ?? "";
-  let validProfileUrl = false;
-  try {
-    new URL(profileUrl.trim());
-    validProfileUrl = true;
-  } catch {
-    // The update API requires an absolute profile image URL.
-  }
   const valid =
     Boolean(name.trim()) &&
     name.trim().length <= 100 &&
     about.trim().length <= 1000 &&
-    validProfileUrl &&
     (isStudent ? !errors.gradeLevel && !errors.goals : !errors.hourlyRate);
   const changed = Boolean(
     profile &&
@@ -127,7 +123,7 @@ export function ProfileEditForm() {
     try {
       const updated = await apiClient.put<ProfileUpdateResponse>("/users/profile", {
         name: name.trim(),
-        profileUrl: profileUrl.trim(),
+        profileUrl: profile.profileUrl,
         bio: about.trim() || null,
         ...(isStudent
           ? { gradeLevel: fields.gradeLevel.trim(), goals: fields.goals.trim() }
@@ -153,6 +149,11 @@ export function ProfileEditForm() {
       setSaved(true);
       router.refresh();
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearSession();
+        setNeedsLogin(true);
+        return;
+      }
       setSaveError(
         error instanceof Error ? error.message : "Unable to save your profile. Please try again."
       );
@@ -226,7 +227,12 @@ export function ProfileEditForm() {
                 )}
               </div>
               <div className="flex flex-col items-center gap-2 sm:items-start">
-                <Button type="button" variant="outline" disabled>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled
+                  title="Photo uploads are not available yet"
+                >
                   <Camera aria-hidden="true" className="size-4" />
                   Change photo
                 </Button>
@@ -329,12 +335,6 @@ export function ProfileEditForm() {
           <p role="status" className="text-sm text-ink empty:hidden">
             {saving ? "Saving your profile..." : saved ? "Your profile has been saved." : ""}
           </p>
-          {!validProfileUrl && (
-            <p role="alert" className="mt-4 text-sm text-error">
-              Your profile needs a valid photo URL before changes can be saved. Photo uploads are
-              not available yet.
-            </p>
-          )}
           {saveError && (
             <p role="alert" className="mt-4 text-sm text-error">
               {saveError}

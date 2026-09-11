@@ -15,7 +15,7 @@ type ProfileData = {
 
 type ProfileUpdateData = ProfileData & {
   name: string;
-  profileUrl: string;
+  profileUrl: string | null;
   bio: string | null;
 };
 

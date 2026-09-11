@@ -71,6 +71,7 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *         profileUrl:
  *           type: string
  *           format: uri
+ *           nullable: true
  *           example: "https://cdn.example.com/student.jpg"
  *         bio:
  *           type: string
@@ -100,6 +101,7 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *         profileUrl:
  *           type: string
  *           format: uri
+ *           nullable: true
  *           example: "https://cdn.example.com/tutor.jpg"
  *         bio:
  *           type: string
