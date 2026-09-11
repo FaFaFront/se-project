@@ -1,16 +1,18 @@
 "use client";
 
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { GraduationCap, UserRound } from "lucide-react";
+import { Camera, UserRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
 import { getToken, saveSession } from "@/lib/auth-storage";
+import { GRADE_LEVELS } from "@/lib/grade-levels";
 import type { ProfileUpdateResponse, UserProfile } from "@/types/profile";
 
 type Fields = { gradeLevel: string; goals: string; hourlyRate: string };
@@ -26,6 +28,13 @@ function fieldsFromProfile(profile: UserProfile): Fields {
 export function ProfileEditForm() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  // Name, photo and about are local UI drafts until connected to the update API.
+  const [name, setName] = useState("");
+  const [about, setAbout] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [photoError, setPhotoError] = useState("");
+  const photoInput = useRef<HTMLInputElement>(null);
   const [fields, setFields] = useState<Fields>({ gradeLevel: "", goals: "", hourlyRate: "" });
   const [touched, setTouched] = useState<Partial<Record<keyof Fields, boolean>>>({});
   const [loading, setLoading] = useState(true);
@@ -36,6 +45,16 @@ export function ProfileEditForm() {
   const [saveError, setSaveError] = useState("");
   const [saved, setSaved] = useState(false);
   const submitting = useRef(false);
+
+  useEffect(() => {
+    if (!photo) {
+      setPhotoPreview("");
+      return;
+    }
+    const url = URL.createObjectURL(photo);
+    setPhotoPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photo]);
 
   useEffect(() => {
     let active = true;
@@ -51,6 +70,8 @@ export function ProfileEditForm() {
       .then((current) => {
         if (!active) return;
         setProfile(current);
+        setName(current.name ?? "");
+        setAbout(current.bio ?? "");
         setFields(fieldsFromProfile(current));
       })
       .catch((error: unknown) => {
@@ -70,7 +91,7 @@ export function ProfileEditForm() {
   const rate = Number(fields.hourlyRate);
   // Match the controller schema: trimmed required strings, or a finite positive number.
   const errors = {
-    gradeLevel: fields.gradeLevel.trim() ? "" : "Please enter your grade level.",
+    gradeLevel: fields.gradeLevel.trim() ? "" : "Please select your grade level.",
     goals: fields.goals.trim() ? "" : "Please enter your learning goals.",
     hourlyRate:
       fields.hourlyRate.trim() && Number.isFinite(rate) && rate > 0
@@ -176,62 +197,109 @@ export function ProfileEditForm() {
   }
 
   return (
-    <div className="grid overflow-hidden rounded-3xl border border-hairline/70 bg-white shadow-[0_20px_70px_-24px_rgba(48,9,66,0.18)] lg:grid-cols-[0.85fr_1.4fr]">
-      <aside className="bg-gradient-to-br from-brand-plum-deepest to-brand-plum-dark px-6 py-8 text-white sm:p-10 lg:p-12">
-        <GraduationCap className="size-8" aria-hidden="true" />
-        <h1 className="font-outfit mt-6 text-3xl font-semibold sm:text-4xl">Your profile</h1>
-        <p className="mt-4 text-sm leading-7 text-white/80">
-          Keep your {isStudent ? "learning goals" : "teaching rate"} up to date.
-        </p>
-        <div className="mt-8 flex size-24 items-center justify-center overflow-hidden rounded-full bg-white/10">
-          {profile.profileUrl ? (
-            <Image
-              src={profile.profileUrl}
-              alt="Your current profile photo"
-              width={96}
-              height={96}
-              unoptimized
-              className="size-full object-cover"
-            />
-          ) : (
-            <UserRound className="size-10" aria-hidden="true" />
-          )}
-        </div>
-        <dl className="mt-6 space-y-4 break-words text-sm">
-          <div>
-            <dt className="text-white/70">Name</dt>
-            <dd className="mt-1 font-semibold">{profile.name || "Not provided"}</dd>
-          </div>
-          <div>
-            <dt className="text-white/70">Email</dt>
-            <dd className="mt-1 font-semibold">{profile.email}</dd>
-          </div>
-        </dl>
-      </aside>
-      <section className="min-w-0 px-6 py-8 sm:p-10 lg:p-12">
-        <h2 className="font-outfit text-2xl font-semibold text-ink">
+    <div className="rounded-3xl border border-hairline bg-white shadow-sm">
+      <section className="min-w-0 p-5 sm:p-6">
+        <h1 className="font-outfit text-2xl font-semibold text-ink">
           Edit {isStudent ? "student" : "tutor"} profile
-        </h2>
-        <p className="mb-6 mt-2 text-sm text-ink/70">All fields below are required.</p>
+        </h1>
+        <p className="mb-4 mt-1 text-sm text-ink/70">Update your profile details.</p>
         <form noValidate onSubmit={handleSubmit} aria-busy={saving}>
-          <fieldset disabled={saving} className="min-w-0 space-y-5">
+          <fieldset disabled={saving} className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
             <legend className="sr-only">Profile information</legend>
+            <div className="flex flex-col items-center gap-3 border-b border-hairline pb-4 sm:col-span-2 sm:flex-row sm:flex-wrap sm:gap-5">
+              <div className="flex size-32 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-primary/20 bg-primary/5 sm:size-40">
+                {photoPreview || profile.profileUrl ? (
+                  <Image
+                    src={photoPreview || profile.profileUrl!}
+                    alt="Selected profile photo"
+                    width={160}
+                    height={160}
+                    unoptimized
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  <UserRound aria-hidden="true" className="size-16 text-primary/60 sm:size-20" />
+                )}
+              </div>
+              <div className="flex flex-col items-center gap-2 sm:items-start">
+                <Button type="button" variant="outline" onClick={() => photoInput.current?.click()}>
+                  <Camera aria-hidden="true" className="size-4" />
+                  Change photo
+                </Button>
+                <p className="text-xs text-ink/60">JPG, PNG or WebP. Maximum 5 MB.</p>
+              </div>
+              <input
+                ref={photoInput}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                aria-label="Choose profile photo"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  event.target.value = "";
+                  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+                    setPhotoError("Please choose a JPG, PNG, or WebP image.");
+                    return;
+                  }
+                  if (file.size > 5 * 1024 * 1024) {
+                    setPhotoError("Please choose an image smaller than 5 MB.");
+                    return;
+                  }
+                  setPhotoError("");
+                  setPhoto(file);
+                }}
+              />
+              {photoError && (
+                <p role="alert" className="text-sm text-error">
+                  {photoError}
+                </p>
+              )}
+            </div>
+            <Input
+              name="name"
+              label="Name"
+              autoComplete="name"
+              placeholder="Enter your name"
+              maxLength={100}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className="h-10 rounded-xl"
+            />
+            <Textarea
+              name="bio"
+              wrapperClassName="sm:row-start-3"
+              label="About"
+              placeholder="Tell us a little about yourself."
+              maxLength={1000}
+              value={about}
+              onChange={(event) => setAbout(event.target.value)}
+              className="h-24 min-h-24 rounded-xl"
+            />
             {isStudent ? (
               <>
-                <Input
+                <Select
                   name="gradeLevel"
                   label="Grade level"
-                  required
+                  placeholder="Select your grade level"
+                  options={
+                    fields.gradeLevel && !GRADE_LEVELS.includes(fields.gradeLevel)
+                      ? [fields.gradeLevel, ...GRADE_LEVELS]
+                      : GRADE_LEVELS
+                  }
                   value={fields.gradeLevel}
-                  onChange={(event) => edit("gradeLevel", event.target.value)}
-                  onBlur={() => touch("gradeLevel")}
+                  onValueChange={(value) => {
+                    edit("gradeLevel", value);
+                    touch("gradeLevel");
+                  }}
+                  disabled={saving}
                   error={Boolean(touched.gradeLevel && errors.gradeLevel)}
                   errorMessage={errors.gradeLevel}
-                  placeholder="For example, Grade 10 or University"
-                  className="h-12 rounded-xl"
+                  className="w-full gap-2 sm:col-start-2 sm:row-start-2 [&>button]:h-10 [&>button]:rounded-xl [&>button]:px-4 [&>button]:text-sm [&>button:focus-visible]:ring-4 [&>button:focus-visible]:ring-primary/10"
                 />
                 <Textarea
                   name="goals"
+                  wrapperClassName="sm:col-start-2 sm:row-start-3"
                   label="Learning goals"
                   required
                   value={fields.goals}
@@ -240,7 +308,7 @@ export function ProfileEditForm() {
                   error={Boolean(touched.goals && errors.goals)}
                   errorMessage={errors.goals}
                   placeholder="What would you like to learn?"
-                  className="min-h-32 rounded-xl"
+                  className="h-24 min-h-24 rounded-xl"
                 />
               </>
             ) : (
@@ -256,19 +324,21 @@ export function ProfileEditForm() {
                 onBlur={() => touch("hourlyRate")}
                 error={Boolean(touched.hourlyRate && errors.hourlyRate)}
                 errorMessage={errors.hourlyRate}
-                className="h-12 rounded-xl"
+                className="h-10 rounded-xl"
               />
             )}
-            <Button
-              type="submit"
-              isLoading={saving}
-              disabled={saving || !valid || !changed}
-              className="h-12 w-full rounded-xl shadow-cta disabled:opacity-60"
-            >
-              {saving ? "Saving changes..." : "Save changes"}
-            </Button>
+            <div className="flex justify-end border-t border-hairline pt-3 sm:col-span-2">
+              <Button
+                type="submit"
+                isLoading={saving}
+                disabled={saving || !valid || !changed}
+                className="h-10 w-full rounded-xl px-8 shadow-cta disabled:opacity-60 sm:w-auto sm:min-w-44"
+              >
+                {saving ? "Saving changes..." : "Save changes"}
+              </Button>
+            </div>
           </fieldset>
-          <p role="status" className="mt-4 text-sm text-ink">
+          <p role="status" className="text-sm text-ink empty:hidden">
             {saving ? "Saving your profile..." : saved ? "Your profile has been saved." : ""}
           </p>
           {saveError && (

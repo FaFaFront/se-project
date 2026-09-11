@@ -14,6 +14,7 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *   schemas:
  *     StudentProfile:
  *       type: object
+ *       additionalProperties: false
  *       required: [gradeLevel, goals]
  *       properties:
  *         gradeLevel:
@@ -24,19 +25,21 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *           example: "Improve my math skills"
  *     TutorProfile:
  *       type: object
+ *       additionalProperties: false
  *       required: [hourlyRate]
  *       properties:
  *         hourlyRate:
  *           type: number
+ *           exclusiveMinimum: 0
  *           example: 25.0
  *     UserProfile:
  *       type: object
  *       properties:
  *         id: { type: string, format: uuid }
- *         name: { type: string, example: Student Name }
+ *         name: { type: string, nullable: true, example: Student Name }
  *         email: { type: string, format: email }
  *         role: { type: string, enum: [student, tutor]}
- *         profileUrl: { type: string, format: uri }
+ *         profileUrl: { type: string, format: uri, nullable: true }
  *         bio: { type: string, nullable: true }
  *         hourlyRate:
  *           type: number
@@ -55,6 +58,59 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *             properties:
  *               id: { type: string, format: uuid }
  *               name: { type: string, example: Mathematics }
+ *     StudentProfileUpdate:
+ *       type: object
+ *       additionalProperties: false
+ *       required: [name, profileUrl, bio]
+ *       properties:
+ *         name:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 100
+ *           example: "Student Name"
+ *         profileUrl:
+ *           type: string
+ *           format: uri
+ *           example: "https://cdn.example.com/student.jpg"
+ *         bio:
+ *           type: string
+ *           nullable: true
+ *           maxLength: 1000
+ *           example: "I enjoy mathematics."
+ *         gradeLevel:
+ *           type: string
+ *           minLength: 1
+ *           description: Optional; retains its current value when omitted
+ *           example: "Grade 10"
+ *         goals:
+ *           type: string
+ *           minLength: 1
+ *           description: Optional; retains its current value when omitted
+ *           example: "Prepare for my final examination."
+ *     TutorProfileUpdate:
+ *       type: object
+ *       additionalProperties: false
+ *       required: [name, profileUrl, bio]
+ *       properties:
+ *         name:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 100
+ *           example: "Tutor Name"
+ *         profileUrl:
+ *           type: string
+ *           format: uri
+ *           example: "https://cdn.example.com/tutor.jpg"
+ *         bio:
+ *           type: string
+ *           nullable: true
+ *           maxLength: 1000
+ *           example: "I have five years of teaching experience."
+ *         hourlyRate:
+ *           type: number
+ *           exclusiveMinimum: 0
+ *           description: Optional; retains its current value when omitted
+ *           example: 750.0
  */
 
 // Cast router to use AuthRequest
@@ -111,5 +167,31 @@ router.post("/profile", authMiddleware, userController.submitProfile);
  *      404: { description: User not found }
  */
 router.get("/me", authMiddleware, userController.getProfile);
+
+/**
+ * @swagger
+ * /users/profile:
+ *   put:
+ *     summary: Replace the authenticated user's editable profile
+ *     description: Updates the common profile fields and any supplied role-specific fields. Omitted role-specific fields retain their current values. Email, password, and role cannot be changed through this endpoint.
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             anyOf:
+ *               - $ref: '#/components/schemas/StudentProfileUpdate'
+ *               - $ref: '#/components/schemas/TutorProfileUpdate'
+ *     responses:
+ *       200: { description: Profile updated successfully }
+ *       400: { description: Missing, invalid, role-incompatible, or unknown request fields }
+ *       401: { description: Missing or invalid authentication, deleted user, or role mismatch }
+ *       409: { description: Initial profile completion is required }
+ *       500: { description: Internal server error }
+ */
+router.put("/profile", authMiddleware, userController.updateProfile);
 
 export const userRouter = router;
