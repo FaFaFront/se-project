@@ -66,11 +66,22 @@ export function ProfilePanel() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   /** A token the API rejects is worse than no token — drop it and start over. */
   const endSession = useCallback(() => {
     clearSession();
     router.replace("/login");
+  }, [router]);
+
+  const handleLogout = useCallback(async () => {
+    setIsLoggingOut(true);
+    try {
+      await apiClient.post("/auth/logout", {});
+    } finally {
+      clearSession();
+      router.replace("/login");
+    }
   }, [router]);
 
   const load = useCallback(async () => {
@@ -130,5 +141,5 @@ export function ProfilePanel() {
 
   if (!profile) return null;
 
-  return <ProfileDetails profile={profile} />;
+  return <ProfileDetails profile={profile} onLogout={handleLogout} isLoggingOut={isLoggingOut} />;
 }

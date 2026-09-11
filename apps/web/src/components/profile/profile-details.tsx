@@ -1,14 +1,17 @@
 "use client";
 
-import { Mail } from "lucide-react";
+import { LogOut, Mail } from "lucide-react";
 
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types/user";
 
 export interface ProfileDetailsProps {
   profile: UserProfile;
   className?: string;
+  onLogout?: () => void;
+  isLoggingOut?: boolean;
 }
 
 const EMPTY = "Not set yet";
@@ -50,7 +53,12 @@ function Field({ label, value }: { label: string; value?: string | null }) {
 }
 
 /** Read-only view of the signed-in user's profile. */
-export function ProfileDetails({ profile, className }: ProfileDetailsProps) {
+export function ProfileDetails({
+  profile,
+  className,
+  onLogout,
+  isLoggingOut,
+}: ProfileDetailsProps) {
   const isStudent = profile.role === "student";
 
   return (
@@ -86,6 +94,18 @@ export function ProfileDetails({ profile, className }: ProfileDetailsProps) {
                 profile.hourlyRate === null ? EMPTY : `${formatCurrency(profile.hourlyRate)} / hour`
               }
             />
+          )}
+          {onLogout && (
+            <Button
+              type="button"
+              variant="outline"
+              className="text-error border-error w-full"
+              onClick={onLogout}
+              isLoading={isLoggingOut}
+            >
+              <LogOut aria-hidden="true" className="size-4 shrink-0" />
+              Log out
+            </Button>
           )}
         </div>
       </section>

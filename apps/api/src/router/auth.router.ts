@@ -21,7 +21,27 @@ export const authRouter = Router();
  *               password: { type: string, minLength: 8, format: password }
  *               role: { type: string, enum: [student, tutor] }
  *     responses:
- *       201: { description: Registration successful }
+ *       201:
+ *         description: Registration successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Registration successful }
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token: { type: string, description: JWT valid for 7 days }
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id: { type: string, format: uuid }
+ *                         name: { type: string, nullable: true }
+ *                         email: { type: string, format: email }
+ *                         role: { type: string, enum: [student, tutor] }
+ *                         profileUrl: { type: string, format: uri, nullable: true }
  *       400: { description: Invalid registration details }
  *       409: { description: Email already registered }
  */
@@ -60,10 +80,10 @@ authRouter.post("/register", authController.register);
  *                       type: object
  *                       properties:
  *                         id: { type: string }
- *                         name: { type: string }
+ *                         name: { type: string, nullable: true }
  *                         email: { type: string, format: email }
  *                         role: { type: string, enum: [student, tutor] }
- *                         profileUrl: { type: string, format: uri }
+ *                         profileUrl: { type: string, format: uri, nullable: true }
  *       400: { description: Validation error }
  *       401: { description: Invalid email or password }
  */
