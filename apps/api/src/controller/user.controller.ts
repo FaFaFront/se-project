@@ -25,7 +25,7 @@ const tutorProfileSchema = z.object(tutorProfileFields).strict();
 
 const editableProfileFields = {
   name: z.string().trim().min(1, "Name is required").max(100, "Name is too long"),
-  profileUrl: z.string().trim().url("Please enter a valid profile image URL"),
+  profileUrl: z.string().trim().url("Please enter a valid profile image URL").nullable(),
   bio: z.string().trim().max(1000, "Bio must be at most 1000 characters").nullable(),
 } as const;
 
@@ -40,12 +40,17 @@ const tutorProfileUpdateSchema = z
   .object({
     ...editableProfileFields,
     hourlyRate: tutorProfileFields.hourlyRate.optional(),
+    subjectIds: z
+      .array(z.string().uuid("Each subject ID must be a valid UUID"))
+      .refine((ids) => new Set(ids).size === ids.length, "Subject IDs must be unique")
+      .optional(),
   })
   .strict();
 
 type ProfileData = z.infer<typeof studentProfileSchema> | z.infer<typeof tutorProfileSchema>;
-type ProfileUpdateData =
-  z.infer<typeof studentProfileUpdateSchema> | z.infer<typeof tutorProfileUpdateSchema>;
+type ProfileUpdateRequest =
+  | { role: typeof Role.student; data: z.infer<typeof studentProfileUpdateSchema> }
+  | { role: typeof Role.tutor; data: z.infer<typeof tutorProfileUpdateSchema> };
 
 export const userController = {
   async submitProfile(req: AuthRequest, res: Response, next: NextFunction) {
@@ -97,20 +102,23 @@ export const userController = {
         throw new UnauthorizedError("User not found in request");
       }
 
-      let role: Role;
-      let validatedData: ProfileUpdateData;
+      let profileUpdate: ProfileUpdateRequest;
 
       if (user.role === Role.student) {
-        role = Role.student;
-        validatedData = studentProfileUpdateSchema.parse(req.body);
+        profileUpdate = {
+          role: Role.student,
+          data: studentProfileUpdateSchema.parse(req.body),
+        };
       } else if (user.role === Role.tutor) {
-        role = Role.tutor;
-        validatedData = tutorProfileUpdateSchema.parse(req.body);
+        profileUpdate = {
+          role: Role.tutor,
+          data: tutorProfileUpdateSchema.parse(req.body),
+        };
       } else {
         throw new UnauthorizedError("Invalid authentication role");
       }
 
-      const updatedUser = await userService.updateProfile(user.id, role, validatedData);
+      const updatedUser = await userService.updateProfile(user.id, profileUpdate);
       res.status(200).json(successResponse(updatedUser, "Profile updated successfully"));
     } catch (error) {
       next(error);

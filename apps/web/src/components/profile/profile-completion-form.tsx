@@ -19,7 +19,7 @@ type ProfileCompletionFormProps = {
   role: UserRole;
 };
 
-const GRADE_LEVELS = [
+export const GRADE_LEVELS = [
   "Grade 7",
   "Grade 8",
   "Grade 9",
