@@ -1,5 +1,10 @@
 import { Role, User, Prisma } from "@prisma/client";
-import { userRepository } from "../repository/user.repository.js";
+import {
+  userRepository,
+  type ExistingProfileUpdate,
+  type UserProfileRow,
+} from "../repository/user.repository.js";
+import { subjectRepository } from "../repository/subject.repository.js";
 import {
   NotFoundError,
   BadRequestError,
@@ -13,11 +18,47 @@ type ProfileData = {
   hourlyRate?: number;
 };
 
-type ProfileUpdateData = ProfileData & {
+type CommonProfileUpdateData = {
   name: string;
   profileUrl: string | null;
   bio: string | null;
 };
+
+type StudentProfileUpdateData = CommonProfileUpdateData & {
+  gradeLevel?: string;
+  goals?: string;
+  hourlyRate?: never;
+  subjectIds?: never;
+};
+
+type TutorProfileUpdateData = CommonProfileUpdateData & {
+  hourlyRate?: number;
+  subjectIds?: string[];
+  gradeLevel?: never;
+  goals?: never;
+};
+
+type ProfileUpdateRequest =
+  | { role: typeof Role.student; data: StudentProfileUpdateData }
+  | { role: typeof Role.tutor; data: TutorProfileUpdateData };
+
+function mapProfile(user: UserProfileRow) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    profileUrl: user.profileUrl,
+    bio: user.bio,
+    hourlyRate: user.hourlyRate === null ? null : Number(user.hourlyRate),
+    gradeLevel: user.gradeLevel,
+    goals: user.goals,
+    walletBalance: Number(user.walletBalance),
+    profileComplete: user.profileComplete,
+    createdAt: user.createdAt,
+    subjects: user.tutorSubjects.map((tutorSubject) => tutorSubject.subject),
+  };
+}
 
 export const userService = {
   async completeProfile(userId: string, role: Role, data: ProfileData) {
@@ -46,23 +87,11 @@ export const userService = {
       throw new NotFoundError("User not found");
     }
 
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      profileUrl: user.profileUrl,
-      bio: user.bio,
-      hourlyRate: user.hourlyRate ? Number(user.hourlyRate) : null,
-      gradeLevel: user.gradeLevel,
-      goals: user.goals,
-      walletBalance: Number(user.walletBalance),
-      createdAt: user.createdAt,
-      subjects: user.tutorSubjects.map((ts) => ts.subject),
-    };
+    return mapProfile(user);
   },
 
-  async updateProfile(userId: string, role: Role, data: ProfileUpdateData) {
+  async updateProfile(userId: string, profileUpdate: ProfileUpdateRequest) {
+    const { role, data } = profileUpdate;
     const profileOwner = await userRepository.findProfileOwnerById(userId);
 
     if (!profileOwner) {
@@ -83,7 +112,8 @@ export const userService = {
       bio: data.bio,
     };
 
-    let updateData;
+    let updateData: ExistingProfileUpdate;
+    let subjectIds: string[] | undefined;
     if (role === Role.student) {
       updateData = {
         ...commonData,
@@ -97,12 +127,30 @@ export const userService = {
           hourlyRate: new Prisma.Decimal(data.hourlyRate),
         }),
       };
+
+      subjectIds = data.subjectIds;
+      if (subjectIds !== undefined) {
+        const existingSubjects = await subjectRepository.findByIds(subjectIds);
+        const existingSubjectIds = new Set(existingSubjects.map((subject) => subject.id));
+        const unknownSubjectIds = subjectIds.filter(
+          (subjectId) => !existingSubjectIds.has(subjectId)
+        );
+
+        if (unknownSubjectIds.length > 0) {
+          throw new BadRequestError(`Unknown subject IDs: ${unknownSubjectIds.join(", ")}`);
+        }
+      }
     } else {
       throw new UnauthorizedError("Invalid authentication role");
     }
 
     try {
-      return await userRepository.updateExistingProfile(userId, updateData);
+      const updatedUser = await userRepository.updateExistingProfile(
+        userId,
+        updateData,
+        subjectIds
+      );
+      return mapProfile(updatedUser);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
         throw new UnauthorizedError("Authenticated user no longer exists");
