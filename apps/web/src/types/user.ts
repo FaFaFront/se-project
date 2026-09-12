@@ -29,10 +29,10 @@ export type PublicUser = {
   role: UserRole;
   profileUrl: string | null;
   bio: string | null;
-  hourlyRate: number | null;
+  hourlyRate: string | null;
   gradeLevel: string | null;
   goals: string | null;
-  walletBalance: number;
+  walletBalance: string;
   profileComplete: boolean;
   createdAt: string;
 };
