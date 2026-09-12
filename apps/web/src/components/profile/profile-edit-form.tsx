@@ -8,12 +8,14 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { apiClient } from "@/lib/api-client";
-import { getToken, saveSession } from "@/lib/auth-storage";
-import { GRADE_LEVELS } from "@/lib/grade-levels";
-import type { ProfileUpdateResponse, UserProfile } from "@/types/profile";
+import { ApiError, apiClient } from "@/lib/api-client";
+import { clearSession, getToken, saveSession } from "@/lib/auth-storage";
+import { GRADE_LEVELS } from "@/components/profile/profile-completion-form";
+import type { Subject } from "@/types/subject";
+import type { ProfileUpdateResponse, UserProfile } from "@/types/user";
 
 type Fields = { gradeLevel: string; goals: string; hourlyRate: string };
 
@@ -25,12 +27,18 @@ function fieldsFromProfile(profile: UserProfile): Fields {
   };
 }
 
+function haveSameSubjectIds(left: string[], right: string[]) {
+  return JSON.stringify([...left].sort()) === JSON.stringify([...right].sort());
+}
+
 export function ProfileEditForm() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState("");
   const [about, setAbout] = useState("");
   const [fields, setFields] = useState<Fields>({ gradeLevel: "", goals: "", hourlyRate: "" });
+  const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([]);
   const [touched, setTouched] = useState<Partial<Record<keyof Fields, boolean>>>({});
   const [loading, setLoading] = useState(true);
   const [needsLogin, setNeedsLogin] = useState(false);
@@ -50,23 +58,38 @@ export function ProfileEditForm() {
     }
     setLoading(true);
     setLoadError("");
-    apiClient
-      .get<UserProfile>("/users/me")
-      .then((current) => {
+    setProfile(null);
+    setAvailableSubjects([]);
+    setSelectedSubjectIds([]);
+
+    async function loadProfile() {
+      try {
+        const current = await apiClient.get<UserProfile>("/users/me");
+        const subjects =
+          current.role === "tutor" ? await apiClient.get<Subject[]>("/subjects") : [];
+
         if (!active) return;
         setProfile(current);
         setName(current.name ?? "");
         setAbout(current.bio ?? "");
         setFields(fieldsFromProfile(current));
-      })
-      .catch((error: unknown) => {
+        setAvailableSubjects(subjects);
+        setSelectedSubjectIds(current.subjects.map((subject) => subject.id));
+      } catch (error) {
         if (active) {
+          if (error instanceof ApiError && error.status === 401) {
+            clearSession();
+            setNeedsLogin(true);
+            return;
+          }
           setLoadError(error instanceof Error ? error.message : "Unable to load your profile.");
         }
-      })
-      .finally(() => {
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    }
+
+    void loadProfile();
     return () => {
       active = false;
     };
@@ -83,19 +106,10 @@ export function ProfileEditForm() {
         ? ""
         : "Enter an hourly rate greater than 0.",
   };
-  const profileUrl = profile?.profileUrl ?? "";
-  let validProfileUrl = false;
-  try {
-    new URL(profileUrl.trim());
-    validProfileUrl = true;
-  } catch {
-    // The update API requires an absolute profile image URL.
-  }
   const valid =
     Boolean(name.trim()) &&
     name.trim().length <= 100 &&
     about.trim().length <= 1000 &&
-    validProfileUrl &&
     (isStudent ? !errors.gradeLevel && !errors.goals : !errors.hourlyRate);
   const changed = Boolean(
     profile &&
@@ -104,7 +118,11 @@ export function ProfileEditForm() {
       (isStudent
         ? fields.gradeLevel.trim() !== (profile.gradeLevel ?? "").trim() ||
           fields.goals.trim() !== (profile.goals ?? "").trim()
-        : fields.hourlyRate.trim() !== "" && rate !== profile.hourlyRate))
+        : (fields.hourlyRate.trim() !== "" && rate !== profile.hourlyRate) ||
+          !haveSameSubjectIds(
+            selectedSubjectIds,
+            profile.subjects.map((subject) => subject.id)
+          )))
   );
 
   function edit(field: keyof Fields, value: string) {
@@ -127,23 +145,18 @@ export function ProfileEditForm() {
     try {
       const updated = await apiClient.put<ProfileUpdateResponse>("/users/profile", {
         name: name.trim(),
-        profileUrl: profileUrl.trim(),
+        profileUrl: profile.profileUrl,
         bio: about.trim() || null,
         ...(isStudent
           ? { gradeLevel: fields.gradeLevel.trim(), goals: fields.goals.trim() }
-          : { hourlyRate: rate }),
+          : { hourlyRate: rate, subjectIds: selectedSubjectIds }),
       });
-      // Refresh from the persisted response, including database decimal rounding.
-      const current: UserProfile = {
-        ...profile,
-        ...updated,
-        hourlyRate: updated.hourlyRate === null ? null : Number(updated.hourlyRate),
-        walletBalance: Number(updated.walletBalance),
-      };
+      const current: UserProfile = updated;
       setProfile(current);
       setName(current.name ?? "");
       setAbout(current.bio ?? "");
       setFields(fieldsFromProfile(current));
+      setSelectedSubjectIds(current.subjects.map((subject) => subject.id));
       setTouched({});
       const token = getToken();
       if (token) {
@@ -153,6 +166,11 @@ export function ProfileEditForm() {
       setSaved(true);
       router.refresh();
     } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearSession();
+        setNeedsLogin(true);
+        return;
+      }
       setSaveError(
         error instanceof Error ? error.message : "Unable to save your profile. Please try again."
       );
@@ -226,7 +244,12 @@ export function ProfileEditForm() {
                 )}
               </div>
               <div className="flex flex-col items-center gap-2 sm:items-start">
-                <Button type="button" variant="outline" disabled>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled
+                  title="Photo uploads are not available yet"
+                >
                   <Camera aria-hidden="true" className="size-4" />
                   Change photo
                 </Button>
@@ -300,20 +323,39 @@ export function ProfileEditForm() {
                 />
               </>
             ) : (
-              <Input
-                name="hourlyRate"
-                label="Hourly rate ($)"
-                type="number"
-                inputMode="decimal"
-                step="any"
-                required
-                value={fields.hourlyRate}
-                onChange={(event) => edit("hourlyRate", event.target.value)}
-                onBlur={() => touch("hourlyRate")}
-                error={Boolean(touched.hourlyRate && errors.hourlyRate)}
-                errorMessage={errors.hourlyRate}
-                className="h-10 rounded-xl"
-              />
+              <>
+                <Input
+                  name="hourlyRate"
+                  label="Hourly rate ($)"
+                  type="number"
+                  inputMode="decimal"
+                  step="any"
+                  required
+                  value={fields.hourlyRate}
+                  onChange={(event) => edit("hourlyRate", event.target.value)}
+                  onBlur={() => touch("hourlyRate")}
+                  error={Boolean(touched.hourlyRate && errors.hourlyRate)}
+                  errorMessage={errors.hourlyRate}
+                  className="h-10 rounded-xl"
+                />
+                <MultiSelect
+                  name="subjectIds"
+                  label="Subjects you teach"
+                  placeholder="Select subjects"
+                  options={availableSubjects.map((subject) => ({
+                    label: subject.name,
+                    value: subject.id,
+                  }))}
+                  value={selectedSubjectIds}
+                  onValueChange={(subjectIds) => {
+                    setSelectedSubjectIds(subjectIds);
+                    setSaved(false);
+                    setSaveError("");
+                  }}
+                  disabled={saving}
+                  className="w-full gap-2 sm:col-start-2 sm:row-start-3 [&>button]:h-10 [&>button]:rounded-xl [&>button]:px-4 [&>button]:text-sm [&>button:focus-visible]:ring-4 [&>button:focus-visible]:ring-primary/10"
+                />
+              </>
             )}
             <div className="flex justify-end border-t border-hairline pt-3 sm:col-span-2">
               <Button
@@ -329,12 +371,6 @@ export function ProfileEditForm() {
           <p role="status" className="text-sm text-ink empty:hidden">
             {saving ? "Saving your profile..." : saved ? "Your profile has been saved." : ""}
           </p>
-          {!validProfileUrl && (
-            <p role="alert" className="mt-4 text-sm text-error">
-              Your profile needs a valid photo URL before changes can be saved. Photo uploads are
-              not available yet.
-            </p>
-          )}
           {saveError && (
             <p role="alert" className="mt-4 text-sm text-error">
               {saveError}

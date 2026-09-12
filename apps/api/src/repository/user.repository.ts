@@ -74,11 +74,25 @@ export const userRepository = {
     });
   },
 
-  async updateExistingProfile(userId: string, data: ExistingProfileUpdate): Promise<PublicUser> {
+  async updateExistingProfile(
+    userId: string,
+    data: ExistingProfileUpdate,
+    subjectIds?: string[]
+  ): Promise<UserProfileRow> {
     return prisma.user.update({
       where: { id: userId },
-      data,
-      select: publicUserSelect,
+      data: {
+        ...data,
+        ...(subjectIds !== undefined && {
+          tutorSubjects: {
+            deleteMany: {},
+            create: subjectIds.map((subjectId) => ({
+              subject: { connect: { id: subjectId } },
+            })),
+          },
+        }),
+      },
+      select: profileSelect,
     });
   },
 };
