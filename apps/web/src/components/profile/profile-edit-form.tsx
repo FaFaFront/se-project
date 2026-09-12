@@ -12,7 +12,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { clearSession, getToken, saveSession } from "@/lib/auth-storage";
-import { GRADE_LEVELS } from "@/lib/grade-levels";
+import { GRADE_LEVELS } from "@/components/profile/profile-completion-form";
 import type { ProfileUpdateResponse, UserProfile } from "@/types/user";
 
 type Fields = { gradeLevel: string; goals: string; hourlyRate: string };
