@@ -51,8 +51,8 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
       const user = getToken() ? getUser() : null;
       setSession(user);
       setBalance(undefined);
-      if (user?.role === "student") {
-        apiClient.get<WalletBalance>("/wallet").then(
+      if (user?.role === "student" || user?.role === "tutor") {
+        apiClient.get<WalletBalance>(user.role === "tutor" ? "/users/me" : "/wallet").then(
           (wallet) => {
             if (active && version === accountVersion) {
               setBalance(Number(wallet.walletBalance).toFixed(2));
@@ -79,6 +79,8 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
   const displayPhoto = profileUrl ?? session?.profileUrl ?? undefined;
   const displayBalance = userMoney ?? balance;
   const isStudent = session?.role === "student";
+  const isTutor = session?.role === "tutor";
+  const currencySymbol = isTutor ? "฿" : "$";
 
   useEffect(() => {
     if (!isSidebarOpen) return;
@@ -128,7 +130,7 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
         </p>
       </div>
 
-      <div className="hidden items-center gap-2 lg:absolute lg:left-1/2 lg:flex lg:-translate-x-1/2">
+      <div className="hidden items-center gap-2 lg:flex">
         {NAV_LINKS.map(({ label, href }) => {
           const isActive = pathname === href;
           return (
@@ -170,12 +172,20 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
                 )}
                 <div className="flex flex-col gap-[1px] text-left">
                   <p className="text-sm font-semibold">{displayName}</p>
-                  {displayBalance !== undefined && <p className="text-xs">${displayBalance}</p>}
+                  {displayBalance !== undefined && (
+                    <p className="text-xs">
+                      {currencySymbol}
+                      {displayBalance}
+                    </p>
+                  )}
                 </div>
               </button>
-              {isStudent && (
-                <Link href="/balance/top-up" className="pl-14 text-xs font-semibold text-primary">
-                  Top up balance
+              {(isStudent || isTutor) && (
+                <Link
+                  href={isTutor ? "/balance/withdraw" : "/balance/top-up"}
+                  className="pl-14 text-xs font-semibold text-primary"
+                >
+                  {isTutor ? "Withdraw balance" : "Top up balance"}
                 </Link>
               )}
             </div>
@@ -276,15 +286,18 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
                     </span>
                   )}
                   {displayBalance !== undefined && (
-                    <span className="font-inter text-ink text-[10px]">${displayBalance}</span>
+                    <span className="font-inter text-ink text-[10px]">
+                      {currencySymbol}
+                      {displayBalance}
+                    </span>
                   )}
-                  {isStudent && (
+                  {(isStudent || isTutor) && (
                     <Link
-                      href="/balance/top-up"
+                      href={isTutor ? "/balance/withdraw" : "/balance/top-up"}
                       onClick={() => setIsSidebarOpen(false)}
                       className="text-xs font-semibold text-primary"
                     >
-                      Top up balance
+                      {isTutor ? "Withdraw balance" : "Top up balance"}
                     </Link>
                   )}
                 </div>

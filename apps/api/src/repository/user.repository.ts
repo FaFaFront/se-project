@@ -49,6 +49,22 @@ export type ExistingProfileUpdate =
     });
 
 export const userRepository = {
+  async findForPasswordVerification(
+    userId: string
+  ): Promise<Pick<User, "role" | "passwordHash"> | null> {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, passwordHash: true },
+    });
+  },
+
+  async findRoleById(userId: string): Promise<Pick<User, "role"> | null> {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+  },
+
   async updateProfile(userId: string, data: Partial<User>): Promise<PublicUser> {
     return prisma.user.update({
       where: { id: userId },
