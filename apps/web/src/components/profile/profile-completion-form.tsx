@@ -10,23 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
+import { GRADE_LEVELS } from "@/lib/grade-levels";
 
 type UserRole = "student" | "tutor";
 
 type ProfileCompletionFormProps = {
   role: UserRole;
 };
-
-const GRADE_LEVELS = [
-  "Grade 7",
-  "Grade 8",
-  "Grade 9",
-  "Grade 10",
-  "Grade 11",
-  "Grade 12",
-  "University",
-  "Other",
-];
 
 export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
   const router = useRouter();
