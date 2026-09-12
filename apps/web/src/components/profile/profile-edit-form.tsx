@@ -8,11 +8,13 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { clearSession, getToken, saveSession } from "@/lib/auth-storage";
 import { GRADE_LEVELS } from "@/components/profile/profile-completion-form";
+import type { Subject } from "@/types/subject";
 import type { ProfileUpdateResponse, UserProfile } from "@/types/user";
 
 type Fields = { gradeLevel: string; goals: string; hourlyRate: string };
@@ -25,12 +27,18 @@ function fieldsFromProfile(profile: UserProfile): Fields {
   };
 }
 
+function haveSameSubjectIds(left: string[], right: string[]) {
+  return JSON.stringify([...left].sort()) === JSON.stringify([...right].sort());
+}
+
 export function ProfileEditForm() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState("");
   const [about, setAbout] = useState("");
   const [fields, setFields] = useState<Fields>({ gradeLevel: "", goals: "", hourlyRate: "" });
+  const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([]);
   const [touched, setTouched] = useState<Partial<Record<keyof Fields, boolean>>>({});
   const [loading, setLoading] = useState(true);
   const [needsLogin, setNeedsLogin] = useState(false);
@@ -50,16 +58,24 @@ export function ProfileEditForm() {
     }
     setLoading(true);
     setLoadError("");
-    apiClient
-      .get<UserProfile>("/users/me")
-      .then((current) => {
+    setProfile(null);
+    setAvailableSubjects([]);
+    setSelectedSubjectIds([]);
+
+    async function loadProfile() {
+      try {
+        const current = await apiClient.get<UserProfile>("/users/me");
+        const subjects =
+          current.role === "tutor" ? await apiClient.get<Subject[]>("/subjects") : [];
+
         if (!active) return;
         setProfile(current);
         setName(current.name ?? "");
         setAbout(current.bio ?? "");
         setFields(fieldsFromProfile(current));
-      })
-      .catch((error: unknown) => {
+        setAvailableSubjects(subjects);
+        setSelectedSubjectIds(current.subjects.map((subject) => subject.id));
+      } catch (error) {
         if (active) {
           if (error instanceof ApiError && error.status === 401) {
             clearSession();
@@ -68,10 +84,12 @@ export function ProfileEditForm() {
           }
           setLoadError(error instanceof Error ? error.message : "Unable to load your profile.");
         }
-      })
-      .finally(() => {
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    }
+
+    void loadProfile();
     return () => {
       active = false;
     };
@@ -100,7 +118,11 @@ export function ProfileEditForm() {
       (isStudent
         ? fields.gradeLevel.trim() !== (profile.gradeLevel ?? "").trim() ||
           fields.goals.trim() !== (profile.goals ?? "").trim()
-        : fields.hourlyRate.trim() !== "" && rate !== profile.hourlyRate))
+        : (fields.hourlyRate.trim() !== "" && rate !== profile.hourlyRate) ||
+          !haveSameSubjectIds(
+            selectedSubjectIds,
+            profile.subjects.map((subject) => subject.id)
+          )))
   );
 
   function edit(field: keyof Fields, value: string) {
@@ -127,19 +149,14 @@ export function ProfileEditForm() {
         bio: about.trim() || null,
         ...(isStudent
           ? { gradeLevel: fields.gradeLevel.trim(), goals: fields.goals.trim() }
-          : { hourlyRate: rate }),
+          : { hourlyRate: rate, subjectIds: selectedSubjectIds }),
       });
-      // Refresh from the persisted response, including database decimal rounding.
-      const current: UserProfile = {
-        ...profile,
-        ...updated,
-        hourlyRate: updated.hourlyRate === null ? null : Number(updated.hourlyRate),
-        walletBalance: Number(updated.walletBalance),
-      };
+      const current: UserProfile = updated;
       setProfile(current);
       setName(current.name ?? "");
       setAbout(current.bio ?? "");
       setFields(fieldsFromProfile(current));
+      setSelectedSubjectIds(current.subjects.map((subject) => subject.id));
       setTouched({});
       const token = getToken();
       if (token) {
@@ -306,20 +323,39 @@ export function ProfileEditForm() {
                 />
               </>
             ) : (
-              <Input
-                name="hourlyRate"
-                label="Hourly rate ($)"
-                type="number"
-                inputMode="decimal"
-                step="any"
-                required
-                value={fields.hourlyRate}
-                onChange={(event) => edit("hourlyRate", event.target.value)}
-                onBlur={() => touch("hourlyRate")}
-                error={Boolean(touched.hourlyRate && errors.hourlyRate)}
-                errorMessage={errors.hourlyRate}
-                className="h-10 rounded-xl"
-              />
+              <>
+                <Input
+                  name="hourlyRate"
+                  label="Hourly rate ($)"
+                  type="number"
+                  inputMode="decimal"
+                  step="any"
+                  required
+                  value={fields.hourlyRate}
+                  onChange={(event) => edit("hourlyRate", event.target.value)}
+                  onBlur={() => touch("hourlyRate")}
+                  error={Boolean(touched.hourlyRate && errors.hourlyRate)}
+                  errorMessage={errors.hourlyRate}
+                  className="h-10 rounded-xl"
+                />
+                <MultiSelect
+                  name="subjectIds"
+                  label="Subjects you teach"
+                  placeholder="Select subjects"
+                  options={availableSubjects.map((subject) => ({
+                    label: subject.name,
+                    value: subject.id,
+                  }))}
+                  value={selectedSubjectIds}
+                  onValueChange={(subjectIds) => {
+                    setSelectedSubjectIds(subjectIds);
+                    setSaved(false);
+                    setSaveError("");
+                  }}
+                  disabled={saving}
+                  className="w-full gap-2 sm:col-start-2 sm:row-start-3 [&>button]:h-10 [&>button]:rounded-xl [&>button]:px-4 [&>button]:text-sm [&>button:focus-visible]:ring-4 [&>button:focus-visible]:ring-primary/10"
+                />
+              </>
             )}
             <div className="flex justify-end border-t border-hairline pt-3 sm:col-span-2">
               <Button

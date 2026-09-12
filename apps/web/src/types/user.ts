@@ -21,12 +21,7 @@ export type UserProfile = {
   subjects: Subject[];
 };
 
-// PUT returns Prisma decimals as JSON strings and does not include subjects.
-export type ProfileUpdateResponse = Omit<
-  UserProfile,
-  "hourlyRate" | "walletBalance" | "subjects"
-> & {
-  hourlyRate: string | number | null;
-  walletBalance: string | number;
+/** Shape of a successful `PUT /users/profile` response. */
+export type ProfileUpdateResponse = UserProfile & {
   profileComplete: boolean;
 };
