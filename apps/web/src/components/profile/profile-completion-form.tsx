@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
+import { getToken, getUser, saveUser } from "@/lib/auth-storage";
+import type { PublicUser } from "@/types/user";
 
 type UserRole = "student" | "tutor";
 
@@ -44,6 +46,19 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
   const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    const currentUser = getUser();
+    if (currentUser?.name) {
+      setName(currentUser.name);
+    }
+  }, [router]);
+
+  useEffect(() => {
     if (!profileImage) {
       setProfilePreview("");
       return;
@@ -55,6 +70,8 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
   }, [profileImage]);
 
   const isStudent = role === "student";
+  const trimmedName = name.trim();
+  const nameError = showErrors && !trimmedName;
   const gradeLevelError = showErrors && !gradeLevel;
   const goalsError = showErrors && !goals.trim();
   const hourlyRateNumber = Number(hourlyRate);
@@ -66,19 +83,32 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
     setShowErrors(true);
     setSubmitError("");
 
-    const isValid = isStudent
-      ? Boolean(gradeLevel && goals.trim())
-      : Boolean(hourlyRate && Number.isFinite(hourlyRateNumber) && hourlyRateNumber > 0);
+    const isValid =
+      Boolean(trimmedName) &&
+      (isStudent
+        ? Boolean(gradeLevel && goals.trim())
+        : Boolean(hourlyRate && Number.isFinite(hourlyRateNumber) && hourlyRateNumber > 0));
 
     if (!isValid) return;
 
     const profileData = isStudent
-      ? { gradeLevel, goals: goals.trim() }
-      : { hourlyRate: hourlyRateNumber };
+      ? { name: trimmedName, gradeLevel, goals: goals.trim() }
+      : { name: trimmedName, hourlyRate: hourlyRateNumber };
 
     try {
       setIsPending(true);
-      await apiClient.post<unknown>("/users/profile", profileData);
+      const updatedUser = await apiClient.post<PublicUser>("/users/profile", profileData);
+
+      const currentUser = getUser();
+      if (currentUser) {
+        saveUser({
+          ...currentUser,
+          name: updatedUser.name ?? currentUser.name,
+          profileUrl: updatedUser.profileUrl ?? currentUser.profileUrl,
+        });
+        window.dispatchEvent(new Event("storage"));
+      }
+
       router.refresh();
       setSubmitted(true);
     } catch (error) {
@@ -243,6 +273,8 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
             value={name}
             onChange={(event) => setName(event.target.value)}
             maxLength={100}
+            error={nameError}
+            errorMessage="Please enter your name."
             wrapperClassName="gap-2"
             className="h-12 rounded-xl px-4 focus:ring-4 focus:ring-primary/10"
           />
