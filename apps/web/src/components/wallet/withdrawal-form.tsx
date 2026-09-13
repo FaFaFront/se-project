@@ -11,9 +11,16 @@ import { apiClient, ApiError } from "@/lib/api-client";
 import { clearSession, getToken } from "@/lib/auth-storage";
 import { formatTHB, withdrawalCents } from "@/lib/withdrawal";
 import type { UserProfile } from "@/types/user";
-import { WITHDRAWAL_BANKS, type Withdrawal, type WithdrawalRequest } from "@/types/withdrawal";
+import { WITHDRAWAL_BANKS, type Withdrawal } from "@/types/withdrawal";
+import {
+  clearRecovery,
+  isDefinitiveFirstRejection,
+  readRecovery,
+  recoveryKey,
+  saveRecovery,
+  type WithdrawalRecovery,
+} from "@/lib/withdrawal-recovery";
 
-type Draft = Omit<WithdrawalRequest, "password">;
 type Field = "amount" | "bank" | "account" | "holder" | "password";
 const LOGIN = "/login?next=/balance/withdraw";
 
@@ -28,13 +35,16 @@ export function WithdrawalForm() {
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
-  const [draft, setDraft] = useState<Draft | null>(null);
+  const [draft, setDraft] = useState<WithdrawalRecovery | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
   const [receipt, setReceipt] = useState<Withdrawal | null>(null);
   const [loadVersion, setLoadVersion] = useState(0);
   const submitting = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
   const receiptHeading = useRef<HTMLHeadingElement>(null);
   const alive = useRef(true);
+  const generation = useRef(0);
 
   useEffect(() => {
     alive.current = true;
@@ -45,29 +55,94 @@ export function WithdrawalForm() {
 
   useEffect(() => {
     let active = true;
+    let verifiedUserId: string | null = null;
+    const currentGeneration = ++generation.current;
+    const token = getToken();
+    const current = () =>
+      active && generation.current === currentGeneration && getToken() === token;
+    setBalance(null);
+    setUserId(null);
+    setAccount("");
+    setHolder("");
+    setPassword("");
+    setDraft(null);
+    setReceipt(null);
+    setBlocked(false);
     if (!getToken()) {
       router.replace(LOGIN);
       return;
     }
     setError("");
     apiClient.get<UserProfile>("/users/me").then(
-      (user) => {
-        if (!active) return;
+      async (user) => {
+        if (!current()) return;
         if (user.role !== "tutor") {
           router.replace("/");
           return;
         }
-        setBalance(Math.round(user.walletBalance * 100));
+        setUserId(user.id);
+        verifiedUserId = user.id;
+        try {
+          const saved = readRecovery(user.id);
+          if (saved) {
+            setDraft(saved);
+            setAmount(saved.amount.toFixed(2));
+            setBank(saved.bankCode);
+            try {
+              const recovered = await apiClient.get<Withdrawal>(
+                `/wallet/withdrawals/by-request/${saved.requestId}`
+              );
+              if (!current()) return;
+              setReceipt(recovered);
+              clearRecovery(user.id, saved.requestId);
+              setDraft(null);
+              window.dispatchEvent(new Event("wallet-updated"));
+              router.refresh();
+              const fresh = await apiClient.get<UserProfile>("/users/me");
+              if (!current()) return;
+              setBalance(Math.round(fresh.walletBalance * 100));
+              return;
+            } catch (err) {
+              if (!current()) return;
+              if (err instanceof ApiError && err.status === 401) {
+                clearSession();
+                router.replace(LOGIN);
+                return;
+              }
+              if (!(err instanceof ApiError && err.status === 404)) throw err;
+              setError(
+                "No completed withdrawal is visible yet. Re-enter the original bank details and password to retry this same request."
+              );
+            }
+          } else {
+            setAmount("");
+            setBank("");
+          }
+          setBalance(Math.round(user.walletBalance * 100));
+        } catch (err) {
+          if (!current()) return;
+          setBlocked(true);
+          setError(
+            err instanceof Error ? err.message : "Unable to reconcile the previous withdrawal."
+          );
+        }
       },
       (err: unknown) => {
-        if (!active) return;
+        if (!current()) return;
         if (err instanceof ApiError && (err.status === 401 || err.status === 404)) {
           clearSession();
           router.replace(LOGIN);
         } else setError("Unable to load your balance. Please try again.");
       }
     );
-    function sessionChanged() {
+    function sessionChanged(event: StorageEvent) {
+      if (
+        event.key !== null &&
+        event.key !== "tutorist.auth.token" &&
+        event.key !== "tutorist.auth.user"
+      )
+        return;
+      generation.current++;
       setBalance(null);
       setAccount("");
       setHolder("");
@@ -76,10 +151,19 @@ export function WithdrawalForm() {
       setReceipt(null);
       setLoadVersion((value) => value + 1);
     }
+    function recoveryChanged(event: StorageEvent) {
+      if (verifiedUserId && event.key === recoveryKey(verifiedUserId)) {
+        generation.current++;
+        setBalance(null);
+        setLoadVersion((value) => value + 1);
+      }
+    }
     window.addEventListener("storage", sessionChanged);
+    window.addEventListener("storage", recoveryChanged);
     return () => {
       active = false;
       window.removeEventListener("storage", sessionChanged);
+      window.removeEventListener("storage", recoveryChanged);
     };
   }, [router, loadVersion]);
 
@@ -97,26 +181,30 @@ export function WithdrawalForm() {
     return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
   }, [pending, draft]);
 
-  async function refreshBalance() {
+  async function refreshBalance(current: () => boolean, success = false) {
     try {
       const user = await apiClient.get<UserProfile>("/users/me");
-      if (!alive.current) return;
+      if (!current()) return;
       if (user.role !== "tutor") {
         router.replace("/");
         return;
       }
       setBalance(Math.round(user.walletBalance * 100));
     } catch {
-      if (alive.current) {
+      if (current()) {
         setBalance(null);
-        setError("Your receipt is saved, but the current balance could not be refreshed.");
+        setError(
+          success
+            ? "Your receipt is saved, but the current balance could not be refreshed."
+            : "Unable to refresh your balance. Please try again."
+        );
       }
     }
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting.current || balance === null) return;
+    if (submitting.current || balance === null || !userId || blocked) return;
     const cents = withdrawalCents(amount);
     const normalizedAccount = account.trim().replace(/[ -]/g, "");
     const normalizedHolder = holder.trim().replace(/\s+/g, " ");
@@ -127,12 +215,12 @@ export function WithdrawalForm() {
       if (cents === null || cents <= 0)
         nextErrors.amount = "Enter an amount greater than zero with up to 2 decimal places.";
       else if (cents > balance) nextErrors.amount = "Insufficient available balance.";
-      if (!selectedBank) nextErrors.bank = "Select your bank.";
-      if (account.length > 64 || !/^\d{6,20}$/.test(normalizedAccount))
-        nextErrors.account = "Enter an account number with 6–20 digits.";
-      if (!normalizedHolder || holder.trim().length > 100)
-        nextErrors.holder = "Enter an account holder name (up to 100 characters).";
     }
+    if (!selectedBank) nextErrors.bank = "Select your bank.";
+    if (account.length > 64 || !/^\d{6,20}$/.test(normalizedAccount))
+      nextErrors.account = "Enter an account number with 6–20 digits.";
+    if (!normalizedHolder || holder.trim().length > 100)
+      nextErrors.holder = "Enter an account holder name (up to 100 characters).";
     if (!password) nextErrors.password = "Enter your password to confirm.";
     setErrors(nextErrors);
     setError("");
@@ -142,33 +230,81 @@ export function WithdrawalForm() {
       );
       return;
     }
-    const request: Draft = draft ?? {
+    const request: WithdrawalRecovery = draft ?? {
+      version: 1,
       requestId: crypto.randomUUID(),
       amount: cents! / 100,
       bankCode: selectedBank!.value,
-      accountNumber: normalizedAccount,
-      accountHolderName: normalizedHolder,
+      createdAt: new Date().toISOString(),
     };
     const token = getToken();
+    const currentGeneration = generation.current;
+    const current = () =>
+      alive.current && getToken() === token && generation.current === currentGeneration;
+    const wasRetry = draft !== null;
     submitting.current = true;
     setPending(true);
+    let sent = false;
     try {
-      const result = await apiClient.post<Withdrawal>("/wallet/withdrawals", {
-        ...request,
-        password,
+      if (!navigator.locks)
+        throw new Error(
+          "This browser cannot safely coordinate withdrawal recovery. Use a supported browser over HTTPS or localhost."
+        );
+      await navigator.locks.request(recoveryKey(userId), { ifAvailable: true }, async (lock) => {
+        if (!lock)
+          throw new Error(
+            "Another tab is submitting a withdrawal. Check its result, then reload this page."
+          );
+        if (!current()) return;
+        const existing = readRecovery(userId);
+        if ((existing?.requestId ?? null) !== (draft?.requestId ?? null))
+          throw new Error(
+            "Withdrawal recovery changed in another tab. Reload to reconcile it before continuing."
+          );
+        saveRecovery(userId, request);
+        setDraft(request);
+        sent = true;
+        const result = await apiClient
+          .post<Withdrawal>("/wallet/withdrawals", {
+            requestId: request.requestId,
+            amount: request.amount,
+            bankCode: request.bankCode,
+            accountNumber: normalizedAccount,
+            accountHolderName: normalizedHolder,
+            password,
+          })
+          .catch((err: unknown) => {
+            // Clear definitive first-attempt rejections under the same cross-tab lock.
+            // A rejected retry cannot establish the outcome of an earlier uncertain POST.
+            if (
+              current() &&
+              err instanceof ApiError &&
+              isDefinitiveFirstRejection(wasRetry, err.status)
+            ) {
+              clearRecovery(userId, request.requestId);
+              setDraft(null);
+            }
+            throw err;
+          });
+        if (!current()) return;
+        setReceipt(result);
+        clearRecovery(userId, request.requestId);
+        setDraft(null);
+        setAccount("");
+        setHolder("");
+        setBank("");
+        setAmount("");
+        window.dispatchEvent(new Event("wallet-updated"));
+        router.refresh();
+        await refreshBalance(current, true);
       });
-      if (!alive.current || getToken() !== token) return;
-      setReceipt(result);
-      setDraft(null);
-      setAccount("");
-      setHolder("");
-      setBank("");
-      setAmount("");
-      window.dispatchEvent(new Event("wallet-updated"));
-      router.refresh();
-      await refreshBalance();
     } catch (err) {
-      if (!alive.current || getToken() !== token) return;
+      if (!current()) return;
+      if (!sent) {
+        setBlocked(true);
+        setError(err instanceof Error ? err.message : "Unable to save withdrawal recovery.");
+        return;
+      }
       if (err instanceof ApiError && err.status === 401) {
         clearSession();
         router.replace(LOGIN);
@@ -180,19 +316,17 @@ export function WithdrawalForm() {
         setError(
           err instanceof ApiError && err.status === 409
             ? "This request conflicts with an existing withdrawal. Do not submit a new withdrawal; contact support to resolve it."
-            : "The result could not be confirmed. Retry the same withdrawal below; do not reload or start another withdrawal."
+            : "The result could not be confirmed. Your request ID is saved. Check its status or retry the same withdrawal."
         );
       } else {
         setError(err.message);
         // An earlier uncertain request stays frozen even when this retry fails validation.
-        if (err.status === 400) await refreshBalance();
+        if (err.status === 400) await refreshBalance(current);
       }
     } finally {
       submitting.current = false;
-      if (alive.current) {
-        setPending(false);
-        setPassword("");
-      }
+      if (alive.current) setPending(false);
+      if (current()) setPassword("");
     }
   }
 
@@ -239,6 +373,7 @@ export function WithdrawalForm() {
         )}
         <Button
           className="w-full"
+          disabled={pending}
           onClick={() => {
             setReceipt(null);
             setErrors({});
@@ -252,7 +387,7 @@ export function WithdrawalForm() {
     );
   }
 
-  if (balance === null)
+  if (balance === null || blocked)
     return (
       <div className="mx-auto max-w-5xl">
         <p role={error ? "alert" : "status"}>{error || "Loading your account and balance…"}</p>
@@ -332,7 +467,7 @@ export function WithdrawalForm() {
                 <p className="text-sm text-ink/70">You have no available balance to withdraw.</p>
               )}
             </fieldset>
-            <fieldset disabled={locked} className="space-y-4 border-t border-hairline pt-6">
+            <fieldset disabled={pending} className="space-y-4 border-t border-hairline pt-6">
               <legend className="font-semibold">2. Bank account details</legend>
               <p className="text-sm text-ink/70">Enter mock bank account details.</p>
               <Select
@@ -387,9 +522,20 @@ export function WithdrawalForm() {
             )}
             {draft && (
               <p className="text-sm text-ink/70">
-                Details are locked to protect against duplicate withdrawals. Re-enter your password
-                to retry this request.
+                Amount and bank are locked to the saved request. Re-enter the original account
+                details and your password to retry. A missing result does not mean the original
+                request cannot still complete.
               </p>
+            )}
+            {draft && (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={pending}
+                onClick={() => setLoadVersion((value) => value + 1)}
+              >
+                Check withdrawal status
+              </Button>
             )}
             <Button
               type="submit"

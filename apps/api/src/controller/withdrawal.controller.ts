@@ -46,6 +46,18 @@ function tutorId(req: AuthRequest) {
 }
 
 export const withdrawalController = {
+  async getByRequest(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = tutorId(req);
+      const requestId = z.string().uuid("Request ID must be a UUID").parse(req.params.requestId);
+      const withdrawal = await withdrawalService.getByRequest(userId, requestId);
+      res
+        .set("Cache-Control", "no-store")
+        .json(successResponse(withdrawal, "Withdrawal retrieved"));
+    } catch (error) {
+      next(error);
+    }
+  },
   async submit(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const userId = tutorId(req);

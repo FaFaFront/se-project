@@ -13,6 +13,7 @@ import { withdrawalRepository } from "../repository/withdrawal.repository.js";
 import { userRepository } from "../repository/user.repository.js";
 import {
   readWithdrawalMetadata,
+  withdrawalTransactionId,
   type WithdrawalMetadata,
 } from "../common/utils/withdrawal-metadata.js";
 
@@ -47,6 +48,9 @@ function requireTutor<T extends { role: string }>(user: T | null): T {
 }
 
 export const withdrawalService = {
+  async getByRequest(userId: string, requestId: string) {
+    return withdrawalService.get(userId, withdrawalTransactionId(userId, requestId));
+  },
   async submit(userId: string, input: SubmitWithdrawal) {
     const user = requireTutor(await userRepository.findForPasswordVerification(userId));
     if (!(await bcrypt.compare(input.password, user.passwordHash))) {

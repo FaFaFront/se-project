@@ -2,22 +2,8 @@ import { createHash } from "node:crypto";
 import type { Transaction } from "@prisma/client";
 import { z } from "zod";
 
-// Supported mock destinations, not bank ownership or bank-specific account verification.
-export const THAI_BANK_CODES = [
-  "BBL",
-  "KBANK",
-  "KTB",
-  "SCB",
-  "BAY",
-  "TTB",
-  "GSB",
-  "BAAC",
-  "GHB",
-  "KKP",
-  "TISCO",
-  "CIMBT",
-  "UOB",
-] as const;
+import { THAI_BANK_CODES } from "@tutorist/shared";
+export { THAI_BANK_CODES } from "@tutorist/shared";
 
 const metadataSchema = z
   .object({

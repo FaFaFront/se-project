@@ -81,7 +81,7 @@ withdrawalRouter.use(authMiddleware);
  *               password: { type: string, format: password, minLength: 1, writeOnly: true }
  *               bankCode:
  *                 type: string
- *                 enum: [BBL, KBANK, KTB, SCB, BAY, TTB, GSB, BAAC, GHB, KKP, TISCO, CIMBT, UOB]
+ *                 $ref: '#/components/schemas/ThaiBankCode'
  *               accountNumber:
  *                 type: string
  *                 maxLength: 64
@@ -155,4 +155,31 @@ withdrawalRouter.use(authMiddleware);
  *               $ref: '#/components/schemas/WithdrawalError'
  */
 withdrawalRouter.post("/", withdrawalController.submit);
+/**
+ * @openapi
+ * /wallet/withdrawals/by-request/{requestId}:
+ *   get:
+ *     summary: Reconcile an owned mock withdrawal using its original request ID
+ *     description: A 404 means no completed record is visible yet, not that an in-flight POST cannot complete. Retry only with the same request ID.
+ *     tags: [Wallet]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: requestId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Completed withdrawal with masked destination
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/WithdrawalResponse'
+ *       400: { description: Invalid UUID }
+ *       401: { description: Authentication required }
+ *       403: { description: Tutors only }
+ *       404: { description: No valid owned withdrawal is currently visible }
+ */
+withdrawalRouter.get("/by-request/:requestId", withdrawalController.getByRequest);
 withdrawalRouter.get("/:id", withdrawalController.get);
