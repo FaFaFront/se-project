@@ -1,11 +1,12 @@
 import { prisma } from "../config/prisma.js";
-import type { Prisma, User } from "@prisma/client";
+import type { AccountStatus, Prisma, User } from "@prisma/client";
 
 const publicUserSelect = {
   id: true,
   name: true,
   email: true,
   role: true,
+  accountStatus: true,
   profileUrl: true,
   bio: true,
   hourlyRate: true,
@@ -92,6 +93,14 @@ export const userRepository = {
           },
         }),
       },
+      select: profileSelect,
+    });
+  },
+
+  async updateAccountStatus(userId: string, accountStatus: AccountStatus): Promise<UserProfileRow> {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { accountStatus },
       select: profileSelect,
     });
   },

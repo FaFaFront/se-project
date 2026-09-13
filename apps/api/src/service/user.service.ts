@@ -1,4 +1,4 @@
-import { Role, User, Prisma } from "@prisma/client";
+import { AccountStatus, Role, User, Prisma } from "@prisma/client";
 import {
   userRepository,
   type ExistingProfileUpdate,
@@ -9,6 +9,7 @@ import {
   NotFoundError,
   BadRequestError,
   ConflictError,
+  ForbiddenError,
   UnauthorizedError,
 } from "../common/errors/app-error.js";
 
@@ -49,6 +50,7 @@ function mapProfile(user: UserProfileRow) {
     name: user.name,
     email: user.email,
     role: user.role,
+    accountStatus: user.accountStatus,
     profileUrl: user.profileUrl,
     bio: user.bio,
     hourlyRate: user.hourlyRate === null ? null : Number(user.hourlyRate),
@@ -155,6 +157,27 @@ export const userService = {
         updateData,
         subjectIds
       );
+      return mapProfile(updatedUser);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+        throw new UnauthorizedError("Authenticated user no longer exists");
+      }
+      throw error;
+    }
+  },
+
+  async updateAccountStatus(userId: string, accountStatus: AccountStatus) {
+    const profileOwner = await userRepository.findProfileOwnerById(userId);
+    if (!profileOwner) {
+      throw new UnauthorizedError("Authenticated user no longer exists");
+    }
+
+    if (profileOwner.role === Role.student) {
+      throw new ForbiddenError("Students cannot change their account status");
+    }
+
+    try {
+      const updatedUser = await userRepository.updateAccountStatus(userId, accountStatus);
       return mapProfile(updatedUser);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
