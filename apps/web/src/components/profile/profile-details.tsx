@@ -1,9 +1,10 @@
 "use client";
 
-import { LogOut, Mail } from "lucide-react";
+import { LogOut, Mail, Pencil } from "lucide-react";
+import Link from "next/link";
 
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types/user";
 
@@ -95,6 +96,10 @@ export function ProfileDetails({
               }
             />
           )}
+          <Link href="/profile/edit" className={cn(buttonVariants(), "w-full")}>
+            <Pencil aria-hidden="true" className="size-4 shrink-0" />
+            Edit Profile
+          </Link>
           {onLogout && (
             <Button
               type="button"

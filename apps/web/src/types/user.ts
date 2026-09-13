@@ -1,7 +1,7 @@
 import type { UserRole } from "@/types/auth";
 import type { Subject } from "@/types/subject";
 
-/** Shape of `GET /users/me` and the body echoed back by `PATCH /users/me`. */
+/** Shape of `GET /users/me`. */
 export type UserProfile = {
   id: string;
   name: string | null;
@@ -19,4 +19,25 @@ export type UserProfile = {
   createdAt: string;
   /** Subjects the tutor teaches; always empty for students. */
   subjects: Subject[];
+};
+
+/** Shape returned by `POST /users/profile` on completion. */
+export type PublicUser = {
+  id: string;
+  name: string | null;
+  email: string;
+  role: UserRole;
+  profileUrl: string | null;
+  bio: string | null;
+  hourlyRate: string | null;
+  gradeLevel: string | null;
+  goals: string | null;
+  walletBalance: string;
+  profileComplete: boolean;
+  createdAt: string;
+};
+
+/** Shape of a successful `PUT /users/profile` response. */
+export type ProfileUpdateResponse = UserProfile & {
+  profileComplete: boolean;
 };

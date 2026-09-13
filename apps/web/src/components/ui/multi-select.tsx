@@ -1,3 +1,5 @@
+"use client";
+
 import { useId, useState } from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { Check, ChevronDown } from "lucide-react";
@@ -5,10 +7,16 @@ import { cn } from "@/lib/utils";
 
 const textSize = "text-sm leading-[23px] md:text-base md:leading-[26px]";
 
+export interface MultiSelectOption {
+  label: string;
+  value: string;
+  disabled?: boolean;
+}
+
 export interface MultiSelectProps {
   label?: string;
   placeholder?: string;
-  options: string[];
+  options: Array<string | MultiSelectOption>;
   value?: string[];
   defaultValue?: string[];
   onValueChange?: (value: string[]) => void;
@@ -42,15 +50,20 @@ const MultiSelect = ({
 }: MultiSelectProps) => {
   const [internalValue, setInternalValue] = useState<string[]>(defaultValue ?? []);
   const selected = value ?? internalValue;
+  const normalizedOptions = options.map((option) =>
+    typeof option === "string" ? { label: option, value: option } : option
+  );
 
   const labelId = useId();
   const triggerId = useId();
   const errorId = useId();
 
-  const toggle = (option: string) => {
-    const next = selected.includes(option)
-      ? selected.filter((v) => v !== option)
-      : [...selected, option];
+  const toggle = (option: MultiSelectOption) => {
+    if (disabled || option.disabled) return;
+
+    const next = selected.includes(option.value)
+      ? selected.filter((value) => value !== option.value)
+      : [...selected, option.value];
     if (value === undefined) {
       setInternalValue(next);
     }
@@ -96,13 +109,13 @@ const MultiSelect = ({
             sideOffset={4}
             className="flex flex-col gap-1 border-hairline data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 w-[var(--radix-dropdown-menu-trigger-width,12.5rem)] rounded-lg border bg-white p-1.5 shadow-black"
           >
-            {options.map((option) => {
-              const checked = selected.includes(option);
+            {normalizedOptions.map((option) => {
+              const checked = selected.includes(option.value);
               return (
                 <DropdownMenuPrimitive.CheckboxItem
-                  key={option}
+                  key={option.value}
                   checked={checked}
-                  disabled={disabled}
+                  disabled={disabled || option.disabled}
                   onCheckedChange={() => toggle(option)}
                   onSelect={(e) => e.preventDefault()}
                   className={cn(
@@ -122,7 +135,7 @@ const MultiSelect = ({
                   >
                     {checked && <Check className="size-3.5 text-white" strokeWidth={3} />}
                   </span>
-                  {option}
+                  {option.label}
                 </DropdownMenuPrimitive.CheckboxItem>
               );
             })}
@@ -130,7 +143,7 @@ const MultiSelect = ({
         </DropdownMenuPrimitive.Portal>
       </DropdownMenuPrimitive.Root>
       {name &&
-        selected.map((option) => <input key={option} type="hidden" name={name} value={option} />)}
+        selected.map((value) => <input key={value} type="hidden" name={name} value={value} />)}
       {error && errorMessage && (
         <span id={errorId} className="font-inter text-error text-xs leading-[23px] sm:text-sm">
           {errorMessage}

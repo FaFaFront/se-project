@@ -17,6 +17,11 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *       additionalProperties: false
  *       required: [gradeLevel, goals]
  *       properties:
+ *         name:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 100
+ *           example: "Student Name"
  *         gradeLevel:
  *           type: string
  *           example: "10th Grade"
@@ -28,6 +33,11 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *       additionalProperties: false
  *       required: [hourlyRate]
  *       properties:
+ *         name:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 100
+ *           example: "Tutor Name"
  *         hourlyRate:
  *           type: number
  *           exclusiveMinimum: 0
@@ -71,6 +81,7 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *         profileUrl:
  *           type: string
  *           format: uri
+ *           nullable: true
  *           example: "https://cdn.example.com/student.jpg"
  *         bio:
  *           type: string
@@ -100,6 +111,7 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *         profileUrl:
  *           type: string
  *           format: uri
+ *           nullable: true
  *           example: "https://cdn.example.com/tutor.jpg"
  *         bio:
  *           type: string
@@ -111,6 +123,13 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *           exclusiveMinimum: 0
  *           description: Optional; retains its current value when omitted
  *           example: 750.0
+ *         subjectIds:
+ *           type: array
+ *           uniqueItems: true
+ *           description: Optional; omitted retains current subjects, an empty array removes all subjects, and a non-empty array replaces them.
+ *           items:
+ *             type: string
+ *             format: uuid
  */
 
 // Cast router to use AuthRequest
@@ -186,8 +205,22 @@ router.get("/me", authMiddleware, userController.getProfile);
  *               - $ref: '#/components/schemas/StudentProfileUpdate'
  *               - $ref: '#/components/schemas/TutorProfileUpdate'
  *     responses:
- *       200: { description: Profile updated successfully }
- *       400: { description: Missing, invalid, role-incompatible, or unknown request fields }
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Profile updated successfully }
+ *                 data:
+ *                   allOf:
+ *                     - $ref: '#/components/schemas/UserProfile'
+ *                     - type: object
+ *                       properties:
+ *                         profileComplete: { type: boolean, example: true }
+ *       400: { description: Missing, invalid, role-incompatible, duplicate, malformed, or unknown request fields or subject IDs }
  *       401: { description: Missing or invalid authentication, deleted user, or role mismatch }
  *       409: { description: Initial profile completion is required }
  *       500: { description: Internal server error }
