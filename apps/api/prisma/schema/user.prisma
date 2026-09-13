@@ -3,20 +3,26 @@ enum Role {
   tutor
 }
 
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+}
+
 model User {
-  id              String   @id @default(uuid())
+  id              String        @id @default(uuid())
   name            String?
-  email           String   @unique
+  email           String        @unique
   passwordHash    String
   role            Role
+  accountStatus   AccountStatus @default(ACTIVE)
   profileUrl      String?
   bio             String?
-  hourlyRate      Decimal? @db.Decimal(10, 2) // tutor only
+  hourlyRate      Decimal?      @db.Decimal(10, 2) // tutor only
   gradeLevel      String? // student only
   goals           String? // student only
-  walletBalance   Decimal  @default(0) @db.Decimal(12, 2)
-  profileComplete Boolean  @default(false)
-  createdAt       DateTime @default(now())
+  walletBalance   Decimal       @default(0) @db.Decimal(12, 2)
+  profileComplete Boolean       @default(false)
+  createdAt       DateTime      @default(now())
 
   tutorSubjects       TutorSubject[]
   conversationsAsA    Conversation[]      @relation("ConversationParticipantA")

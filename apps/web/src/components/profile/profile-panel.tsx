@@ -67,6 +67,9 @@ export function ProfilePanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isStatusUpdating, setIsStatusUpdating] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   /** A token the API rejects is worse than no token — drop it and start over. */
   const endSession = useCallback(() => {
@@ -83,6 +86,38 @@ export function ProfilePanel() {
       router.replace("/login");
     }
   }, [router]);
+
+  const handleAccountStatusToggle = useCallback(async () => {
+    if (!profile) return;
+
+    const nextStatus = profile.accountStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+    setIsStatusUpdating(true);
+    setStatusError(null);
+    setStatusMessage(null);
+
+    try {
+      const updatedProfile = await apiClient.patch<UserProfile>("/users/me/status", {
+        status: nextStatus,
+      });
+      setProfile(updatedProfile);
+      setStatusMessage(
+        nextStatus === "INACTIVE"
+          ? "Account is now inactive. Your data has been kept."
+          : "Account is now active."
+      );
+      router.refresh();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        endSession();
+        return;
+      }
+      setStatusError(
+        error instanceof Error ? error.message : "Unable to update your account status."
+      );
+    } finally {
+      setIsStatusUpdating(false);
+    }
+  }, [endSession, profile, router]);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -141,5 +176,15 @@ export function ProfilePanel() {
 
   if (!profile) return null;
 
-  return <ProfileDetails profile={profile} onLogout={handleLogout} isLoggingOut={isLoggingOut} />;
+  return (
+    <ProfileDetails
+      profile={profile}
+      onLogout={handleLogout}
+      isLoggingOut={isLoggingOut}
+      onToggleAccountStatus={handleAccountStatusToggle}
+      isStatusUpdating={isStatusUpdating}
+      statusError={statusError}
+      statusMessage={statusMessage}
+    />
+  );
 }
