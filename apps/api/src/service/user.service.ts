@@ -9,6 +9,7 @@ import {
   NotFoundError,
   BadRequestError,
   ConflictError,
+  ForbiddenError,
   UnauthorizedError,
 } from "../common/errors/app-error.js";
 
@@ -164,6 +165,10 @@ export const userService = {
     const profileOwner = await userRepository.findProfileOwnerById(userId);
     if (!profileOwner) {
       throw new UnauthorizedError("Authenticated user no longer exists");
+    }
+
+    if (profileOwner.role === Role.student) {
+      throw new ForbiddenError("Students cannot change their account status");
     }
 
     try {

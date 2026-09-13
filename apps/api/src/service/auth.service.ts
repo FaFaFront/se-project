@@ -1,7 +1,7 @@
-import { AccountStatus, Prisma, type Role } from "@prisma/client";
+import { Prisma, type Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { ConflictError, ForbiddenError, UnauthorizedError } from "../common/errors/app-error.js";
+import { ConflictError, UnauthorizedError } from "../common/errors/app-error.js";
 import { env } from "../config/env.js";
 import { authRepository } from "../repository/auth.repository.js";
 
@@ -49,12 +49,6 @@ export const authService = {
     const passwordMatch = await bcrypt.compare(password, user.passwordHash);
     if (!passwordMatch) {
       throw new UnauthorizedError("Invalid email or password");
-    }
-
-    if (user.accountStatus === AccountStatus.INACTIVE) {
-      throw new ForbiddenError(
-        "This account is inactive. Sign in is disabled until the account is reactivated."
-      );
     }
 
     const token = jwt.sign({ sub: user.id, role: user.role }, env.JWT_SECRET, {
