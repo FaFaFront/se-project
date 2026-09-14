@@ -3,10 +3,12 @@ import { authRouter } from "./router/auth.router.js";
 import { subjectRouter } from "./router/subject.router.js";
 import { userRouter } from "./router/user.router.js";
 import { walletRouter } from "./router/wallet.router.js";
+import { withdrawalRouter } from "./router/withdrawal.router.js";
 
 export const apiRoutes = Router();
 
 apiRoutes.use("/auth", authRouter);
 apiRoutes.use("/subjects", subjectRouter);
 apiRoutes.use("/users", userRouter);
+apiRoutes.use("/wallet/withdrawals", withdrawalRouter);
 apiRoutes.use("/wallet", walletRouter);

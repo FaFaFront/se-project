@@ -2203,6 +2203,14 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tutorist/shared@workspace:*, @tutorist/shared@workspace:packages/shared":
+  version: 0.0.0-use.local
+  resolution: "@tutorist/shared@workspace:packages/shared"
+  dependencies:
+    typescript: "npm:^5.6.0"
+  languageName: unknown
+  linkType: soft
+
 "@tybys/wasm-util@npm:^0.10.3":
   version: 0.10.3
   resolution: "@tybys/wasm-util@npm:0.10.3"
@@ -2997,6 +3005,7 @@ __metadata:
   resolution: "api@workspace:apps/api"
   dependencies:
     "@prisma/client": "npm:^6.1.0"
+    "@tutorist/shared": "workspace:*"
     "@types/bcryptjs": "npm:^3.0.0"
     "@types/cors": "npm:^2.8.17"
     "@types/express": "npm:^4.17.21"
@@ -8823,6 +8832,7 @@ __metadata:
     "@storybook/addon-a11y": "npm:^9.1.0"
     "@storybook/addon-docs": "npm:^9.1.0"
     "@storybook/nextjs-vite": "npm:^9.1.0"
+    "@tutorist/shared": "workspace:*"
     "@types/node": "npm:^20.19.0"
     "@types/react": "npm:^19.0.0"
     "@types/react-dom": "npm:^19.0.0"

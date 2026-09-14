@@ -60,6 +60,15 @@ export default defineConfig([
   },
 
   // Web: Next.js
+  ...tseslint.configs.recommended.map((c) => ({ ...c, files: ["packages/**/*.ts"] })),
+  {
+    files: ["packages/**/*.ts"],
+    ...prettierConfig,
+    plugins: { prettier: prettierPlugin },
+    rules: { "prettier/prettier": "error" },
+  },
+
+  // Web: Next.js
   ...nextConfigs.map((c) => ({ ...c, files: ["apps/web/**/*.{ts,tsx,js,jsx}"] })),
   {
     files: ["apps/web/**/*.{ts,tsx,js,jsx}"],

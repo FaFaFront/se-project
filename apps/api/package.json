@@ -5,10 +5,10 @@
   "main": "src/server.ts",
   "license": "MIT",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "dev": "yarn workspace @tutorist/shared build && tsx watch src/server.ts",
+    "build": "yarn workspace @tutorist/shared build && tsc",
     "start": "node dist/src/server.js",
-    "check": "tsc --noEmit",
+    "check": "yarn workspace @tutorist/shared build && tsc --noEmit",
     "db.create": "docker-compose up -d db",
     "db.start": "docker-compose start db",
     "db.stop": "docker-compose stop db",
@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.1.0",
+    "@tutorist/shared": "workspace:*",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
