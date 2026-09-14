@@ -14,6 +14,7 @@ const studentProfile: UserProfile = {
   gradeLevel: "Grade 11",
   goals: "Get comfortable with calculus before my final exam in March.",
   walletBalance: 120.5,
+  profileComplete: true,
   createdAt: "2026-01-15T08:30:00.000Z",
   subjects: [],
 };
@@ -30,6 +31,7 @@ const tutorProfile: UserProfile = {
   gradeLevel: null,
   goals: null,
   walletBalance: 1840,
+  profileComplete: true,
   createdAt: "2025-09-02T08:30:00.000Z",
   subjects: [
     { id: "s1", name: "Mathematics" },

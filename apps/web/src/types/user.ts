@@ -19,6 +19,7 @@ export type UserProfile = {
   /** Student only — null for tutors. */
   goals: string | null;
   walletBalance: number;
+  profileComplete: boolean;
   createdAt: string;
   /** Subjects the tutor teaches; always empty for students. */
   subjects: Subject[];
@@ -41,6 +42,4 @@ export type PublicUser = {
 };
 
 /** Shape of a successful `PUT /users/profile` response. */
-export type ProfileUpdateResponse = UserProfile & {
-  profileComplete: boolean;
-};
+export type ProfileUpdateResponse = UserProfile;
