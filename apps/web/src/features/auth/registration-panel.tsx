@@ -18,7 +18,7 @@ export function RegistrationPanel() {
     });
 
     saveSession(registration);
-    router.push(`/complete-profile?role=${registration.user.role}`);
+    router.push("/complete-profile");
     router.refresh();
   }
 

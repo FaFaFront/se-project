@@ -52,10 +52,7 @@ function evaluate(rule: RouteRule, profile: UserProfile | null, hasToken: boolea
   if (rule.guest) {
     if (!hasToken) return { type: "allow" };
     if (!profile) return { type: "wait" };
-    return {
-      type: "redirect",
-      to: profile.profileComplete ? "/" : `/complete-profile?role=${profile.role}`,
-    };
+    return { type: "redirect", to: profile.profileComplete ? "/" : "/complete-profile" };
   }
 
   if (!hasToken) return { type: "redirect", to: "/login" };
@@ -63,7 +60,7 @@ function evaluate(rule: RouteRule, profile: UserProfile | null, hasToken: boolea
 
   const requireProfileComplete = rule.requireProfileComplete ?? true;
   if (requireProfileComplete && !profile.profileComplete) {
-    return { type: "redirect", to: `/complete-profile?role=${profile.role}` };
+    return { type: "redirect", to: "/complete-profile" };
   }
   if (rule.redirectIfProfileComplete && profile.profileComplete) {
     return { type: "redirect", to: "/" };
@@ -78,7 +75,11 @@ function evaluate(rule: RouteRule, profile: UserProfile | null, hasToken: boolea
  * Client-side gate mounted once in the root layout, inside AuthProvider.
  * Matches the current path against `ROUTE_RULES` and redirects before
  * rendering children, so protected content never flashes on screen.
- * Unmatched paths (home, tutors, ...) render immediately.
+ * Unmatched paths (home, tutors, ...) render immediately for anyone signed
+ * out or with a complete profile; a signed-in incomplete profile still gets
+ * bounced to /complete-profile from there via the effect below — a brief
+ * flash of that public page's (already-public) content is an acceptable
+ * trade for not delaying first paint on every route for the common case.
  */
 export function AuthGuard({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -87,7 +88,13 @@ export function AuthGuard({ children }: { children: ReactNode }) {
   const rule = matchRule(pathname);
 
   useEffect(() => {
-    if (!rule || isLoading) return;
+    if (isLoading) return;
+
+    if (!rule) {
+      if (profile && !profile.profileComplete) router.replace("/complete-profile");
+      return;
+    }
+
     const result = evaluate(rule, profile, Boolean(getToken()));
     if (result.type === "redirect") router.replace(result.to);
   }, [rule, profile, isLoading, router]);
