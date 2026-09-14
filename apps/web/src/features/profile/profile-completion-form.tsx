@@ -33,7 +33,7 @@ export const GRADE_LEVELS = [
  */
 export function ProfileCompletionForm() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, refresh } = useAuth();
   const role = profile?.role ?? "student";
   const photoInputId = useId();
   const [name, setName] = useState("");
@@ -112,6 +112,7 @@ export function ProfileCompletionForm() {
         window.dispatchEvent(new Event("storage"));
       }
 
+      await refresh();
       router.refresh();
       setSubmitted(true);
     } catch (error) {
