@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { clearSession, getToken } from "@/lib/auth-storage";
 import type { UserRole } from "@/types/auth";
@@ -56,16 +57,16 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [allowedPath, setAllowedPath] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
     let active = true;
     const rule = matchRule(pathname);
+    setError(null);
 
     async function run() {
-      if (!rule) {
-        setAllowedPath(pathname);
-        return;
-      }
+      if (!rule) return;
 
       const token = getToken();
 
@@ -116,9 +117,12 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
           router.replace("/login");
           return;
         }
-        // Backend unreachable or another transient error: let the page's own
-        // data fetching surface it rather than trapping the user on a blank guard.
-        setAllowedPath(pathname);
+        // Backend unreachable or another transient error: keep the session
+        // but never authorize the route on an unverified profile/role — show
+        // a retry instead of guessing.
+        setError(
+          error instanceof Error && error.message ? error.message : "Unable to verify your session."
+        );
       }
     }
 
@@ -126,7 +130,20 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [pathname, router]);
+  }, [pathname, router, retryToken]);
+
+  if (!matchRule(pathname)) return <>{children}</>;
+
+  if (error) {
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 px-4 text-center">
+        <p className="text-sm text-ink">{error}</p>
+        <Button variant="outline" onClick={() => setRetryToken((token) => token + 1)}>
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   if (allowedPath !== pathname) return null;
 
