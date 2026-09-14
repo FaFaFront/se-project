@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TopUpForm } from "@/components/wallet/top-up-form";
+import { TopUpForm } from "@/features/wallet/top-up-form";
 
 export const metadata: Metadata = { title: "Top up balance | Tutorist" };
 

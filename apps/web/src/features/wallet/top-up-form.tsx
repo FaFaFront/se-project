@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/auth-context";
 import { apiClient } from "@/lib/api-client";
 import { getToken, getUser } from "@/lib/auth-storage";
 import type { Wallet, WalletBalance } from "@/types/wallet";
 
 export function TopUpForm() {
   const router = useRouter();
+  const { refresh } = useAuth();
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [amount, setAmount] = useState<number | null>(null);
   const [error, setError] = useState("");
@@ -55,7 +57,7 @@ export function TopUpForm() {
       setWallet({ ...wallet, ...updated });
       setAmount(null);
       setSuccess(`Added $${amount} in demo credit to your balance.`);
-      window.dispatchEvent(new Event("wallet-updated"));
+      void refresh();
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to top up your balance.");

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import { RegistrationForm, type RegistrationFormValues } from "@/components/auth/registration-form";
+import { RegistrationForm, type RegistrationFormValues } from "@/features/auth/registration-form";
 import { apiClient } from "@/lib/api-client";
 import { saveSession } from "@/lib/auth-storage";
 import type { RegistrationResponse } from "@/types/auth";

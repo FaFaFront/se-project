@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ProfileCompletionForm } from "@/components/profile/profile-completion-form";
+import { ProfileCompletionForm } from "@/features/profile/profile-completion-form";
 
 export const metadata: Metadata = {
   title: "Complete your profile | Tutorist",

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { RegistrationPanel } from "@/components/auth/registration-panel";
+import { RegistrationPanel } from "@/features/auth/registration-panel";
 
 export const metadata: Metadata = {
   title: "Sign up | Tutorist",
