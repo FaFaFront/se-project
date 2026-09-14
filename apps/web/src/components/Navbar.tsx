@@ -13,7 +13,6 @@ const NAV_LINKS = [
   { label: "Find tutors", href: "/tutors" },
   { label: "My classroom", href: "/classroom" },
   { label: "Message", href: "/message" },
-  { label: "My profile", href: "/profile" },
 ];
 
 const FOCUSABLE_SELECTOR =
