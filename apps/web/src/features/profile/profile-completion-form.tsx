@@ -9,15 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/auth-context";
 import { apiClient } from "@/lib/api-client";
 import { getToken, getUser, saveUser } from "@/lib/auth-storage";
 import type { PublicUser } from "@/types/user";
-
-type UserRole = "student" | "tutor";
-
-type ProfileCompletionFormProps = {
-  role: UserRole;
-};
 
 export const GRADE_LEVELS = [
   "Grade 7",
@@ -30,8 +25,16 @@ export const GRADE_LEVELS = [
   "Other",
 ];
 
-export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
+/**
+ * `role` always comes from the signed-in user's own profile (via
+ * AuthContext), never from a URL param — AuthGuard already guarantees a
+ * loaded profile before this route renders, and trusting a query string
+ * here would let a student render (and submit) the tutor form and vice versa.
+ */
+export function ProfileCompletionForm() {
   const router = useRouter();
+  const { profile, refresh } = useAuth();
+  const role = profile?.role ?? "student";
   const photoInputId = useId();
   const [name, setName] = useState("");
   const [profileImage, setProfileImage] = useState<File | null>(null);
@@ -109,6 +112,7 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
         window.dispatchEvent(new Event("storage"));
       }
 
+      await refresh();
       router.refresh();
       setSubmitted(true);
     } catch (error) {

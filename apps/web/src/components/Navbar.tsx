@@ -7,16 +7,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { getToken, getUser } from "@/lib/auth-storage";
-import { apiClient } from "@/lib/api-client";
-import type { WalletBalance } from "@/types/wallet";
-import type { LoginResponse } from "@/types/auth";
+import { useAuth } from "@/contexts/auth-context";
 
 const NAV_LINKS = [
   { label: "Find tutors", href: "/tutors" },
   { label: "My classroom", href: "/classroom" },
   { label: "Message", href: "/message" },
-  { label: "My profile", href: "/profile" },
 ];
 
 const FOCUSABLE_SELECTOR =
@@ -34,51 +30,16 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
   const pathname = usePathname();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [session, setSession] = useState<LoginResponse["user"] | null>(null);
-  const [balance, setBalance] = useState<string>();
+  const { profile } = useAuth();
   const menuToggleRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  // The session lives in localStorage, so it can only be read after mount —
-  // the first paint always renders signed-out. Re-reading on navigation is what
-  // makes logging in or out update the header, since this component never
-  // unmounts during client-side routing.
-  useEffect(() => {
-    let active = true;
-    let accountVersion = 0;
-    function updateAccount() {
-      const version = ++accountVersion;
-      const user = getToken() ? getUser() : null;
-      setSession(user);
-      setBalance(undefined);
-      if (user?.role === "student") {
-        apiClient.get<WalletBalance>("/wallet").then(
-          (wallet) => {
-            if (active && version === accountVersion) {
-              setBalance(Number(wallet.walletBalance).toFixed(2));
-            }
-          },
-          () => {
-            /* The top-up page displays wallet loading errors. */
-          }
-        );
-      }
-    }
-    updateAccount();
-    window.addEventListener("wallet-updated", updateAccount);
-    window.addEventListener("storage", updateAccount);
-    return () => {
-      active = false;
-      window.removeEventListener("wallet-updated", updateAccount);
-      window.removeEventListener("storage", updateAccount);
-    };
-  }, [pathname]);
-
-  const signedIn = isLoggedIn ?? session !== null;
-  const displayName = userName ?? session?.name ?? session?.email;
-  const displayPhoto = profileUrl ?? session?.profileUrl ?? undefined;
-  const displayBalance = userMoney ?? balance;
-  const isStudent = session?.role === "student";
+  const signedIn = isLoggedIn ?? profile !== null;
+  const displayName = userName ?? profile?.name ?? profile?.email;
+  const displayPhoto = profileUrl ?? profile?.profileUrl ?? undefined;
+  const displayBalance =
+    userMoney ?? (profile?.role === "student" ? profile.walletBalance.toFixed(2) : undefined);
+  const isStudent = profile?.role === "student";
 
   useEffect(() => {
     if (!isSidebarOpen) return;

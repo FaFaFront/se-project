@@ -5,6 +5,13 @@ Monorepo: Next.js frontend + Express API, Prisma/Postgres, Swagger docs, Storybo
 ## Stack
 
 - **apps/web** — Next.js, Tailwind CSS, shadcn/ui, lucide-react, Storybook
+  - `src/features/<domain>/` — feature UI grouped by business domain (`auth`,
+    `profile`, `wallet`)
+  - `src/components/ui/` — base design-system primitives, see `DESIGN.md`
+  - `src/components/guards/auth-guard.tsx` — the single route guard mounted in
+    `app/layout.tsx`; redirects per-route based on sign-in/profile-completion/role
+  - `src/contexts/auth-context.tsx` — `AuthProvider`/`useAuth()`, the shared
+    signed-in user profile consumed by the guard, navbar, and feature components
 - **apps/api** — Express, Prisma, PostgreSQL, Swagger (`swagger-jsdoc` + `swagger-ui-express`)
   - Layers: `router/` → `controller/` → `service/` → `repository/`. Validation
     (zod) lives in the controller; no separate DTO layer.

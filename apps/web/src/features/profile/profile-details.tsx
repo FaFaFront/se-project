@@ -3,7 +3,7 @@
 import { LogOut, Mail, Pencil } from "lucide-react";
 import Link from "next/link";
 
-import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { ProfileAvatar } from "@/features/profile/profile-avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types/user";

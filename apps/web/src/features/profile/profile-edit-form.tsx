@@ -11,9 +11,10 @@ import { Input } from "@/components/ui/input";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/auth-context";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { clearSession, getToken, saveSession } from "@/lib/auth-storage";
-import { GRADE_LEVELS } from "@/components/profile/profile-completion-form";
+import { GRADE_LEVELS } from "@/features/profile/profile-completion-form";
 import type { Subject } from "@/types/subject";
 import type { ProfileUpdateResponse, UserProfile } from "@/types/user";
 
@@ -33,6 +34,7 @@ function haveSameSubjectIds(left: string[], right: string[]) {
 
 export function ProfileEditForm() {
   const router = useRouter();
+  const { refresh } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState("");
   const [about, setAbout] = useState("");
@@ -164,6 +166,7 @@ export function ProfileEditForm() {
         saveSession({ token, user: { id, name, email, role, profileUrl } });
       }
       setSaved(true);
+      void refresh();
       router.refresh();
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
