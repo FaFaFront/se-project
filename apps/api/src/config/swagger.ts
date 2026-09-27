@@ -9,6 +9,29 @@ export const swaggerSpec = swaggerJsdoc({
       description: "API documentation",
     },
     servers: [{ url: "/api" }],
+    components: {
+      schemas: {
+        ChatMessage: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "uuid" },
+            conversationId: { type: "string", format: "uuid" },
+            senderId: { type: "string", format: "uuid" },
+            text: { type: "string" },
+            createdAt: { type: "string", format: "date-time" },
+            sender: {
+              type: "object",
+              properties: {
+                id: { type: "string", format: "uuid" },
+                name: { type: "string", nullable: true },
+                role: { type: "string", enum: ["student", "tutor"] },
+                profileUrl: { type: "string", format: "uri", nullable: true },
+              },
+            },
+          },
+        },
+      },
+    },
   },
   apis: ["./src/router/*.ts"],
 });
