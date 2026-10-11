@@ -3,7 +3,7 @@ import type { LoginResponse } from "@/types/auth";
 const TOKEN_KEY = "tutorist.auth.token";
 const USER_KEY = "tutorist.auth.user";
 
-type AuthUser = LoginResponse["user"];
+export type AuthUser = LoginResponse["user"];
 
 /**
  * Session lives in localStorage because the API returns the token in the
@@ -28,6 +28,15 @@ export function saveSession({ token, user }: LoginResponse): void {
   } catch {
     // Storage unavailable (private mode, quota). The token stays in memory
     // for this page load only — the user simply has to log in again later.
+  }
+}
+
+export function saveUser(user: AuthUser): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(USER_KEY, JSON.stringify(user));
+  } catch {
+    // Storage unavailable (private mode, quota).
   }
 }
 

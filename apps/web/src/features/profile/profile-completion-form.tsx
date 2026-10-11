@@ -9,15 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/auth-context";
 import { apiClient } from "@/lib/api-client";
+import { getToken, getUser, saveUser } from "@/lib/auth-storage";
+import type { PublicUser } from "@/types/user";
 
-type UserRole = "student" | "tutor";
-
-type ProfileCompletionFormProps = {
-  role: UserRole;
-};
-
-const GRADE_LEVELS = [
+export const GRADE_LEVELS = [
   "Grade 7",
   "Grade 8",
   "Grade 9",
@@ -28,8 +25,16 @@ const GRADE_LEVELS = [
   "Other",
 ];
 
-export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
+/**
+ * `role` always comes from the signed-in user's own profile (via
+ * AuthContext), never from a URL param — AuthGuard already guarantees a
+ * loaded profile before this route renders, and trusting a query string
+ * here would let a student render (and submit) the tutor form and vice versa.
+ */
+export function ProfileCompletionForm() {
   const router = useRouter();
+  const { profile, refresh } = useAuth();
+  const role = profile?.role ?? "student";
   const photoInputId = useId();
   const [name, setName] = useState("");
   const [profileImage, setProfileImage] = useState<File | null>(null);
@@ -44,6 +49,19 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
   const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    const currentUser = getUser();
+    if (currentUser?.name) {
+      setName(currentUser.name);
+    }
+  }, [router]);
+
+  useEffect(() => {
     if (!profileImage) {
       setProfilePreview("");
       return;
@@ -55,6 +73,8 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
   }, [profileImage]);
 
   const isStudent = role === "student";
+  const trimmedName = name.trim();
+  const nameError = showErrors && !trimmedName;
   const gradeLevelError = showErrors && !gradeLevel;
   const goalsError = showErrors && !goals.trim();
   const hourlyRateNumber = Number(hourlyRate);
@@ -66,19 +86,33 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
     setShowErrors(true);
     setSubmitError("");
 
-    const isValid = isStudent
-      ? Boolean(gradeLevel && goals.trim())
-      : Boolean(hourlyRate && Number.isFinite(hourlyRateNumber) && hourlyRateNumber > 0);
+    const isValid =
+      Boolean(trimmedName) &&
+      (isStudent
+        ? Boolean(gradeLevel && goals.trim())
+        : Boolean(hourlyRate && Number.isFinite(hourlyRateNumber) && hourlyRateNumber > 0));
 
     if (!isValid) return;
 
     const profileData = isStudent
-      ? { gradeLevel, goals: goals.trim() }
-      : { hourlyRate: hourlyRateNumber };
+      ? { name: trimmedName, gradeLevel, goals: goals.trim() }
+      : { name: trimmedName, hourlyRate: hourlyRateNumber };
 
     try {
       setIsPending(true);
-      await apiClient.post<unknown>("/users/profile", profileData);
+      const updatedUser = await apiClient.post<PublicUser>("/users/profile", profileData);
+
+      const currentUser = getUser();
+      if (currentUser) {
+        saveUser({
+          ...currentUser,
+          name: updatedUser.name ?? currentUser.name,
+          profileUrl: updatedUser.profileUrl ?? currentUser.profileUrl,
+        });
+        window.dispatchEvent(new Event("storage"));
+      }
+
+      await refresh();
       router.refresh();
       setSubmitted(true);
     } catch (error) {
@@ -243,6 +277,8 @@ export function ProfileCompletionForm({ role }: ProfileCompletionFormProps) {
             value={name}
             onChange={(event) => setName(event.target.value)}
             maxLength={100}
+            error={nameError}
+            errorMessage="Please enter your name."
             wrapperClassName="gap-2"
             className="h-12 rounded-xl px-4 focus:ring-4 focus:ring-primary/10"
           />

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ProfilePanel } from "@/components/profile/profile-panel";
+import { ProfilePanel } from "@/features/profile/profile-panel";
 
 export const metadata: Metadata = {
   title: "My profile | Tutorist",

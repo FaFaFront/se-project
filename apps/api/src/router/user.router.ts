@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { userController } from "../controller/user.controller.js";
-import { authMiddleware } from "../common/middleware/auth.middleware.js";
+import { authMiddleware, requireActiveAccount } from "../common/middleware/auth.middleware.js";
 import type { AuthRequest } from "../common/middleware/auth.middleware.js";
 
 /**
@@ -17,6 +17,11 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *       additionalProperties: false
  *       required: [gradeLevel, goals]
  *       properties:
+ *         name:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 100
+ *           example: "Student Name"
  *         gradeLevel:
  *           type: string
  *           example: "10th Grade"
@@ -28,6 +33,11 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *       additionalProperties: false
  *       required: [hourlyRate]
  *       properties:
+ *         name:
+ *           type: string
+ *           minLength: 1
+ *           maxLength: 100
+ *           example: "Tutor Name"
  *         hourlyRate:
  *           type: number
  *           exclusiveMinimum: 0
@@ -36,10 +46,11 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *       type: object
  *       properties:
  *         id: { type: string, format: uuid }
- *         name: { type: string, example: Student Name }
+ *         name: { type: string, nullable: true, example: Student Name }
  *         email: { type: string, format: email }
  *         role: { type: string, enum: [student, tutor]}
- *         profileUrl: { type: string, format: uri }
+ *         accountStatus: { type: string, enum: [ACTIVE, INACTIVE], example: ACTIVE }
+ *         profileUrl: { type: string, format: uri, nullable: true }
  *         bio: { type: string, nullable: true }
  *         hourlyRate:
  *           type: number
@@ -71,6 +82,7 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *         profileUrl:
  *           type: string
  *           format: uri
+ *           nullable: true
  *           example: "https://cdn.example.com/student.jpg"
  *         bio:
  *           type: string
@@ -100,6 +112,7 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *         profileUrl:
  *           type: string
  *           format: uri
+ *           nullable: true
  *           example: "https://cdn.example.com/tutor.jpg"
  *         bio:
  *           type: string
@@ -111,6 +124,13 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *           exclusiveMinimum: 0
  *           description: Optional; retains its current value when omitted
  *           example: 750.0
+ *         subjectIds:
+ *           type: array
+ *           uniqueItems: true
+ *           description: Optional; omitted retains current subjects, an empty array removes all subjects, and a non-empty array replaces them.
+ *           items:
+ *             type: string
+ *             format: uuid
  */
 
 // Cast router to use AuthRequest
@@ -141,7 +161,7 @@ router.use((req, res, next) => {
  *       400: { description: Validation error }
  *       401: { description: Unauthorized }
  */
-router.post("/profile", authMiddleware, userController.submitProfile);
+router.post("/profile", authMiddleware, requireActiveAccount, userController.submitProfile);
 
 /**
  * @swagger
@@ -186,12 +206,67 @@ router.get("/me", authMiddleware, userController.getProfile);
  *               - $ref: '#/components/schemas/StudentProfileUpdate'
  *               - $ref: '#/components/schemas/TutorProfileUpdate'
  *     responses:
- *       200: { description: Profile updated successfully }
- *       400: { description: Missing, invalid, role-incompatible, or unknown request fields }
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Profile updated successfully }
+ *                 data:
+ *                   allOf:
+ *                     - $ref: '#/components/schemas/UserProfile'
+ *                     - type: object
+ *                       properties:
+ *                         profileComplete: { type: boolean, example: true }
+ *       400: { description: Missing, invalid, role-incompatible, duplicate, malformed, or unknown request fields or subject IDs }
  *       401: { description: Missing or invalid authentication, deleted user, or role mismatch }
  *       409: { description: Initial profile completion is required }
  *       500: { description: Internal server error }
  */
-router.put("/profile", authMiddleware, userController.updateProfile);
+router.put("/profile", authMiddleware, requireActiveAccount, userController.updateProfile);
+
+/**
+ * @swagger
+ * /users/me/status:
+ *   patch:
+ *     summary: Set the authenticated user's account status
+ *     description: >
+ *       Soft-pauses or restores the account. Inactive accounts cannot sign in or
+ *       use other protected features, but the user row and related data are not
+ *       deleted. This is separate from account deletion.
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             additionalProperties: false
+ *             required: [status]
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [ACTIVE, INACTIVE]
+ *     responses:
+ *       200:
+ *         description: Account status updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Account is now inactive. Your data has been kept. }
+ *                 data:
+ *                   $ref: '#/components/schemas/UserProfile'
+ *       400: { description: Invalid status }
+ *       401: { description: Unauthorized }
+ */
+router.patch("/me/status", authMiddleware, userController.updateAccountStatus);
 
 export const userRouter = router;
