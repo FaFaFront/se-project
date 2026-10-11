@@ -79,16 +79,14 @@ export const tutorRepository = {
       return [];
     }
 
-    const pairs = await prisma.classroom.groupBy({
-      by: ["tutorId", "studentId"],
-      where: { tutorId: { in: tutorIds } },
-    });
+    // Prisma's groupBy has no COUNT(DISTINCT), so let Postgres do the counting.
+    const rows = await prisma.$queryRaw<{ tutorId: string; studentCount: bigint }[]>`
+      SELECT "tutorId", COUNT(DISTINCT "studentId") AS "studentCount"
+      FROM "classrooms"
+      WHERE "tutorId" IN (${Prisma.join(tutorIds)})
+      GROUP BY "tutorId"
+    `;
 
-    const counts = new Map<string, number>();
-    for (const { tutorId } of pairs) {
-      counts.set(tutorId, (counts.get(tutorId) ?? 0) + 1);
-    }
-
-    return [...counts].map(([tutorId, studentCount]) => ({ tutorId, studentCount }));
+    return rows.map((row) => ({ tutorId: row.tutorId, studentCount: Number(row.studentCount) }));
   },
 };

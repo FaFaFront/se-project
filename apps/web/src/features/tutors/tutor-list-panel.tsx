@@ -108,21 +108,25 @@ export function TutorListPanel() {
         priceError={priceError}
       />
 
-      {error ? (
-        <div className="gap-md flex flex-col items-center py-10 text-center">
-          <p className="text-ink text-sm">{error}</p>
+      {/* Always mounted so screen readers announce every change, errors included. */}
+      <p role="status" className="text-ink text-sm">
+        {priceError
+          ? "Fix the price range to see results."
+          : error
+            ? error
+            : isLoading
+              ? "Loading tutors…"
+              : `${tutors.length} ${tutors.length === 1 ? "tutor" : "tutors"} found`}
+      </p>
+
+      {priceError ? null : error ? (
+        <div className="flex justify-center py-6">
           <Button variant="outline" onClick={() => setReloadKey((key) => key + 1)}>
             Retry
           </Button>
         </div>
       ) : (
-        <section aria-busy={isLoading} aria-live="polite" className="gap-base flex flex-col">
-          <p className="text-ink text-sm">
-            {isLoading
-              ? "Loading tutors…"
-              : `${tutors.length} ${tutors.length === 1 ? "tutor" : "tutors"} found`}
-          </p>
-
+        <section aria-busy={isLoading} className="gap-base flex flex-col">
           {!isLoading && tutors.length === 0 ? (
             <div className="border-hairline gap-md flex flex-col items-center rounded-[10px] border border-dashed py-12 text-center">
               <p className="text-ink-black text-body-emphasis">No tutors match your criteria</p>
