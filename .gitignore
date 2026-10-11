@@ -19,4 +19,6 @@ apps/api/generated/
 .DS_Store
 *.pem
 
+# Design specs (local only)
+docs/superpowers/
 SESSION.md
