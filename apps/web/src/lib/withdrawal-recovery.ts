@@ -49,12 +49,20 @@ export function readRecovery(userId: string): WithdrawalRecovery | null {
 
 /** Call while holding the user-scoped Web Lock. Never overwrite another pending attempt. */
 export function saveRecovery(userId: string, record: WithdrawalRecovery): void {
+  // TypeScript types do not strip extra fields; persist only recovery metadata.
+  const recovery: WithdrawalRecovery = {
+    version: record.version,
+    requestId: record.requestId,
+    amount: record.amount,
+    bankCode: record.bankCode,
+    createdAt: record.createdAt,
+  };
   const existing = readRecovery(userId);
-  if (existing && JSON.stringify(existing) !== JSON.stringify(record)) {
+  if (existing && JSON.stringify(existing) !== JSON.stringify(recovery)) {
     throw new Error("Another withdrawal needs recovery. Reload this page to reconcile it first.");
   }
   try {
-    const raw = JSON.stringify(record);
+    const raw = JSON.stringify(recovery);
     window.localStorage.setItem(recoveryKey(userId), raw);
     if (window.localStorage.getItem(recoveryKey(userId)) !== raw) throw new Error(storageError);
   } catch {
