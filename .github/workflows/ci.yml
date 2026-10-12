@@ -24,13 +24,7 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Build shared package
-        run: yarn workspace @tutorist/shared build
-
-      - name: Verify web types
-        run: yarn workspace web check
-
-      - name: Prepare API environment
+      - name: Prepare api .env from example
         run: cp apps/api/.env.example apps/api/.env
 
       - name: Generate Prisma client

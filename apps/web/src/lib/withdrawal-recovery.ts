@@ -1,4 +1,7 @@
-import { THAI_BANK_CODES, type ThaiBankCode } from "@tutorist/shared";
+import { WITHDRAWAL_BANKS, type WithdrawalRequest } from "../types/withdrawal";
+
+type ThaiBankCode = WithdrawalRequest["bankCode"];
+const THAI_BANK_CODES = WITHDRAWAL_BANKS.map(({ value }) => value);
 import { withdrawalCents } from "./withdrawal";
 
 export type WithdrawalRecovery = {

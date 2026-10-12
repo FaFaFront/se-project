@@ -81,7 +81,7 @@ withdrawalRouter.use(authMiddleware);
  *               password: { type: string, format: password, minLength: 1, writeOnly: true }
  *               bankCode:
  *                 type: string
- *                 $ref: '#/components/schemas/ThaiBankCode'
+ *                 enum: [BBL, KBANK, KTB, SCB, BAY, TTB, GSB, BAAC, GHB, KKP, TISCO, CIMBT, UOB]
  *               accountNumber:
  *                 type: string
  *                 maxLength: 64
