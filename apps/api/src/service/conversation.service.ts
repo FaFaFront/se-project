@@ -1,5 +1,16 @@
 import { NotFoundError } from "../common/errors/app-error.js";
-import { conversationRepository } from "../repository/conversation.repository.js";
+import { conversationRepository, type MessageRow } from "../repository/conversation.repository.js";
+
+function serializeMessage(message: MessageRow) {
+  return {
+    id: message.id,
+    conversationId: message.conversationId,
+    senderId: message.senderId,
+    text: message.text,
+    createdAt: message.createdAt.toISOString(),
+    sender: message.sender,
+  };
+}
 
 export const conversationService = {
   async requireParticipant(conversationId: string, userId: string) {
@@ -27,14 +38,17 @@ export const conversationService = {
 
     return {
       conversationId: conversation.id,
-      messages: conversation.messages.map((message) => ({
-        id: message.id,
-        conversationId: message.conversationId,
-        senderId: message.senderId,
-        text: message.text,
-        createdAt: message.createdAt.toISOString(),
-        sender: message.sender,
-      })),
+      participant:
+        conversation.participantAId === userId
+          ? conversation.participantB
+          : conversation.participantA,
+      messages: conversation.messages.map(serializeMessage),
     };
+  },
+
+  async sendMessage(conversationId: string, senderId: string, text: string) {
+    await this.requireParticipant(conversationId, senderId);
+    const message = await conversationRepository.createMessage(conversationId, senderId, text);
+    return serializeMessage(message);
   },
 };
