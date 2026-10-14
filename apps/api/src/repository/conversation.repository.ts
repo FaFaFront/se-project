@@ -28,6 +28,16 @@ export type MessageHistoryRow = Prisma.ConversationGetPayload<{
 }>;
 
 export const conversationRepository = {
+  async findByIdForParticipant(conversationId: string, userId: string) {
+    return prisma.conversation.findFirst({
+      where: {
+        id: conversationId,
+        OR: [{ participantAId: userId }, { participantBId: userId }],
+      },
+      select: { id: true },
+    });
+  },
+
   async findMessageHistoryForParticipant(
     conversationId: string,
     userId: string
