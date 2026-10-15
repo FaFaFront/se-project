@@ -18,5 +18,6 @@ export type ChatMessage = {
 
 export type MessageHistory = {
   conversationId: string;
+  participant: ChatParticipant;
   messages: ChatMessage[];
 };
