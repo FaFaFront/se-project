@@ -4054,6 +4054,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"engine.io-client@npm:~6.6.1":
+  version: 6.6.7
+  resolution: "engine.io-client@npm:6.6.7"
+  dependencies:
+    "@socket.io/component-emitter": "npm:~3.1.0"
+    debug: "npm:~4.4.1"
+    engine.io-parser: "npm:~5.2.1"
+    ws: "npm:~8.21.0"
+    xmlhttprequest-ssl: "npm:~2.1.1"
+  checksum: 10c0/64892158a23537f31f38b8eac40c6cdc28cfe141add2872e1f337d42f3e8d0d5dc4ad92684f45e6b89d17ddb62cc4743ef54a575918d2220d68008b3d4d4bd6e
+  languageName: node
+  linkType: hard
+
 "engine.io-parser@npm:~5.2.1":
   version: 5.2.3
   resolution: "engine.io-parser@npm:5.2.3"
@@ -7928,6 +7941,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"socket.io-client@npm:^4":
+  version: 4.8.4
+  resolution: "socket.io-client@npm:4.8.4"
+  dependencies:
+    "@socket.io/component-emitter": "npm:~3.1.0"
+    debug: "npm:~4.4.1"
+    engine.io-client: "npm:~6.6.1"
+    socket.io-parser: "npm:~4.2.4"
+  checksum: 10c0/53f6266d85e375902f1ca417fb2c9ad523463fcd9c4b7aa66fb31792809c4b0d7b81cb760e9fac1b7cbb7bc4283feb39b37867e8ef2a5dcad99302f71ca2346f
+  languageName: node
+  linkType: hard
+
 "socket.io-parser@npm:~4.2.4":
   version: 4.2.7
   resolution: "socket.io-parser@npm:4.2.7"
@@ -8925,6 +8950,7 @@ __metadata:
     postcss: "npm:^8.4.49"
     react: "npm:^19.0.0"
     react-dom: "npm:^19.0.0"
+    socket.io-client: "npm:^4"
     storybook: "npm:^9.1.0"
     tailwind-merge: "npm:^2.5.5"
     tailwindcss: "npm:^3.4.15"
@@ -9075,6 +9101,13 @@ __metadata:
     utf-8-validate:
       optional: true
   checksum: 10c0/7b28dc2863ea0e2cece68d142a3eee90361021b73f750431e6d8076bb7dede5fdfdb75b3d29534b62f411261147b76b1bc80fb5cc63ab0aabd467280e85b22e0
+  languageName: node
+  linkType: hard
+
+"xmlhttprequest-ssl@npm:~2.1.1":
+  version: 2.1.2
+  resolution: "xmlhttprequest-ssl@npm:2.1.2"
+  checksum: 10c0/70d60869323e823f473a238f78fd108437edbc3690ecd5859c39c83217080090a18899b272e515769c0d1f518cc64cbed6b6995b23fdd7ba13b297d530b6e631
   languageName: node
   linkType: hard
 

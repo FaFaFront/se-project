@@ -12,7 +12,7 @@ export function createSocketServer(httpServer: HttpServer): AppSocketServer {
   });
 
   io.use(socketAuthMiddleware);
-  io.on("connection", registerConnectionHandlers);
+  io.on("connection", (socket) => registerConnectionHandlers(io, socket));
 
   return io;
 }

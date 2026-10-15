@@ -30,9 +30,11 @@ import { conversationController } from "../controller/conversation.controller.js
  *     MessageHistory:
  *       type: object
  *       additionalProperties: false
- *       required: [conversationId, messages]
+ *       required: [conversationId, participant, messages]
  *       properties:
  *         conversationId: { type: string, format: uuid }
+ *         participant:
+ *           $ref: '#/components/schemas/ConversationMessageSender'
  *         messages:
  *           type: array
  *           description: Complete message history, ordered oldest to newest by creation time and then ID.

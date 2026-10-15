@@ -1,6 +1,7 @@
 "use client";
 
 import type { ChatMessage, ChatParticipant } from "@/types/conversation";
+import { Button } from "@/components/ui/button";
 import { ChatHeader } from "./chat-header";
 import { MessageComposer } from "./message-composer";
 import { MessageList } from "./message-list";
@@ -13,6 +14,9 @@ type ChatViewProps = {
   onSend: (text: string) => void | Promise<void>;
   isSending?: boolean;
   sendError?: string | null;
+  composerDisabled?: boolean;
+  statusMessage?: string | null;
+  onRetry?: () => void;
 };
 
 export function ChatView({
@@ -23,6 +27,9 @@ export function ChatView({
   onSend,
   isSending,
   sendError,
+  composerDisabled = false,
+  statusMessage,
+  onRetry,
 }: ChatViewProps) {
   return (
     <section
@@ -32,7 +39,26 @@ export function ChatView({
     >
       <ChatHeader participant={participant} viewerRole={viewer.role} />
       <MessageList messages={messages} currentUserId={viewer.id} />
-      <MessageComposer onSend={onSend} isSending={isSending} errorMessage={sendError} />
+      {statusMessage && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center justify-between gap-3 border-t border-hairline bg-surface-lavender px-4 py-2 text-sm text-ink sm:px-6"
+        >
+          <span>{statusMessage}</span>
+          {onRetry && (
+            <Button type="button" variant="outline" onClick={onRetry} className="shrink-0">
+              Retry
+            </Button>
+          )}
+        </div>
+      )}
+      <MessageComposer
+        onSend={onSend}
+        isSending={isSending}
+        disabled={composerDisabled}
+        errorMessage={sendError}
+      />
     </section>
   );
 }

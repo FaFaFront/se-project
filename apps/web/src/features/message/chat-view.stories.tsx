@@ -42,6 +42,14 @@ export const EmptyConversation: Story = {
   },
 };
 
+export const Reconnecting: Story = {
+  args: {
+    composerDisabled: true,
+    statusMessage: "Connection lost. Reconnecting...",
+    onRetry: () => {},
+  },
+};
+
 export const Loading: Story = {
   render: () => <ChatViewLoading />,
 };

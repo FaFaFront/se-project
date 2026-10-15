@@ -10,21 +10,27 @@ const MAX_MESSAGE_LENGTH = 2000;
 type MessageComposerProps = {
   onSend: (text: string) => void | Promise<void>;
   isSending?: boolean;
+  disabled?: boolean;
   errorMessage?: string | null;
 };
 
-export function MessageComposer({ onSend, isSending = false, errorMessage }: MessageComposerProps) {
+export function MessageComposer({
+  onSend,
+  isSending = false,
+  disabled = false,
+  errorMessage,
+}: MessageComposerProps) {
   const inputId = useId();
   const [draft, setDraft] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const sending = isSending || isSubmitting;
-  const canSend = draft.trim().length > 0 && !sending;
+  const canSend = draft.trim().length > 0 && !sending && !disabled;
   const visibleError = errorMessage ?? submissionError;
 
   async function submitDraft() {
     const text = draft.trim();
-    if (!text || sending) return;
+    if (!text || sending || disabled) return;
 
     setIsSubmitting(true);
     setSubmissionError(null);
@@ -71,7 +77,7 @@ export function MessageComposer({ onSend, isSending = false, errorMessage }: Mes
           placeholder="Type a message..."
           maxLength={MAX_MESSAGE_LENGTH}
           rows={2}
-          disabled={sending}
+          disabled={sending || disabled}
           aria-label="Message"
           className="min-h-12 max-h-32 resize-none py-2"
           wrapperClassName="min-w-0 flex-1"

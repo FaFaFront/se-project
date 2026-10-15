@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { ChatPreview } from "@/features/message/chat-preview";
+import { ChatContainer } from "@/features/message/chat-container";
 
 export const metadata: Metadata = {
   title: "Conversation | Tutorist",
@@ -30,7 +30,7 @@ export default async function ConversationPage({ params }: ConversationPageProps
           </span>
           <span>Back</span>
         </Link>
-        <ChatPreview key={conversationId} conversationId={conversationId} />
+        <ChatContainer key={conversationId} conversationId={conversationId} />
       </div>
     </main>
   );
