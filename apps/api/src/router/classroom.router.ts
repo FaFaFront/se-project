@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { authMiddleware, requireActiveAccount } from "../common/middleware/auth.middleware.js";
+import {
+  authMiddleware,
+  requireActiveAccount,
+  requireRole,
+} from "../common/middleware/auth.middleware.js";
 import { classroomController } from "../controller/classroom.controller.js";
 
 /**
@@ -39,7 +43,7 @@ import { classroomController } from "../controller/classroom.controller.js";
 
 const router = Router();
 
-router.use(authMiddleware, requireActiveAccount);
+router.use(authMiddleware, requireActiveAccount, requireRole("tutor"));
 
 /**
  * @swagger

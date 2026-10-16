@@ -1,7 +1,7 @@
 import type { NextFunction, Response } from "express";
 import { z } from "zod";
 import type { AuthRequest } from "../common/middleware/auth.middleware.js";
-import { ForbiddenError, UnauthorizedError } from "../common/errors/app-error.js";
+import { UnauthorizedError } from "../common/errors/app-error.js";
 import { successResponse } from "../common/utils/response.js";
 import { classroomService } from "../service/classroom.service.js";
 
@@ -13,18 +13,12 @@ const createClassroomSchema = z
   })
   .strict();
 
-function tutorId(req: AuthRequest) {
-  if (!req.user) throw new UnauthorizedError();
-  if (req.user.role !== "tutor") throw new ForbiddenError("Only tutors can create classrooms");
-  return req.user.id;
-}
-
 export const classroomController = {
   async createClassroom(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const userId = tutorId(req);
+      if (!req.user) throw new UnauthorizedError();
       const input = createClassroomSchema.parse(req.body);
-      const classroom = await classroomService.createClassroom(userId, input);
+      const classroom = await classroomService.createClassroom(req.user.id, input);
       res.status(201).json(successResponse(classroom, "Classroom created"));
     } catch (error) {
       next(error);
