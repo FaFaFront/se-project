@@ -44,12 +44,26 @@ const tutorListQuerySchema = z
     "Minimum price must not exceed maximum price"
   );
 
+const tutorIdParamsSchema = z.object({
+  tutorId: z.string().uuid("Tutor ID must be a valid UUID"),
+});
+
 export const tutorController = {
   async listTutors(req: Request, res: Response, next: NextFunction) {
     try {
       const query = tutorListQuerySchema.parse(req.query);
       const tutors = await tutorService.listTutors(query);
       res.status(200).json(successResponse(tutors, "Tutors retrieved successfully."));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getTutor(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { tutorId } = tutorIdParamsSchema.parse(req.params);
+      const tutor = await tutorService.getTutor(tutorId);
+      res.status(200).json(successResponse(tutor, "Tutor retrieved successfully."));
     } catch (error) {
       next(error);
     }

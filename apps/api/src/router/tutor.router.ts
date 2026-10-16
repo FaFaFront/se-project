@@ -84,3 +84,23 @@ export const tutorRouter = Router();
  *       400: { description: Invalid query parameters }
  */
 tutorRouter.get("/", tutorController.listTutors);
+
+/**
+ * @swagger
+ * /tutors/{tutorId}:
+ *   get:
+ *     summary: Get one active tutor
+ *     description: Retrieves the public profile for the UUID selected from the tutor directory.
+ *     tags: [Tutors]
+ *     parameters:
+ *       - in: path
+ *         name: tutorId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Tutor retrieved successfully
+ *       400: { description: Tutor ID must be a valid UUID }
+ *       404: { description: Tutor not found }
+ */
+tutorRouter.get("/:tutorId", tutorController.getTutor);
