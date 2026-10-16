@@ -1,4 +1,5 @@
 import { tutorRepository, type TutorListFilter } from "../repository/tutor.repository.js";
+import { NotFoundError } from "../common/errors/app-error.js";
 
 export type TutorSortBy = "rating" | "price" | "popularity";
 export type SortOrder = "asc" | "desc";
@@ -30,6 +31,25 @@ const DEFAULT_ORDER: Record<TutorSortBy, SortOrder> = {
 
 /** A list item plus the unrounded average, so 4.84 still outranks 4.76 though both show "4.8". */
 type RankedTutor = { item: TutorListItem; averageRating: number | null };
+
+function toTutorListItem(
+  tutor: Awaited<ReturnType<typeof tutorRepository.findActive>>[number],
+  averageRating: number | null,
+  reviewCount: number,
+  studentCount: number
+): TutorListItem {
+  return {
+    id: tutor.id,
+    name: tutor.name,
+    profileUrl: tutor.profileUrl,
+    bio: tutor.bio,
+    hourlyRate: tutor.hourlyRate === null ? null : Number(tutor.hourlyRate),
+    subjects: tutor.tutorSubjects.map((tutorSubject) => tutorSubject.subject),
+    rating: averageRating === null ? null : Math.round(averageRating * 10) / 10,
+    reviewCount,
+    studentCount,
+  };
+}
 
 const SORT_VALUE: Record<TutorSortBy, (tutor: RankedTutor) => number | null> = {
   rating: (tutor) => tutor.averageRating,
@@ -72,17 +92,12 @@ export const tutorService = {
     const ranked: RankedTutor[] = tutors.map((tutor) => {
       const rating = ratingByTutor.get(tutor.id);
       const averageRating = rating?.averageRating ?? null;
-      const item: TutorListItem = {
-        id: tutor.id,
-        name: tutor.name,
-        profileUrl: tutor.profileUrl,
-        bio: tutor.bio,
-        hourlyRate: tutor.hourlyRate === null ? null : Number(tutor.hourlyRate),
-        subjects: tutor.tutorSubjects.map((tutorSubject) => tutorSubject.subject),
-        rating: averageRating === null ? null : Math.round(averageRating * 10) / 10,
-        reviewCount: rating?.reviewCount ?? 0,
-        studentCount: studentsByTutor.get(tutor.id) ?? 0,
-      };
+      const item = toTutorListItem(
+        tutor,
+        averageRating,
+        rating?.reviewCount ?? 0,
+        studentsByTutor.get(tutor.id) ?? 0
+      );
       return { item, averageRating };
     });
 
@@ -90,5 +105,25 @@ export const tutorService = {
     return ranked
       .sort(compareTutors(effectiveSort, order ?? DEFAULT_ORDER[effectiveSort]))
       .map(({ item }) => item);
+  },
+
+  async getTutor(tutorId: string): Promise<TutorListItem> {
+    const tutor = await tutorRepository.findActiveById(tutorId);
+    if (!tutor) {
+      throw new NotFoundError("Tutor not found");
+    }
+
+    const [ratings, popularity] = await Promise.all([
+      tutorRepository.findRatings([tutorId]),
+      tutorRepository.findPopularity([tutorId]),
+    ]);
+    const rating = ratings[0];
+
+    return toTutorListItem(
+      tutor,
+      rating?.averageRating ?? null,
+      rating?.reviewCount ?? 0,
+      popularity[0]?.studentCount ?? 0
+    );
   },
 };
