@@ -31,10 +31,21 @@ const messageHistorySelect = {
   },
 } as const satisfies Prisma.ConversationSelect;
 
+const participantsSelect = {
+  id: true,
+  participantAId: true,
+  participantBId: true,
+  participantA: { select: { id: true, role: true } },
+  participantB: { select: { id: true, role: true } },
+} as const satisfies Prisma.ConversationSelect;
+
 export type MessageHistoryRow = Prisma.ConversationGetPayload<{
   select: typeof messageHistorySelect;
 }>;
 export type MessageRow = Prisma.MessageGetPayload<{ select: typeof messageSelect }>;
+export type ConversationParticipantsRow = Prisma.ConversationGetPayload<{
+  select: typeof participantsSelect;
+}>;
 
 export const conversationRepository = {
   async findByIdForParticipant(conversationId: string, userId: string) {
@@ -44,6 +55,19 @@ export const conversationRepository = {
         OR: [{ participantAId: userId }, { participantBId: userId }],
       },
       select: { id: true },
+    });
+  },
+
+  async findParticipantsForParticipant(
+    conversationId: string,
+    userId: string
+  ): Promise<ConversationParticipantsRow | null> {
+    return prisma.conversation.findFirst({
+      where: {
+        id: conversationId,
+        OR: [{ participantAId: userId }, { participantBId: userId }],
+      },
+      select: participantsSelect,
     });
   },
 
