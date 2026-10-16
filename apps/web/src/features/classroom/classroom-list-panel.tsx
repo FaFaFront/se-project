@@ -38,6 +38,8 @@ function TutorClassroomList() {
   const [query, setQuery] = useState<ClassroomListQuery>(INITIAL_QUERY);
   const [debouncedSearch, setDebouncedSearch] = useState(query.search);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subjectsError, setSubjectsError] = useState<string | null>(null);
+  const [subjectsReloadKey, setSubjectsReloadKey] = useState(0);
   const [classrooms, setClassrooms] = useState<ClassroomListItem[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,12 +54,25 @@ function TutorClassroomList() {
   const isSearchPending = query.search.trim() !== debouncedSearch.trim();
 
   useEffect(() => {
+    let isStale = false;
+    setSubjectsError(null);
+
     apiClient
       .get<Subject[]>("/subjects")
-      .then(setSubjects)
-      // The subject filter just stays at "All subjects" if this fails.
-      .catch(() => setSubjects([]));
-  }, []);
+      .then((data) => {
+        if (!isStale) setSubjects(data);
+      })
+      // The list itself still works; only the subject filter is limited to "All subjects".
+      .catch((err: unknown) => {
+        if (!isStale) {
+          setSubjectsError(err instanceof Error ? err.message : "Unable to load subjects.");
+        }
+      });
+
+    return () => {
+      isStale = true;
+    };
+  }, [subjectsReloadKey]);
 
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedSearch(query.search), SEARCH_DEBOUNCE_MS);
@@ -102,6 +117,15 @@ function TutorClassroomList() {
         onChange={(patch) => setQuery((current) => ({ ...current, ...patch }))}
         onClear={isDefault ? undefined : clearFilters}
       />
+
+      {subjectsError && (
+        <div role="alert" className="gap-sm text-error flex flex-wrap items-center text-sm">
+          <span>Couldn&apos;t load the subject filter: {subjectsError}</span>
+          <Button variant="outline" onClick={() => setSubjectsReloadKey((key) => key + 1)}>
+            Retry
+          </Button>
+        </div>
+      )}
 
       {/* Always mounted so screen readers announce every change, errors included. */}
       <p role="status" className="text-ink text-sm">
