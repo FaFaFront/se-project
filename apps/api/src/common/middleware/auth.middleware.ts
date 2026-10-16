@@ -28,6 +28,23 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
 };
 
 /**
+ * Restricts a route to specific roles. Applied after `authMiddleware`.
+ */
+export const requireRole = (...roles: string[]) => {
+  return (req: AuthRequest, _res: Response, next: NextFunction) => {
+    try {
+      if (!req.user) throw new UnauthorizedError("User not found in request");
+      if (!roles.includes(req.user.role)) {
+        throw new ForbiddenError(`Only ${roles.join(" or ")} can access this resource`);
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+/**
  * Blocks inactive accounts from protected features. Applied after
  * `authMiddleware`. Intentionally omitted from GET /users/me and
  * PATCH /users/me/status so a paused account can still read and restore status.

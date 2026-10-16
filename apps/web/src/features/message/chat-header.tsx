@@ -1,8 +1,13 @@
+"use client";
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { CreateClassroomModal } from "@/features/classroom/create-classroom-modal";
 import type { ChatParticipant } from "@/types/conversation";
 import type { UserRole } from "@/types/auth";
 
 type ChatHeaderProps = {
+  conversationId: string;
   participant: ChatParticipant;
   viewerRole: UserRole;
   className?: string;
@@ -22,8 +27,15 @@ function initials(name: string | null, role: UserRole): string {
     .toUpperCase();
 }
 
-export function ChatHeader({ participant, viewerRole, className }: ChatHeaderProps) {
+export function ChatHeader({
+  conversationId,
+  participant,
+  viewerRole,
+  className,
+}: ChatHeaderProps) {
   const name = participant.name?.trim() || roleLabel(participant.role) || "Unknown user";
+  const [isCreatingClassroom, setIsCreatingClassroom] = useState(false);
+  const canCreateClassroom = viewerRole === "tutor" && participant.role === "student";
 
   return (
     <header
@@ -43,14 +55,22 @@ export function ChatHeader({ participant, viewerRole, className }: ChatHeaderPro
           <p className="text-sm text-ink/70">{roleLabel(participant.role)}</p>
         </div>
       </div>
-      {viewerRole === "tutor" && participant.role === "student" && (
+      {canCreateClassroom && (
         <Button
           type="button"
           variant="outline"
+          onClick={() => setIsCreatingClassroom(true)}
           className="h-10 px-4 text-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           Create Classroom
         </Button>
+      )}
+      {canCreateClassroom && isCreatingClassroom && (
+        <CreateClassroomModal
+          conversationId={conversationId}
+          student={participant}
+          onClose={() => setIsCreatingClassroom(false)}
+        />
       )}
     </header>
   );
