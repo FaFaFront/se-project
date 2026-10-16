@@ -37,7 +37,7 @@ export const classroomService = {
       pricePerHour = new Prisma.Decimal(input.pricePerHour);
     } else {
       const tutor = await tutorRepository.findHourlyRate(tutorId);
-      if (!tutor?.hourlyRate) {
+      if (!tutor?.hourlyRate || tutor.hourlyRate.lte(0)) {
         throw new BadRequestError(
           "No price was provided and this tutor has no default hourly rate"
         );
