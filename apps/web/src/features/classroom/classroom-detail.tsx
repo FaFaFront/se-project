@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft, BookOpen, CalendarDays, CircleAlert, Clock3, Pencil } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { DeactivateClassroomAction } from "@/features/classroom/deactivate-classroom-action";
 import { ProfileAvatar } from "@/features/profile/profile-avatar";
 import { formatCurrency } from "@/features/profile/profile-details";
 import { cn } from "@/lib/utils";
@@ -116,18 +117,23 @@ export function ClassroomDetail({ classroomId }: { classroomId: string }) {
         <div className="space-y-8 p-6 sm:p-9">
           <div>
             <p className="text-sm font-semibold text-ink/60">{participantLabel}</p>
-            <div className="mt-3 flex min-w-0 items-center gap-4">
-              <ProfileAvatar
-                src={classroom.participant.profileUrl}
-                name={participantName}
-                size={64}
-              />
-              <div className="min-w-0">
-                <p className="break-words text-lg font-semibold text-ink">{participantName}</p>
-                <p className="mt-0.5 text-sm capitalize text-ink/60">
-                  {classroom.viewerRole === "tutor" ? "Student" : "Tutor"}
-                </p>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-5">
+              <div className="flex min-w-0 items-center gap-4">
+                <ProfileAvatar
+                  src={classroom.participant.profileUrl}
+                  name={participantName}
+                  size={64}
+                />
+                <div className="min-w-0">
+                  <p className="break-words text-lg font-semibold text-ink">{participantName}</p>
+                  <p className="mt-0.5 text-sm capitalize text-ink/60">
+                    {classroom.viewerRole === "tutor" ? "Student" : "Tutor"}
+                  </p>
+                </div>
               </div>
+              {classroom.viewerRole === "tutor" && classroom.status === "active" && (
+                <DeactivateClassroomAction key={classroom.id} classroomId={classroom.id} />
+              )}
             </div>
           </div>
 
