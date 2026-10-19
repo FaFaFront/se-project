@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/auth-context";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { clearSession, getToken, saveSession } from "@/lib/auth-storage";
+import { uploadImageToGCS, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_BYTES } from "@/lib/upload";
 import { GRADE_LEVELS } from "@/features/profile/profile-completion-form";
 import type { Subject } from "@/types/subject";
 import type { ProfileUpdateResponse, UserProfile } from "@/types/user";
@@ -35,6 +36,7 @@ function haveSameSubjectIds(left: string[], right: string[]) {
 export function ProfileEditForm() {
   const router = useRouter();
   const { refresh } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState("");
   const [about, setAbout] = useState("");
@@ -49,7 +51,20 @@ export function ProfileEditForm() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string>("");
+  const [photoError, setPhotoError] = useState<string>("");
   const submitting = useRef(false);
+
+  useEffect(() => {
+    if (!photoFile) {
+      setPhotoPreview("");
+      return;
+    }
+    const previewUrl = URL.createObjectURL(photoFile);
+    setPhotoPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [photoFile]);
 
   useEffect(() => {
     let active = true;
@@ -117,6 +132,7 @@ export function ProfileEditForm() {
     profile &&
     (name.trim() !== (profile.name ?? "").trim() ||
       about.trim() !== (profile.bio ?? "").trim() ||
+      photoFile !== null ||
       (isStudent
         ? fields.gradeLevel.trim() !== (profile.gradeLevel ?? "").trim() ||
           fields.goals.trim() !== (profile.goals ?? "").trim()
@@ -145,9 +161,14 @@ export function ProfileEditForm() {
     setSaveError("");
     setSaved(false);
     try {
+      let uploadedUrl = profile.profileUrl;
+      if (photoFile) {
+        uploadedUrl = await uploadImageToGCS(photoFile, "avatars");
+      }
+
       const updated = await apiClient.put<ProfileUpdateResponse>("/users/profile", {
         name: name.trim(),
-        profileUrl: profile.profileUrl,
+        profileUrl: uploadedUrl,
         bio: about.trim() || null,
         ...(isStudent
           ? { gradeLevel: fields.gradeLevel.trim(), goals: fields.goals.trim() }
@@ -160,6 +181,9 @@ export function ProfileEditForm() {
       setFields(fieldsFromProfile(current));
       setSelectedSubjectIds(current.subjects.map((subject) => subject.id));
       setTouched({});
+      setPhotoFile(null);
+      setPhotoPreview("");
+      setPhotoError("");
       const token = getToken();
       if (token) {
         const { id, name, email, role, profileUrl } = current;
@@ -233,9 +257,9 @@ export function ProfileEditForm() {
             <legend className="sr-only">Profile information</legend>
             <div className="flex flex-col items-center gap-3 border-b border-hairline pb-4 sm:col-span-2 sm:flex-row sm:flex-wrap sm:gap-5">
               <div className="flex size-32 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-primary/20 bg-primary/5 sm:size-40">
-                {profile.profileUrl ? (
+                {photoPreview || profile.profileUrl ? (
                   <Image
-                    src={profile.profileUrl}
+                    src={photoPreview || profile.profileUrl!}
                     alt="Profile photo"
                     width={160}
                     height={160}
@@ -247,16 +271,54 @@ export function ProfileEditForm() {
                 )}
               </div>
               <div className="flex flex-col items-center gap-2 sm:items-start">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="sr-only"
+                  aria-label="Change profile photo"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+
+                    if (
+                      !ALLOWED_IMAGE_TYPES.includes(
+                        file.type as (typeof ALLOWED_IMAGE_TYPES)[number]
+                      )
+                    ) {
+                      setPhotoError("Please choose a JPG, PNG, WebP, or GIF image.");
+                      event.target.value = "";
+                      return;
+                    }
+
+                    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+                      setPhotoError("Image must be 10 MB or smaller.");
+                      event.target.value = "";
+                      return;
+                    }
+
+                    setPhotoError("");
+                    setPhotoFile(file);
+                    setSaved(false);
+                    setSaveError("");
+                  }}
+                />
                 <Button
                   type="button"
                   variant="outline"
-                  disabled
-                  title="Photo uploads are not available yet"
+                  disabled={saving}
+                  onClick={() => fileInputRef.current?.click()}
                 >
                   <Camera aria-hidden="true" className="size-4" />
                   Change photo
                 </Button>
-                <p className="text-xs text-ink/60">JPG, PNG or WebP. Maximum 5 MB.</p>
+                {photoError ? (
+                  <p role="alert" className="text-xs text-error">
+                    {photoError}
+                  </p>
+                ) : (
+                  <p className="text-xs text-ink/60">JPG, PNG, WebP or GIF. Maximum 10 MB.</p>
+                )}
               </div>
             </div>
             <Input

@@ -15,6 +15,7 @@ import {
 
 type ProfileData = {
   name?: string;
+  profileUrl?: string | null;
   gradeLevel?: string;
   goals?: string;
   hourlyRate?: number;
@@ -69,6 +70,10 @@ export const userService = {
 
     if (data.name) {
       updateData.name = data.name;
+    }
+
+    if (data.profileUrl !== undefined) {
+      updateData.profileUrl = data.profileUrl;
     }
 
     if (role === "student") {
