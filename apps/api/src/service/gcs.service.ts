@@ -94,13 +94,15 @@ export async function getSignedUploadUrl(
     extensionHeaders["Content-Length"] = String(contentLength);
   }
 
-  const [url] = await getBucket().file(key).getSignedUrl({
-    version: "v4",
-    action: "write",
-    expires: Date.now() + expiresInSecs * 1000,
-    contentType,
-    ...(Object.keys(extensionHeaders).length > 0 ? { extensionHeaders } : {}),
-  });
+  const [url] = await getBucket()
+    .file(key)
+    .getSignedUrl({
+      version: "v4",
+      action: "write",
+      expires: Date.now() + expiresInSecs * 1000,
+      contentType,
+      ...(Object.keys(extensionHeaders).length > 0 ? { extensionHeaders } : {}),
+    });
 
   return url;
 }
