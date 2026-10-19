@@ -83,11 +83,6 @@ const router = Router();
  *       401:
  *         description: Unauthorized
  */
-router.post(
-  "/presigned-url",
-  authMiddleware,
-  requireActiveAccount,
-  uploadController.getUploadUrl
-);
+router.post("/presigned-url", authMiddleware, requireActiveAccount, uploadController.getUploadUrl);
 
 export const uploadRouter = router;

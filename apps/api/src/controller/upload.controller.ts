@@ -12,10 +12,11 @@ import {
   getSignedUploadUrl,
 } from "../service/gcs.service.js";
 
-const ContentTypeSchema = z.string().refine(
-  (type) => (ALLOWED_IMAGE_TYPES as readonly string[]).includes(type),
-  { message: "Invalid file type. Only JPEG, PNG, WEBP, and GIF are allowed." }
-);
+const ContentTypeSchema = z
+  .string()
+  .refine((type) => (ALLOWED_IMAGE_TYPES as readonly string[]).includes(type), {
+    message: "Invalid file type. Only JPEG, PNG, WEBP, and GIF are allowed.",
+  });
 
 const GetUploadUrlSchema = z
   .object({
