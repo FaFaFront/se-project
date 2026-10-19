@@ -1,5 +1,18 @@
+import type { ClassroomStatus } from "@prisma/client";
 import { ForbiddenError, NotFoundError } from "../common/errors/app-error.js";
-import { classroomRepository } from "../repository/classroom.repository.js";
+import {
+  classroomRepository,
+  type ClassroomListFilter,
+} from "../repository/classroom.repository.js";
+
+export type ClassroomListItem = {
+  id: string;
+  student: { id: string; name: string | null; profileUrl: string | null };
+  subject: { id: string; name: string };
+  pricePerHour: number;
+  status: ClassroomStatus;
+  createdAt: string;
+};
 
 function mapParticipant(participant: {
   id: string;
@@ -14,6 +27,22 @@ function mapParticipant(participant: {
 }
 
 export const classroomService = {
+  async listTutorClassrooms(
+    tutorId: string,
+    filter: ClassroomListFilter
+  ): Promise<ClassroomListItem[]> {
+    const classrooms = await classroomRepository.findByTutor(tutorId, filter);
+
+    return classrooms.map((classroom) => ({
+      id: classroom.id,
+      student: classroom.student,
+      subject: classroom.subject,
+      pricePerHour: Number(classroom.pricePerHour),
+      status: classroom.status,
+      createdAt: classroom.createdAt.toISOString(),
+    }));
+  },
+
   async getClassroomDetail(classroomId: string, viewerId: string) {
     const classroom = await classroomRepository.findDetailById(classroomId);
 
@@ -33,7 +62,7 @@ export const classroomService = {
         ...commonDetail,
         viewerRole: "tutor" as const,
         participant: mapParticipant(classroom.student),
-        createdAt: classroom.createdAt,
+        createdAt: classroom.createdAt.toISOString(),
       };
     }
 
