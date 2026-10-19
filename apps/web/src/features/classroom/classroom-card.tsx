@@ -4,13 +4,7 @@ import { BookOpen, CalendarDays } from "lucide-react";
 import { ProfileAvatar } from "@/features/profile/profile-avatar";
 import { formatCurrency } from "@/features/profile/profile-details";
 import { cn } from "@/lib/utils";
-import type { ClassroomListItem, ClassroomStatus } from "@/types/classroom";
-
-// Keep in sync with the status filter options so tutors see one term per state.
-export const CLASSROOM_STATUS_LABEL: Record<ClassroomStatus, string> = {
-  active: "Active",
-  completed: "Completed",
-};
+import { CLASSROOM_STATUS_LABEL, type ClassroomListItem } from "@/types/classroom";
 
 /** Students may not have set a name yet; never fall back to their email. */
 const UNNAMED_STUDENT = "Unnamed student";

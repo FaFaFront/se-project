@@ -5,8 +5,11 @@ import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { CLASSROOM_STATUS_LABEL } from "@/features/classroom/classroom-card";
-import type { ClassroomListQuery, ClassroomStatusFilter } from "@/types/classroom";
+import {
+  CLASSROOM_STATUS_LABEL,
+  type ClassroomListQuery,
+  type ClassroomStatusFilter,
+} from "@/types/classroom";
 import type { Subject } from "@/types/subject";
 
 const STATUS_OPTIONS: { label: string; value: ClassroomStatusFilter }[] = [

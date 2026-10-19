@@ -107,7 +107,11 @@ function TutorClassroomList() {
 
   const isBusy = isLoading || isSearchPending;
   const isDefault = isDefaultQuery(query);
-  const clearFilters = () => setQuery(INITIAL_QUERY);
+  const clearFilters = () => {
+    setQuery(INITIAL_QUERY);
+    // Skip the debounce so the cleared filters aren't sent with the old search first.
+    setDebouncedSearch(INITIAL_QUERY.search);
+  };
 
   return (
     <div className="gap-xl flex flex-col">
@@ -217,8 +221,9 @@ function EmptyState({ query, onShowAll, onClear }: EmptyStateProps) {
 }
 
 /**
- * My Classroom entry point. The route is open to both roles (the detail page
- * under it is shared), so the tutor-only list is gated here by role.
+ * My Classroom entry point. The /classroom prefix is open to both roles (the
+ * detail route under it is meant for tutors and students alike, though it is
+ * only a placeholder for now), so the tutor-only list is gated here by role.
  */
 export function ClassroomListPanel() {
   const { profile } = useAuth();
