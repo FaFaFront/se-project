@@ -1,6 +1,10 @@
 import { Router } from "express";
+import {
+  authMiddleware,
+  requireActiveAccount,
+  requireRole,
+} from "../common/middleware/auth.middleware.js";
 import { classroomController } from "../controller/classroom.controller.js";
-import { authMiddleware, requireActiveAccount } from "../common/middleware/auth.middleware.js";
 
 export const classroomRouter = Router();
 
@@ -8,6 +12,35 @@ export const classroomRouter = Router();
  * @swagger
  * components:
  *   schemas:
+ *     CreateClassroomRequest:
+ *       type: object
+ *       additionalProperties: false
+ *       required: [conversationId, subjectId]
+ *       properties:
+ *         conversationId:
+ *           type: string
+ *           format: uuid
+ *           description: Conversation identifying the student (the other participant).
+ *         subjectId:
+ *           type: string
+ *           format: uuid
+ *           description: Subject assigned to the authenticated tutor.
+ *         pricePerHour:
+ *           type: number
+ *           minimum: 0.01
+ *           description: Classroom-specific price override. Defaults to the tutor's hourlyRate when omitted.
+ *     Classroom:
+ *       type: object
+ *       additionalProperties: false
+ *       required: [id, tutorId, studentId, subjectId, pricePerHour, status, createdAt]
+ *       properties:
+ *         id: { type: string, format: uuid }
+ *         tutorId: { type: string, format: uuid }
+ *         studentId: { type: string, format: uuid }
+ *         subjectId: { type: string, format: uuid }
+ *         pricePerHour: { type: number, example: 25 }
+ *         status: { type: string, enum: [active, completed] }
+ *         createdAt: { type: string, format: date-time }
  *     ClassroomListItem:
  *       type: object
  *       additionalProperties: false
@@ -72,10 +105,7 @@ export const classroomRouter = Router();
  * /classrooms:
  *   get:
  *     summary: List the authenticated tutor's classrooms
- *     description: >
- *       Returns only classrooms owned by the tutor in the access token; a tutor ID is never
- *       accepted from the client. Search, subject, and status filters combine (AND). Results
- *       are ordered newest first (createdAt desc, then id). An empty array means no match.
+ *     description: Returns the tutor's classrooms, with optional combined search, subject, and status filters.
  *     tags: [Classrooms]
  *     security:
  *       - bearerAuth: []
@@ -83,14 +113,13 @@ export const classroomRouter = Router();
  *       - in: query
  *         name: search
  *         schema: { type: string, maxLength: 100 }
- *         description: Trimmed, case-insensitive match against the student's name or the subject name
+ *         description: Case-insensitive match against the student's or subject's name
  *       - in: query
  *         name: subjectId
  *         schema: { type: string, format: uuid }
  *       - in: query
  *         name: status
  *         schema: { type: string, enum: [active, completed, all] }
- *         description: Omit or pass "all" to include every status
  *     responses:
  *       200:
  *         description: Classrooms retrieved successfully
@@ -98,23 +127,59 @@ export const classroomRouter = Router();
  *           application/json:
  *             schema:
  *               type: object
- *               required: [success, message, data]
  *               properties:
  *                 success: { type: boolean, example: true }
  *                 message: { type: string, example: Classrooms retrieved successfully. }
  *                 data:
  *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/ClassroomListItem'
+ *                   items: { $ref: '#/components/schemas/ClassroomListItem' }
  *       400: { description: Invalid query parameters }
- *       401: { description: Missing or invalid JWT, or the authenticated account was deleted }
- *       403: { description: The authenticated user is not a tutor, or the account is inactive }
+ *       401: { description: Missing or invalid authentication }
+ *       403: { description: Only tutors may list classrooms }
  */
 classroomRouter.get(
   "/",
   authMiddleware,
   requireActiveAccount,
   classroomController.listTutorClassrooms
+);
+
+/**
+ * @swagger
+ * /classrooms:
+ *   post:
+ *     summary: Create a classroom from a student conversation
+ *     description: The student is derived from the conversation. The subject must be assigned to the tutor. An omitted price uses the tutor's default hourly rate.
+ *     tags: [Classrooms]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/CreateClassroomRequest' }
+ *     responses:
+ *       201:
+ *         description: Classroom created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Classroom created }
+ *                 data: { $ref: '#/components/schemas/Classroom' }
+ *       400: { description: Invalid classroom data }
+ *       401: { description: Missing or invalid authentication }
+ *       403: { description: Only active tutors may create classrooms }
+ *       404: { description: Conversation not found }
+ */
+classroomRouter.post(
+  "/",
+  authMiddleware,
+  requireActiveAccount,
+  requireRole("tutor"),
+  classroomController.createClassroom
 );
 
 /**

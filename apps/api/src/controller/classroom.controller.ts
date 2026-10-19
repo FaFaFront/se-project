@@ -1,5 +1,5 @@
-import type { NextFunction, Response } from "express";
 import { ClassroomStatus, Role } from "@prisma/client";
+import type { NextFunction, Response } from "express";
 import { z } from "zod";
 import type { AuthRequest } from "../common/middleware/auth.middleware.js";
 import { ForbiddenError, UnauthorizedError } from "../common/errors/app-error.js";
@@ -30,6 +30,14 @@ const classroomListQuerySchema = z.object({
     .transform((value) => (value === "all" || value === "" ? undefined : value)),
 });
 
+const createClassroomSchema = z
+  .object({
+    conversationId: z.string().uuid("Conversation ID must be a valid UUID"),
+    subjectId: z.string().uuid("Subject ID must be a valid UUID"),
+    pricePerHour: z.number().positive("Price per hour must be a positive number").optional(),
+  })
+  .strict();
+
 /** The tutor ID always comes from the verified token, never from the request. */
 function tutorId(req: AuthRequest) {
   if (!req.user) throw new UnauthorizedError("User not found in request");
@@ -50,6 +58,17 @@ export const classroomController = {
         .set("Cache-Control", "no-store")
         .status(200)
         .json(successResponse(classrooms, "Classrooms retrieved successfully."));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async createClassroom(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) throw new UnauthorizedError();
+      const input = createClassroomSchema.parse(req.body);
+      const classroom = await classroomService.createClassroom(req.user.id, input);
+      res.status(201).json(successResponse(classroom, "Classroom created"));
     } catch (error) {
       next(error);
     }

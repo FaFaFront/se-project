@@ -32,6 +32,19 @@ export type TutorRatingRow = { tutorId: string; averageRating: number | null; re
 export type TutorPopularityRow = { tutorId: string; studentCount: number };
 
 export const tutorRepository = {
+  async findSubjectAssignment(tutorId: string, subjectId: string) {
+    return prisma.tutorSubject.findUnique({
+      where: { tutorId_subjectId: { tutorId, subjectId } },
+    });
+  },
+
+  async findHourlyRate(tutorId: string) {
+    return prisma.user.findUnique({
+      where: { id: tutorId },
+      select: { hourlyRate: true },
+    });
+  },
+
   /** Active tutors with a completed profile, narrowed by the given filters. */
   async findActive(filter: TutorListFilter): Promise<TutorListRow[]> {
     const { search, subjectId, minPrice, maxPrice } = filter;

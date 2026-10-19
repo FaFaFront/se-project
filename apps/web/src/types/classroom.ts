@@ -58,3 +58,19 @@ export type StudentClassroomDetail = ClassroomDetailBase & {
 };
 
 export type ClassroomDetail = TutorClassroomDetail | StudentClassroomDetail;
+
+export type Classroom = {
+  id: string;
+  tutorId: string;
+  studentId: string;
+  subjectId: string;
+  pricePerHour: number;
+  status: ClassroomStatus;
+  createdAt: string;
+};
+
+export type CreateClassroomRequest = {
+  conversationId: string;
+  subjectId: string;
+  pricePerHour?: number;
+};

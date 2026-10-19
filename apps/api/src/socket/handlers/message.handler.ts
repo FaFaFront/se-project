@@ -13,7 +13,11 @@ const messageSendSchema = z
   })
   .strict();
 
-export function registerMessageHandlers(io: AppSocketServer, socket: AppSocket): void {
+export function registerMessageHandlers(
+  io: AppSocketServer,
+  socket: AppSocket,
+  canBroadcast: () => boolean
+): void {
   socket.on(SOCKET_EVENTS.messageSend, async (payload, acknowledge) => {
     const respond = typeof acknowledge === "function" ? acknowledge : undefined;
 
@@ -30,13 +34,29 @@ export function registerMessageHandlers(io: AppSocketServer, socket: AppSocket):
         return;
       }
 
+      if (!canBroadcast()) {
+        respond?.(
+          createSocketAckFailure(
+            "INTERNAL_ERROR",
+            "Chat is temporarily unavailable. Please try again shortly."
+          )
+        );
+        return;
+      }
+
       const message = await conversationService.sendMessage(
         conversationId,
         socket.data.user.id,
         text
       );
-      io.to(roomName).emit(SOCKET_EVENTS.messageNew, { message });
-      respond?.({ success: true, data: { message } });
+      // Fanout is best-effort: the Redis adapter does not await PUBLISH. The
+      // success ACK confirms database persistence, not delivery to every socket.
+      try {
+        io.to(roomName).emit(SOCKET_EVENTS.messageNew, { message });
+      } catch {
+        console.error("Message broadcast failed after persistence");
+      }
+      respond?.({ success: true, data: { message, delivery: "persisted" } });
     } catch (error) {
       respond?.(mapMessageError(error));
     }

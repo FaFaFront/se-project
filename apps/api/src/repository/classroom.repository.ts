@@ -22,7 +22,18 @@ const classroomListSelect = {
   },
 } as const;
 
+const classroomSelect = {
+  id: true,
+  tutorId: true,
+  studentId: true,
+  subjectId: true,
+  pricePerHour: true,
+  status: true,
+  createdAt: true,
+} as const satisfies Prisma.ClassroomSelect;
+
 export type ClassroomListRow = Prisma.ClassroomGetPayload<{ select: typeof classroomListSelect }>;
+export type ClassroomRow = Prisma.ClassroomGetPayload<{ select: typeof classroomSelect }>;
 
 export type ClassroomListFilter = {
   search?: string;
@@ -85,6 +96,18 @@ export const classroomRepository = {
           },
         },
       },
+    });
+  },
+
+  async create(data: {
+    tutorId: string;
+    studentId: string;
+    subjectId: string;
+    pricePerHour: Prisma.Decimal;
+  }): Promise<ClassroomRow> {
+    return prisma.classroom.create({
+      data,
+      select: classroomSelect,
     });
   },
 };
