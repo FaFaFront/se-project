@@ -69,6 +69,12 @@ export type Classroom = {
   createdAt: string;
 };
 
+/** Body of `PATCH /classrooms/:classroomId`; both fields are required. */
+export type UpdateClassroomRequest = {
+  subjectId: string;
+  pricePerHour: number;
+};
+
 export type CreateClassroomRequest = {
   conversationId: string;
   subjectId: string;

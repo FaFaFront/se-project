@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, CircleAlert } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useAuth } from "@/contexts/auth-context";
 import { ProfileAvatar } from "@/features/profile/profile-avatar";
+import { ApiError, apiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
-import type { TutorClassroomDetail } from "@/types/classroom";
+import type { TutorClassroomDetail, UpdateClassroomRequest } from "@/types/classroom";
+import type { Subject } from "@/types/subject";
 import { ClassroomErrorState } from "./classroom-detail";
 import { useClassroomDetail } from "./use-classroom-detail";
 
@@ -52,24 +55,66 @@ function NotEditable({ classroomId, message }: { classroomId: string; message: s
   );
 }
 
-function EditForm({ classroom }: { classroom: TutorClassroomDetail }) {
-  const { profile } = useAuth();
-  const [subjectId, setSubjectId] = useState(classroom.subject.id);
+function EditForm({
+  classroom,
+  subjects,
+}: {
+  classroom: TutorClassroomDetail;
+  subjects: Subject[];
+}) {
+  const router = useRouter();
+  // The API only accepts subjects still assigned to the tutor, so a subject removed from the
+  // profile can't be kept: start empty and ask for a new pick instead of submitting a hidden value.
+  const currentSubjectAssigned = subjects.some((subject) => subject.id === classroom.subject.id);
+  const [subjectId, setSubjectId] = useState(currentSubjectAssigned ? classroom.subject.id : "");
   const [price, setPrice] = useState(String(classroom.pricePerHour));
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>(
+    currentSubjectAssigned
+      ? {}
+      : {
+          subjectId: `${classroom.subject.name} is no longer one of your subjects. Please select another.`,
+        }
+  );
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+  const submitting = useRef(false);
 
   const detailHref = `/classroom/${encodeURIComponent(classroom.id)}`;
-  const subjects = profile?.subjects ?? [];
   const participantName = classroom.participant.name?.trim() || "Profile not completed";
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const { errors } = validate(subjectId, price);
+    if (submitting.current) return;
+
+    const { errors, parsedPrice } = validate(subjectId, price);
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
-    // TODO: send PUT /classrooms/:classroomId with { subjectId, pricePerHour: parsedPrice },
-    // then router.push(detailHref) and router.refresh().
+    submitting.current = true;
+    setPending(true);
+    setError("");
+    try {
+      const payload: UpdateClassroomRequest = { subjectId, pricePerHour: parsedPrice };
+      await apiClient.patch<TutorClassroomDetail>(
+        `/classrooms/${encodeURIComponent(classroom.id)}`,
+        payload
+      );
+      router.push(detailHref);
+      router.refresh();
+    } catch (err) {
+      const status = err instanceof ApiError ? err.status : undefined;
+      setError(
+        status === 404
+          ? "This classroom no longer exists or isn't assigned to you."
+          : status === 409
+            ? "This classroom has been completed and can no longer be edited."
+            : err instanceof Error
+              ? err.message
+              : "Unable to save this classroom."
+      );
+      submitting.current = false;
+      setPending(false);
+    }
   }
 
   return (
@@ -106,7 +151,7 @@ function EditForm({ classroom }: { classroom: TutorClassroomDetail }) {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <fieldset disabled={pending} className="grid gap-4 sm:grid-cols-2">
             <Select
               label="Subject"
               placeholder={subjects.length > 0 ? "Select a subject" : "No subjects assigned"}
@@ -116,7 +161,7 @@ function EditForm({ classroom }: { classroom: TutorClassroomDetail }) {
                 setSubjectId(value);
                 setFieldErrors((current) => ({ ...current, subjectId: undefined }));
               }}
-              disabled={subjects.length === 0}
+              disabled={pending || subjects.length === 0}
               error={Boolean(fieldErrors.subjectId)}
               errorMessage={fieldErrors.subjectId}
               className="w-full"
@@ -136,17 +181,32 @@ function EditForm({ classroom }: { classroom: TutorClassroomDetail }) {
               error={Boolean(fieldErrors.pricePerHour)}
               errorMessage={fieldErrors.pricePerHour}
             />
-          </div>
+          </fieldset>
 
           <p className="text-sm text-ink/60">
             This price applies to this classroom only. Your default hourly rate stays the same.
           </p>
 
+          {error && (
+            <p role="alert" className="text-sm text-error">
+              {error}
+            </p>
+          )}
+
           <div className="flex flex-wrap justify-end gap-3 border-t border-hairline pt-6">
-            <Link href={detailHref} className={buttonVariants({ variant: "outline" })}>
+            <Link
+              href={detailHref}
+              aria-disabled={pending}
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                pending && "pointer-events-none opacity-50"
+              )}
+            >
               Cancel
             </Link>
-            <Button type="submit">Save changes</Button>
+            <Button type="submit" isLoading={pending}>
+              Save changes
+            </Button>
           </div>
         </form>
       </section>
@@ -156,8 +216,11 @@ function EditForm({ classroom }: { classroom: TutorClassroomDetail }) {
 
 export function ClassroomEditForm({ classroomId }: { classroomId: string }) {
   const { state, retry } = useClassroomDetail(classroomId);
+  const { profile, isLoading: profileLoading } = useAuth();
 
-  if (state.status === "loading") {
+  // Wait for the profile too: the subject options come from it, and rendering early would
+  // show "No subjects assigned" and pick the initial subject against an empty list.
+  if (state.status === "loading" || profileLoading) {
     return (
       <div className="mx-auto max-w-3xl" role="status" aria-live="polite">
         <div className="h-5 w-40 animate-pulse rounded bg-surface-lavender" />
@@ -189,5 +252,5 @@ export function ClassroomEditForm({ classroomId }: { classroomId: string }) {
     );
   }
 
-  return <EditForm classroom={classroom} />;
+  return <EditForm classroom={classroom} subjects={profile?.subjects ?? []} />;
 }
