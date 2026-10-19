@@ -214,8 +214,8 @@ classroomRouter.post(
  *                     propertyName: viewerRole
  *       400: { description: Malformed classroom ID }
  *       401: { description: Missing or invalid authentication }
- *       403: { description: The user is not assigned to the classroom }
- *       404: { description: Classroom not found }
+ *       403: { description: The user's account is not active }
+ *       404: { description: Classroom not found, or the user is not assigned to it }
  */
 classroomRouter.get(
   "/:classroomId",

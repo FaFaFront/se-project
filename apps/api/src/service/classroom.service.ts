@@ -150,7 +150,8 @@ export const classroomService = {
       };
     }
 
-    throw new ForbiddenError("You do not have access to this classroom");
+    // Same 404 as a missing classroom so non-participants can't probe which IDs exist.
+    throw new NotFoundError("Classroom not found");
   },
 
   async deactivate(classroomId: string, userId: string, role: string) {

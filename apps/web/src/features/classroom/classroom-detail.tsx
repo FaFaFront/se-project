@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, BookOpen, CalendarDays, CircleAlert, Clock3 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { ProfileAvatar } from "@/features/profile/profile-avatar";
+import { formatCurrency } from "@/features/profile/profile-details";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import type { ClassroomDetail as ClassroomDetailData } from "@/types/classroom";
@@ -13,23 +15,10 @@ type LoadState =
   | { status: "ready"; classroom: ClassroomDetailData }
   | { status: "error"; kind: "not-found" | "forbidden" | "general"; message: string };
 
-function ParticipantAvatar({ name, profileUrl }: { name: string; profileUrl: string | null }) {
-  if (profileUrl) {
-    return (
-      <div
-        role="img"
-        aria-label={`${name}'s profile image`}
-        className="size-16 shrink-0 rounded-full bg-cover bg-center ring-1 ring-hairline"
-        style={{ backgroundImage: `url(${JSON.stringify(profileUrl).slice(1, -1)})` }}
-      />
-    );
-  }
-
-  return (
-    <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xl font-semibold text-primary">
-      {name.charAt(0).toUpperCase()}
-    </div>
-  );
+function formatCreatedDate(isoDate: string): string {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(date);
 }
 
 function ErrorState({
@@ -88,8 +77,10 @@ export function ClassroomDetail({ classroomId }: { classroomId: string }) {
         if (!active) return;
 
         const status = error instanceof ApiError ? error.status : undefined;
-        const kind = status === 404 ? "not-found" : status === 403 ? "forbidden" : "general";
-        const fallback =
+        // A malformed ID (400) can never succeed on retry, so treat it like a missing classroom.
+        const kind =
+          status === 404 || status === 400 ? "not-found" : status === 403 ? "forbidden" : "general";
+        const message =
           kind === "not-found"
             ? "The classroom may have been removed or the link may be incorrect."
             : kind === "forbidden"
@@ -99,7 +90,7 @@ export function ClassroomDetail({ classroomId }: { classroomId: string }) {
         setState({
           status: "error",
           kind,
-          message: error instanceof Error ? error.message : fallback,
+          message,
         });
       }
     );
@@ -163,9 +154,10 @@ export function ClassroomDetail({ classroomId }: { classroomId: string }) {
           <div>
             <p className="text-sm font-semibold text-ink/60">{participantLabel}</p>
             <div className="mt-3 flex min-w-0 items-center gap-4">
-              <ParticipantAvatar
+              <ProfileAvatar
+                src={classroom.participant.profileUrl}
                 name={participantName}
-                profileUrl={classroom.participant.profileUrl}
+                size={64}
               />
               <div className="min-w-0">
                 <p className="break-words text-lg font-semibold text-ink">{participantName}</p>
@@ -188,10 +180,7 @@ export function ClassroomDetail({ classroomId }: { classroomId: string }) {
                 <Clock3 aria-hidden="true" className="size-4" /> Price per hour
               </dt>
               <dd className="mt-2 font-semibold text-ink">
-                {new Intl.NumberFormat("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                }).format(classroom.pricePerHour)}
+                {formatCurrency(classroom.pricePerHour)}
               </dd>
             </div>
             {classroom.viewerRole === "tutor" && (
@@ -200,9 +189,9 @@ export function ClassroomDetail({ classroomId }: { classroomId: string }) {
                   <CalendarDays aria-hidden="true" className="size-4" /> Created
                 </dt>
                 <dd className="mt-2 font-semibold text-ink">
-                  {new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(
-                    new Date(classroom.createdAt)
-                  )}
+                  <time dateTime={classroom.createdAt}>
+                    {formatCreatedDate(classroom.createdAt)}
+                  </time>
                 </dd>
               </div>
             )}
