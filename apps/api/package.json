@@ -20,6 +20,7 @@
     "db.seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@google-cloud/storage": "^8.4.0",
     "@prisma/client": "^6.1.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
