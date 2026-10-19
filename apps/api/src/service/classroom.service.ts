@@ -7,6 +7,7 @@ import {
 } from "../common/errors/app-error.js";
 import {
   classroomRepository,
+  type ClassroomDetailRow,
   type ClassroomListFilter,
 } from "../repository/classroom.repository.js";
 import { conversationRepository } from "../repository/conversation.repository.js";
@@ -27,6 +28,11 @@ type CreateClassroomInput = {
   pricePerHour?: number;
 };
 
+type UpdateClassroomInput = {
+  subjectId: string;
+  pricePerHour: number;
+};
+
 function mapParticipant(participant: {
   id: string;
   name: string | null;
@@ -39,15 +45,25 @@ function mapParticipant(participant: {
   };
 }
 
+// Another tutor's classroom is reported as missing, like GET /:classroomId, so its existence isn't leaked.
 async function requireAssignedClassroom(classroomId: string, tutorId: string) {
   const classroom = await classroomRepository.findById(classroomId);
-  if (!classroom) {
+  if (!classroom || classroom.tutorId !== tutorId) {
     throw new NotFoundError("Classroom not found");
   }
-  if (classroom.tutorId !== tutorId) {
-    throw new ForbiddenError("Only the assigned tutor can deactivate this classroom");
-  }
   return classroom;
+}
+
+function mapTutorClassroomDetail(classroom: ClassroomDetailRow) {
+  return {
+    id: classroom.id,
+    subject: classroom.subject,
+    pricePerHour: Number(classroom.pricePerHour),
+    status: classroom.status,
+    viewerRole: "tutor" as const,
+    participant: mapParticipant(classroom.student),
+    createdAt: classroom.createdAt.toISOString(),
+  };
 }
 
 export const classroomService = {
@@ -126,25 +142,16 @@ export const classroomService = {
       throw new NotFoundError("Classroom not found");
     }
 
-    const commonDetail = {
-      id: classroom.id,
-      subject: classroom.subject,
-      pricePerHour: Number(classroom.pricePerHour),
-      status: classroom.status,
-    };
-
     if (classroom.tutorId === viewerId) {
-      return {
-        ...commonDetail,
-        viewerRole: "tutor" as const,
-        participant: mapParticipant(classroom.student),
-        createdAt: classroom.createdAt.toISOString(),
-      };
+      return mapTutorClassroomDetail(classroom);
     }
 
     if (classroom.studentId === viewerId) {
       return {
-        ...commonDetail,
+        id: classroom.id,
+        subject: classroom.subject,
+        pricePerHour: Number(classroom.pricePerHour),
+        status: classroom.status,
         viewerRole: "student" as const,
         participant: mapParticipant(classroom.tutor),
       };
@@ -152,6 +159,34 @@ export const classroomService = {
 
     // Same 404 as a missing classroom so non-participants can't probe which IDs exist.
     throw new NotFoundError("Classroom not found");
+  },
+
+  /** Changes only the subject and this classroom's price; the tutor's default rate is untouched. */
+  async updateClassroom(classroomId: string, tutorId: string, input: UpdateClassroomInput) {
+    const classroom = await requireAssignedClassroom(classroomId, tutorId);
+    if (classroom.status !== ClassroomStatus.active) {
+      throw new ConflictError("Completed classrooms cannot be edited");
+    }
+
+    const tutorSubject = await tutorRepository.findSubjectAssignment(tutorId, input.subjectId);
+    if (!tutorSubject) {
+      throw new BadRequestError("Selected subject is not assigned to this tutor");
+    }
+
+    const { count } = await classroomRepository.updateActiveDetails(classroomId, tutorId, {
+      subjectId: input.subjectId,
+      pricePerHour: new Prisma.Decimal(input.pricePerHour),
+    });
+    if (count === 0) {
+      // Deactivated between the check above and the update.
+      throw new ConflictError("Classroom changed during the update. Please reload and try again");
+    }
+
+    const updated = await classroomRepository.findDetailById(classroomId);
+    if (!updated) {
+      throw new NotFoundError("Classroom not found");
+    }
+    return mapTutorClassroomDetail(updated);
   },
 
   async deactivate(classroomId: string, userId: string, role: string) {
