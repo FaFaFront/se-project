@@ -18,8 +18,10 @@ export function createSocketServer(httpServer: HttpServer): AppSocketServer {
     io.adapter(createAdapter(redis.publisher, redis.subscriber, { key: "tutorist:socket.io" }));
   }
 
+  const canBroadcast = () => !redis || redis.isReady();
+
   io.use(socketAuthMiddleware);
-  io.on("connection", (socket) => registerConnectionHandlers(io, socket));
+  io.on("connection", (socket) => registerConnectionHandlers(io, socket, canBroadcast));
 
   return io;
 }

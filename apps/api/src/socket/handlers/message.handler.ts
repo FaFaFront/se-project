@@ -13,7 +13,11 @@ const messageSendSchema = z
   })
   .strict();
 
-export function registerMessageHandlers(io: AppSocketServer, socket: AppSocket): void {
+export function registerMessageHandlers(
+  io: AppSocketServer,
+  socket: AppSocket,
+  canBroadcast: () => boolean
+): void {
   socket.on(SOCKET_EVENTS.messageSend, async (payload, acknowledge) => {
     const respond = typeof acknowledge === "function" ? acknowledge : undefined;
 
@@ -25,6 +29,16 @@ export function registerMessageHandlers(io: AppSocketServer, socket: AppSocket):
           createSocketAckFailure(
             "NOT_IN_CONVERSATION_ROOM",
             "Join this conversation before sending a message"
+          )
+        );
+        return;
+      }
+
+      if (!canBroadcast()) {
+        respond?.(
+          createSocketAckFailure(
+            "INTERNAL_ERROR",
+            "Chat is temporarily unavailable. Please try again shortly."
           )
         );
         return;
