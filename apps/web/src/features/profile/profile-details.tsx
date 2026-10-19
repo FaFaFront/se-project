@@ -1,14 +1,22 @@
 "use client";
 
-import { Mail } from "lucide-react";
+import { LogOut, Mail, Pencil } from "lucide-react";
+import Link from "next/link";
 
-import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { ProfileAvatar } from "@/features/profile/profile-avatar";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types/user";
 
 export interface ProfileDetailsProps {
   profile: UserProfile;
   className?: string;
+  onLogout?: () => void;
+  isLoggingOut?: boolean;
+  onToggleAccountStatus?: () => void;
+  isStatusUpdating?: boolean;
+  statusError?: string | null;
+  statusMessage?: string | null;
 }
 
 const EMPTY = "Not set yet";
@@ -50,8 +58,18 @@ function Field({ label, value }: { label: string; value?: string | null }) {
 }
 
 /** Read-only view of the signed-in user's profile. */
-export function ProfileDetails({ profile, className }: ProfileDetailsProps) {
+export function ProfileDetails({
+  profile,
+  className,
+  onLogout,
+  isLoggingOut,
+  onToggleAccountStatus,
+  isStatusUpdating,
+  statusError,
+  statusMessage,
+}: ProfileDetailsProps) {
   const isStudent = profile.role === "student";
+  const isActive = profile.accountStatus === "ACTIVE";
 
   return (
     <div className={cn("gap-base grid items-start lg:grid-cols-3", className)}>
@@ -77,6 +95,53 @@ export function ProfileDetails({ profile, className }: ProfileDetailsProps) {
         </p>
 
         <div className="border-hairline gap-lg mt-6 flex w-full flex-col border-t pt-6 text-left">
+          {!isStudent && (
+            <div className="rounded-xl border border-hairline bg-white p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col">
+                  <span className="text-ink/60 text-xs font-semibold tracking-wide uppercase">
+                    Account status
+                  </span>
+                  <span
+                    className={cn(
+                      "mt-1 text-sm font-semibold",
+                      isActive ? "text-success" : "text-error"
+                    )}
+                  >
+                    {isActive ? "Active" : "Inactive"}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  aria-label={isActive ? "Deactivate account" : "Activate account"}
+                  aria-pressed={isActive}
+                  disabled={!onToggleAccountStatus || isStatusUpdating}
+                  onClick={onToggleAccountStatus}
+                  className={cn(
+                    "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60",
+                    isActive ? "bg-success" : "bg-ink/20"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "absolute left-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200",
+                      isActive ? "translate-x-5" : "translate-x-0"
+                    )}
+                  />
+                </button>
+              </div>
+
+              {statusError && <p className="text-error mt-3 text-xs font-medium">{statusError}</p>}
+              {statusMessage && (
+                <p className="text-success mt-3 text-xs font-medium">{statusMessage}</p>
+              )}
+              {isStatusUpdating && (
+                <p className="text-ink/60 mt-3 text-xs font-medium">Updating account status…</p>
+              )}
+            </div>
+          )}
+
           <MetaRow label="Wallet balance" value={formatCurrency(profile.walletBalance)} />
           <MetaRow label="Member since" value={formatJoinedDate(profile.createdAt)} />
           {!isStudent && (
@@ -86,6 +151,22 @@ export function ProfileDetails({ profile, className }: ProfileDetailsProps) {
                 profile.hourlyRate === null ? EMPTY : `${formatCurrency(profile.hourlyRate)} / hour`
               }
             />
+          )}
+          <Link href="/profile/edit" className={cn(buttonVariants(), "w-full")}>
+            <Pencil aria-hidden="true" className="size-4 shrink-0" />
+            Edit Profile
+          </Link>
+          {onLogout && (
+            <Button
+              type="button"
+              variant="outline"
+              className="text-error border-error w-full"
+              onClick={onLogout}
+              isLoading={isLoggingOut}
+            >
+              <LogOut aria-hidden="true" className="size-4 shrink-0" />
+              Log out
+            </Button>
           )}
         </div>
       </section>

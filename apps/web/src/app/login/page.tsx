@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { LoginPanel } from "@/components/auth/login-panel";
+import { LoginPanel } from "@/features/auth/login-panel";
 
 export const metadata: Metadata = {
   title: "Log in | Tutorist",

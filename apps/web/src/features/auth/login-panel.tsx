@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { LoginForm, type LoginFormValues } from "@/components/auth/login-form";
+import { LoginForm, type LoginFormValues } from "@/features/auth/login-form";
 import { apiClient } from "@/lib/api-client";
 import { saveSession } from "@/lib/auth-storage";
 import type { LoginResponse } from "@/types/auth";

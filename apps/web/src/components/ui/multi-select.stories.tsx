@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { expect, fn, userEvent, within } from "storybook/test";
 import { MultiSelect } from "@/components/ui/multi-select";
 
 const options = ["Category 1", "Category 2", "Category 3", "Category 4"];
@@ -48,6 +49,29 @@ export const WithError: Story = {
     defaultValue: ["Category 1", "Category 2"],
     error: true,
     errorMessage: "Something went wrong",
+  },
+};
+
+export const SubjectOptions: Story = {
+  args: {
+    label: "Subjects you teach",
+    placeholder: "Select subjects",
+    options: [
+      { label: "Mathematics", value: "6f050b29-f070-49ae-b2ab-91d96a469f88" },
+      { label: "Physics", value: "9477ccf6-21e6-433d-b042-96dfba1056ac" },
+    ],
+    onValueChange: fn(),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /Subjects you teach/ }));
+
+    const body = within(canvasElement.ownerDocument.body);
+    await userEvent.click(await body.findByRole("menuitemcheckbox", { name: "Mathematics" }));
+
+    await expect(args.onValueChange).toHaveBeenLastCalledWith([
+      "6f050b29-f070-49ae-b2ab-91d96a469f88",
+    ]);
   },
 };
 

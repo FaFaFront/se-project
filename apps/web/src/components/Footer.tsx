@@ -42,7 +42,7 @@ export function Footer() {
         <div className="h-0 w-full border-t border-white/20" />
 
         <p className="flex h-[19px] w-full items-center justify-center text-center text-sm font-normal leading-[135%]">
-          © 2026 tutorist. All rights reserved.
+          © 2026 tutorists. All rights reserved.
         </p>
       </div>
 

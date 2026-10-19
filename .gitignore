@@ -21,3 +21,5 @@ apps/api/generated/
 
 # Design specs (local only)
 docs/superpowers/
+
+SESSION.md
