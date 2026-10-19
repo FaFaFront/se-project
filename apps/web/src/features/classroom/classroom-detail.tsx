@@ -34,7 +34,7 @@ function ErrorState({
     kind === "not-found"
       ? "Classroom not found"
       : kind === "forbidden"
-        ? "You cannot view this classroom"
+        ? "Your account is inactive"
         : "We couldn't load this classroom";
 
   return (
@@ -84,7 +84,7 @@ export function ClassroomDetail({ classroomId }: { classroomId: string }) {
           kind === "not-found"
             ? "The classroom may have been removed or the link may be incorrect."
             : kind === "forbidden"
-              ? "Only the assigned tutor and student can access its details."
+              ? "Your account is inactive. Reactivate it to view classroom details."
               : "Please check your connection and try again.";
 
         setState({
