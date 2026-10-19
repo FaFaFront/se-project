@@ -33,6 +33,7 @@ const ROUTE_RULES: RouteRule[] = [
   { prefix: "/login", guest: true },
   { prefix: "/register", guest: true },
   { prefix: "/complete-profile", requireProfileComplete: false, redirectIfProfileComplete: true },
+  { prefix: "/balance/withdraw", allowRoles: ["tutor"] },
   { prefix: "/balance", allowRoles: ["student"] },
   { prefix: "/profile" },
   { prefix: "/classroom" },

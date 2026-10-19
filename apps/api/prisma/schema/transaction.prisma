@@ -2,6 +2,7 @@ enum TransactionType {
   topup
   session_charge
   earning
+  withdrawal
 }
 
 model Transaction {

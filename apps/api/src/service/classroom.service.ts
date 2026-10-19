@@ -1,5 +1,10 @@
 import { ClassroomStatus, Prisma, Role } from "@prisma/client";
-import { BadRequestError, ForbiddenError, NotFoundError } from "../common/errors/app-error.js";
+import {
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from "../common/errors/app-error.js";
 import {
   classroomRepository,
   type ClassroomListFilter,
@@ -32,6 +37,17 @@ function mapParticipant(participant: {
     name: participant.name,
     profileUrl: participant.profileUrl,
   };
+}
+
+async function requireAssignedClassroom(classroomId: string, tutorId: string) {
+  const classroom = await classroomRepository.findById(classroomId);
+  if (!classroom) {
+    throw new NotFoundError("Classroom not found");
+  }
+  if (classroom.tutorId !== tutorId) {
+    throw new ForbiddenError("Only the assigned tutor can deactivate this classroom");
+  }
+  return classroom;
 }
 
 export const classroomService = {
@@ -135,5 +151,24 @@ export const classroomService = {
     }
 
     throw new ForbiddenError("You do not have access to this classroom");
+  },
+
+  async deactivate(classroomId: string, userId: string, role: string) {
+    if (role !== Role.tutor) {
+      throw new ForbiddenError("Only tutors can deactivate classrooms");
+    }
+
+    const classroom = await requireAssignedClassroom(classroomId, userId);
+    if (classroom.status !== ClassroomStatus.completed) {
+      const { count } = await classroomRepository.completeActive(classroomId, userId);
+      if (count === 0) {
+        const current = await requireAssignedClassroom(classroomId, userId);
+        if (current.status !== ClassroomStatus.completed) {
+          throw new ConflictError("Classroom changed during deactivation. Please try again");
+        }
+      }
+    }
+
+    return { id: classroom.id, status: ClassroomStatus.completed };
   },
 };

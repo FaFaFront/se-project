@@ -2,13 +2,13 @@ import { ClassroomStatus, Role } from "@prisma/client";
 import type { NextFunction, Response } from "express";
 import { z } from "zod";
 import type { AuthRequest } from "../common/middleware/auth.middleware.js";
-import { ForbiddenError, UnauthorizedError } from "../common/errors/app-error.js";
+import { BadRequestError, ForbiddenError, UnauthorizedError } from "../common/errors/app-error.js";
 import { successResponse } from "../common/utils/response.js";
 import { classroomService } from "../service/classroom.service.js";
 
-const classroomParamsSchema = z.object({
-  classroomId: z.string().uuid("Classroom ID must be a valid UUID"),
-});
+const classroomParamsSchema = z
+  .object({ classroomId: z.string().uuid("Classroom ID must be a valid UUID") })
+  .strict();
 
 const classroomListQuerySchema = z.object({
   search: z
@@ -37,6 +37,8 @@ const createClassroomSchema = z
     pricePerHour: z.number().positive("Price per hour must be a positive number").optional(),
   })
   .strict();
+
+const deactivateBodySchema = z.object({}).strict().optional();
 
 /** The tutor ID always comes from the verified token, never from the request. */
 function tutorId(req: AuthRequest) {
@@ -87,6 +89,28 @@ export const classroomController = {
         .set("Cache-Control", "no-store")
         .status(200)
         .json(successResponse(classroom, "Classroom retrieved successfully"));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async deactivate(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError("User not found in request");
+      }
+
+      const { classroomId } = classroomParamsSchema.parse(req.params);
+      const hasBody =
+        Number(req.headers["content-length"] ?? 0) > 0 ||
+        req.headers["transfer-encoding"] !== undefined;
+      if (hasBody && !req.is("application/json")) {
+        throw new BadRequestError("Omit the request body or send an empty JSON object");
+      }
+      deactivateBodySchema.parse(req.body);
+
+      const result = await classroomService.deactivate(classroomId, req.user.id, req.user.role);
+      res.status(200).json(successResponse(result, "Classroom deactivated successfully."));
     } catch (error) {
       next(error);
     }
