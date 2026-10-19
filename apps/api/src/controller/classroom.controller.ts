@@ -1,9 +1,34 @@
+import { ClassroomStatus, Role } from "@prisma/client";
 import type { NextFunction, Response } from "express";
 import { z } from "zod";
 import type { AuthRequest } from "../common/middleware/auth.middleware.js";
-import { BadRequestError, UnauthorizedError } from "../common/errors/app-error.js";
+import { BadRequestError, ForbiddenError, UnauthorizedError } from "../common/errors/app-error.js";
 import { successResponse } from "../common/utils/response.js";
 import { classroomService } from "../service/classroom.service.js";
+
+const classroomParamsSchema = z
+  .object({ classroomId: z.string().uuid("Classroom ID must be a valid UUID") })
+  .strict();
+
+const classroomListQuerySchema = z.object({
+  search: z
+    .string()
+    .trim()
+    .max(100, "Search term is too long")
+    .optional()
+    .transform((value) => value || undefined),
+  subjectId: z
+    .string()
+    .uuid("Subject ID must be a valid UUID")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  status: z
+    .enum([ClassroomStatus.active, ClassroomStatus.completed, "all", ""], {
+      message: 'Status must be one of "active", "completed", or "all"',
+    })
+    .optional()
+    .transform((value) => (value === "all" || value === "" ? undefined : value)),
+});
 
 const createClassroomSchema = z
   .object({
@@ -13,12 +38,33 @@ const createClassroomSchema = z
   })
   .strict();
 
-const classroomParamsSchema = z
-  .object({ classroomId: z.string().uuid("Classroom ID must be a valid UUID") })
-  .strict();
 const deactivateBodySchema = z.object({}).strict().optional();
 
+/** The tutor ID always comes from the verified token, never from the request. */
+function tutorId(req: AuthRequest) {
+  if (!req.user) throw new UnauthorizedError("User not found in request");
+  if (req.user.role !== Role.tutor) {
+    throw new ForbiddenError("Only tutors can view their classroom list");
+  }
+  return req.user.id;
+}
+
 export const classroomController = {
+  async listTutorClassrooms(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const id = tutorId(req);
+      const filter = classroomListQuerySchema.parse(req.query);
+      const classrooms = await classroomService.listTutorClassrooms(id, filter);
+
+      res
+        .set("Cache-Control", "no-store")
+        .status(200)
+        .json(successResponse(classrooms, "Classrooms retrieved successfully."));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async createClassroom(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       if (!req.user) throw new UnauthorizedError();
@@ -30,11 +76,30 @@ export const classroomController = {
     }
   },
 
+  async getClassroomDetail(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError("User not found in request");
+      }
+
+      const { classroomId } = classroomParamsSchema.parse(req.params);
+      const classroom = await classroomService.getClassroomDetail(classroomId, req.user.id);
+
+      res
+        .set("Cache-Control", "no-store")
+        .status(200)
+        .json(successResponse(classroom, "Classroom retrieved successfully"));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async deactivate(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       if (!req.user) {
         throw new UnauthorizedError("User not found in request");
       }
+
       const { classroomId } = classroomParamsSchema.parse(req.params);
       const hasBody =
         Number(req.headers["content-length"] ?? 0) > 0 ||
@@ -43,6 +108,7 @@ export const classroomController = {
         throw new BadRequestError("Omit the request body or send an empty JSON object");
       }
       deactivateBodySchema.parse(req.body);
+
       const result = await classroomService.deactivate(classroomId, req.user.id, req.user.role);
       res.status(200).json(successResponse(result, "Classroom deactivated successfully."));
     } catch (error) {

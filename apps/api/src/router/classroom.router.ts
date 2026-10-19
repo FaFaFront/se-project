@@ -6,6 +6,8 @@ import {
 } from "../common/middleware/auth.middleware.js";
 import { classroomController } from "../controller/classroom.controller.js";
 
+export const classroomRouter = Router();
+
 /**
  * @swagger
  * components:
@@ -39,31 +41,123 @@ import { classroomController } from "../controller/classroom.controller.js";
  *         pricePerHour: { type: number, example: 25 }
  *         status: { type: string, enum: [active, completed] }
  *         createdAt: { type: string, format: date-time }
+ *     ClassroomListItem:
+ *       type: object
+ *       additionalProperties: false
+ *       required: [id, student, subject, pricePerHour, status, createdAt]
+ *       properties:
+ *         id: { type: string, format: uuid }
+ *         student:
+ *           type: object
+ *           description: Limited student summary; contact details are never included
+ *           required: [id, name, profileUrl]
+ *           properties:
+ *             id: { type: string, format: uuid }
+ *             name: { type: string, nullable: true, example: Student Name }
+ *             profileUrl: { type: string, format: uri, nullable: true }
+ *         subject:
+ *           type: object
+ *           required: [id, name]
+ *           properties:
+ *             id: { type: string, format: uuid }
+ *             name: { type: string, example: Mathematics }
+ *         pricePerHour: { type: number, example: 25 }
+ *         status: { type: string, enum: [active, completed] }
+ *         createdAt: { type: string, format: date-time, example: "2026-10-14T08:30:00.000Z" }
+ *     ClassroomSubjectSummary:
+ *       type: object
+ *       required: [id, name]
+ *       properties:
+ *         id: { type: string, format: uuid }
+ *         name: { type: string, example: Mathematics }
+ *     ClassroomParticipantSummary:
+ *       type: object
+ *       required: [id, name, profileUrl]
+ *       properties:
+ *         id: { type: string, format: uuid }
+ *         name: { type: string, nullable: true, example: Alex Smith }
+ *         profileUrl: { type: string, format: uri, nullable: true }
+ *     TutorClassroomDetail:
+ *       type: object
+ *       required: [id, viewerRole, subject, participant, pricePerHour, status, createdAt]
+ *       properties:
+ *         id: { type: string, format: uuid }
+ *         viewerRole: { type: string, enum: [tutor] }
+ *         subject: { $ref: '#/components/schemas/ClassroomSubjectSummary' }
+ *         participant: { $ref: '#/components/schemas/ClassroomParticipantSummary' }
+ *         pricePerHour: { type: number, example: 750 }
+ *         status: { type: string, enum: [active, completed] }
+ *         createdAt: { type: string, format: date-time }
+ *     StudentClassroomDetail:
+ *       type: object
+ *       required: [id, viewerRole, subject, participant, pricePerHour, status]
+ *       properties:
+ *         id: { type: string, format: uuid }
+ *         viewerRole: { type: string, enum: [student] }
+ *         subject: { $ref: '#/components/schemas/ClassroomSubjectSummary' }
+ *         participant: { $ref: '#/components/schemas/ClassroomParticipantSummary' }
+ *         pricePerHour: { type: number, example: 750 }
+ *         status: { type: string, enum: [active, completed] }
  */
 
-const router = Router();
-
-router.use(authMiddleware, requireActiveAccount, requireRole("tutor"));
+/**
+ * @swagger
+ * /classrooms:
+ *   get:
+ *     summary: List the authenticated tutor's classrooms
+ *     description: Returns the tutor's classrooms, with optional combined search, subject, and status filters.
+ *     tags: [Classrooms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema: { type: string, maxLength: 100 }
+ *         description: Case-insensitive match against the student's or subject's name
+ *       - in: query
+ *         name: subjectId
+ *         schema: { type: string, format: uuid }
+ *       - in: query
+ *         name: status
+ *         schema: { type: string, enum: [active, completed, all] }
+ *     responses:
+ *       200:
+ *         description: Classrooms retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Classrooms retrieved successfully. }
+ *                 data:
+ *                   type: array
+ *                   items: { $ref: '#/components/schemas/ClassroomListItem' }
+ *       400: { description: Invalid query parameters }
+ *       401: { description: Missing or invalid authentication }
+ *       403: { description: Only tutors may list classrooms }
+ */
+classroomRouter.get(
+  "/",
+  authMiddleware,
+  requireActiveAccount,
+  classroomController.listTutorClassrooms
+);
 
 /**
  * @swagger
  * /classrooms:
  *   post:
  *     summary: Create a classroom from a student conversation
- *     description: >
- *       Only an active tutor can create a classroom, and only from a conversation
- *       they participate in. The student is derived from the other participant
- *       in that conversation. The subject must already be assigned to the tutor.
- *       When pricePerHour is omitted, the tutor's default hourlyRate is used.
- *     tags: [Classroom]
+ *     description: The student is derived from the conversation. The subject must be assigned to the tutor. An omitted price uses the tutor's default hourly rate.
+ *     tags: [Classrooms]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/CreateClassroomRequest'
+ *           schema: { $ref: '#/components/schemas/CreateClassroomRequest' }
  *     responses:
  *       201:
  *         description: Classroom created
@@ -73,27 +167,70 @@ router.use(authMiddleware, requireActiveAccount, requireRole("tutor"));
  *               type: object
  *               properties:
  *                 success: { type: boolean, example: true }
- *                 message: { type: string }
- *                 data:
- *                   $ref: '#/components/schemas/Classroom'
- *       400:
- *         description: Invalid input, subject not assigned to tutor, other participant is not a student, or no valid price available
- *       401:
- *         description: Missing or invalid JWT, or the authenticated account was deleted
- *       403:
- *         description: Only active tutors can create classrooms
- *       404:
- *         description: Conversation not found or the authenticated tutor is not a participant
+ *                 message: { type: string, example: Classroom created }
+ *                 data: { $ref: '#/components/schemas/Classroom' }
+ *       400: { description: Invalid classroom data }
+ *       401: { description: Missing or invalid authentication }
+ *       403: { description: Only active tutors may create classrooms }
+ *       404: { description: Conversation not found }
  */
-router.post("/", classroomController.createClassroom);
+classroomRouter.post(
+  "/",
+  authMiddleware,
+  requireActiveAccount,
+  requireRole("tutor"),
+  classroomController.createClassroom
+);
+
+/**
+ * @swagger
+ * /classrooms/{classroomId}:
+ *   get:
+ *     summary: Get a classroom visible to the authenticated participant
+ *     description: Tutors receive their assigned student's public summary and the creation date. Students receive their assigned tutor's public summary, without the creation date.
+ *     tags: [Classrooms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classroomId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Role-appropriate classroom detail
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Classroom retrieved successfully }
+ *                 data:
+ *                   oneOf:
+ *                     - $ref: '#/components/schemas/TutorClassroomDetail'
+ *                     - $ref: '#/components/schemas/StudentClassroomDetail'
+ *                   discriminator:
+ *                     propertyName: viewerRole
+ *       400: { description: Malformed classroom ID }
+ *       401: { description: Missing or invalid authentication }
+ *       403: { description: The user's account is not active }
+ *       404: { description: Classroom not found, or the user is not assigned to it }
+ */
+classroomRouter.get(
+  "/:classroomId",
+  authMiddleware,
+  requireActiveAccount,
+  classroomController.getClassroomDetail
+);
 
 /**
  * @swagger
  * /classrooms/{classroomId}/deactivate:
  *   patch:
  *     summary: Deactivate a classroom
- *     description: Only the assigned tutor with an active account may deactivate a classroom. Changes active to completed without deleting any classroom or related data. Repeated requests for a completed classroom return success. Does not cancel sessions, issue refunds, or settle payments.
- *     tags: [Classroom]
+ *     description: Only the assigned tutor with an active account may deactivate a classroom. Changes active to completed without deleting related data. Repeated requests for a completed classroom return success.
+ *     tags: [Classrooms]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -135,6 +272,10 @@ router.post("/", classroomController.createClassroom);
  *       409: { description: Classroom changed concurrently and could not be completed; retry the request }
  *       500: { description: Unexpected server error }
  */
-router.patch("/:classroomId/deactivate", classroomController.deactivate);
-
-export const classroomRouter = router;
+classroomRouter.patch(
+  "/:classroomId/deactivate",
+  authMiddleware,
+  requireActiveAccount,
+  requireRole("tutor"),
+  classroomController.deactivate
+);

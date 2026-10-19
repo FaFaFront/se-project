@@ -5,15 +5,39 @@ import {
   ForbiddenError,
   NotFoundError,
 } from "../common/errors/app-error.js";
-import { classroomRepository } from "../repository/classroom.repository.js";
+import {
+  classroomRepository,
+  type ClassroomListFilter,
+} from "../repository/classroom.repository.js";
 import { conversationRepository } from "../repository/conversation.repository.js";
 import { tutorRepository } from "../repository/tutor.repository.js";
+
+export type ClassroomListItem = {
+  id: string;
+  student: { id: string; name: string | null; profileUrl: string | null };
+  subject: { id: string; name: string };
+  pricePerHour: number;
+  status: ClassroomStatus;
+  createdAt: string;
+};
 
 type CreateClassroomInput = {
   conversationId: string;
   subjectId: string;
   pricePerHour?: number;
 };
+
+function mapParticipant(participant: {
+  id: string;
+  name: string | null;
+  profileUrl: string | null;
+}) {
+  return {
+    id: participant.id,
+    name: participant.name,
+    profileUrl: participant.profileUrl,
+  };
+}
 
 async function requireAssignedClassroom(classroomId: string, tutorId: string) {
   const classroom = await classroomRepository.findById(classroomId);
@@ -27,6 +51,22 @@ async function requireAssignedClassroom(classroomId: string, tutorId: string) {
 }
 
 export const classroomService = {
+  async listTutorClassrooms(
+    tutorId: string,
+    filter: ClassroomListFilter
+  ): Promise<ClassroomListItem[]> {
+    const classrooms = await classroomRepository.findByTutor(tutorId, filter);
+
+    return classrooms.map((classroom) => ({
+      id: classroom.id,
+      student: classroom.student,
+      subject: classroom.subject,
+      pricePerHour: Number(classroom.pricePerHour),
+      status: classroom.status,
+      createdAt: classroom.createdAt.toISOString(),
+    }));
+  },
+
   async createClassroom(tutorId: string, input: CreateClassroomInput) {
     const conversation = await conversationRepository.findParticipantsForParticipant(
       input.conversationId,
@@ -79,6 +119,41 @@ export const classroomService = {
     };
   },
 
+  async getClassroomDetail(classroomId: string, viewerId: string) {
+    const classroom = await classroomRepository.findDetailById(classroomId);
+
+    if (!classroom) {
+      throw new NotFoundError("Classroom not found");
+    }
+
+    const commonDetail = {
+      id: classroom.id,
+      subject: classroom.subject,
+      pricePerHour: Number(classroom.pricePerHour),
+      status: classroom.status,
+    };
+
+    if (classroom.tutorId === viewerId) {
+      return {
+        ...commonDetail,
+        viewerRole: "tutor" as const,
+        participant: mapParticipant(classroom.student),
+        createdAt: classroom.createdAt.toISOString(),
+      };
+    }
+
+    if (classroom.studentId === viewerId) {
+      return {
+        ...commonDetail,
+        viewerRole: "student" as const,
+        participant: mapParticipant(classroom.tutor),
+      };
+    }
+
+    // Same 404 as a missing classroom so non-participants can't probe which IDs exist.
+    throw new NotFoundError("Classroom not found");
+  },
+
   async deactivate(classroomId: string, userId: string, role: string) {
     if (role !== Role.tutor) {
       throw new ForbiddenError("Only tutors can deactivate classrooms");
@@ -88,8 +163,6 @@ export const classroomService = {
     if (classroom.status !== ClassroomStatus.completed) {
       const { count } = await classroomRepository.completeActive(classroomId, userId);
       if (count === 0) {
-        // Another request may have completed it after the initial read.
-        // Recheck ownership/existence before accepting that result as success.
         const current = await requireAssignedClassroom(classroomId, userId);
         if (current.status !== ClassroomStatus.completed) {
           throw new ConflictError("Classroom changed during deactivation. Please try again");
