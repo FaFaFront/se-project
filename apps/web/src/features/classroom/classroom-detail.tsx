@@ -152,10 +152,10 @@ export function ClassroomDetail({ classroomId }: { classroomId: string }) {
         </div>
 
         <div className="space-y-8 p-6 sm:p-9">
-          <div className="flex flex-wrap items-start justify-between gap-5">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-ink/60">{participantLabel}</p>
-              <div className="mt-3 flex min-w-0 items-center gap-4">
+          <div>
+            <p className="text-sm font-semibold text-ink/60">{participantLabel}</p>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-5">
+              <div className="flex min-w-0 items-center gap-4">
                 <ProfileAvatar
                   src={classroom.participant.profileUrl}
                   name={participantName}
@@ -168,10 +168,8 @@ export function ClassroomDetail({ classroomId }: { classroomId: string }) {
                   </p>
                 </div>
               </div>
+              {classroom.viewerRole === "tutor" && <DeleteClassroomAction />}
             </div>
-            {classroom.viewerRole === "tutor" && classroom.status === "active" && (
-              <DeleteClassroomAction subjectName={classroom.subject.name} />
-            )}
           </div>
 
           <dl className="grid gap-4 sm:grid-cols-2">

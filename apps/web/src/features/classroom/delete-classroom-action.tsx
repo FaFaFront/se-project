@@ -4,13 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-function DeleteClassroomDialog({
-  subjectName,
-  onClose,
-}: {
-  subjectName: string;
-  onClose: () => void;
-}) {
+function DeleteClassroomDialog({ onClose }: { onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const deleteRef = useRef<HTMLButtonElement>(null);
@@ -64,8 +58,7 @@ function DeleteClassroomDialog({
         Delete classroom?
       </h2>
       <p id={descriptionId} className="mt-3 break-words text-sm leading-6 text-ink/70">
-        <span className="font-semibold text-ink">{subjectName}</span> will be removed from your
-        active classrooms. Its documents, sessions, and history will be kept.
+        Classroom history will be kept.
       </p>
 
       <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -92,7 +85,7 @@ function DeleteClassroomDialog({
   );
 }
 
-export function DeleteClassroomAction({ subjectName }: { subjectName: string }) {
+export function DeleteClassroomAction() {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -114,7 +107,7 @@ export function DeleteClassroomAction({ subjectName }: { subjectName: string }) 
         <Trash2 aria-hidden="true" className="size-4" />
         Delete Classroom
       </Button>
-      {isOpen && <DeleteClassroomDialog subjectName={subjectName} onClose={close} />}
+      {isOpen && <DeleteClassroomDialog onClose={close} />}
     </>
   );
 }
