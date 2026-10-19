@@ -1,6 +1,12 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 
+const participantSelect = { id: true, name: true, profileUrl: true } as const;
+
+export type ConversationRow = Awaited<
+  ReturnType<typeof conversationRepository.findAllForUser>
+>[number];
+
 const publicParticipantSelect = {
   id: true,
   name: true,
@@ -31,12 +37,38 @@ const messageHistorySelect = {
   },
 } as const satisfies Prisma.ConversationSelect;
 
+const participantsSelect = {
+  id: true,
+  participantAId: true,
+  participantBId: true,
+  participantA: { select: { id: true, role: true } },
+  participantB: { select: { id: true, role: true } },
+} as const satisfies Prisma.ConversationSelect;
+
 export type MessageHistoryRow = Prisma.ConversationGetPayload<{
   select: typeof messageHistorySelect;
 }>;
 export type MessageRow = Prisma.MessageGetPayload<{ select: typeof messageSelect }>;
+export type ConversationParticipantsRow = Prisma.ConversationGetPayload<{
+  select: typeof participantsSelect;
+}>;
 
 export const conversationRepository = {
+  async findAllForUser(userId: string) {
+    return prisma.conversation.findMany({
+      where: { OR: [{ participantAId: userId }, { participantBId: userId }] },
+      include: {
+        participantA: { select: participantSelect },
+        participantB: { select: participantSelect },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { text: true, createdAt: true, senderId: true },
+        },
+      },
+    });
+  },
+
   async findByIdForParticipant(conversationId: string, userId: string) {
     return prisma.conversation.findFirst({
       where: {
@@ -44,6 +76,19 @@ export const conversationRepository = {
         OR: [{ participantAId: userId }, { participantBId: userId }],
       },
       select: { id: true },
+    });
+  },
+
+  async findParticipantsForParticipant(
+    conversationId: string,
+    userId: string
+  ): Promise<ConversationParticipantsRow | null> {
+    return prisma.conversation.findFirst({
+      where: {
+        id: conversationId,
+        OR: [{ participantAId: userId }, { participantBId: userId }],
+      },
+      select: participantsSelect,
     });
   },
 

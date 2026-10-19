@@ -12,6 +12,16 @@ const conversationParamsSchema = z
   .strict();
 
 export const conversationController = {
+  async listConversations(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) throw new UnauthorizedError("User not found in request");
+      const conversations = await conversationService.listForUser(req.user.id);
+      res.status(200).json(successResponse(conversations, "Conversations retrieved successfully"));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getMessageHistory(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const user = req.user;
