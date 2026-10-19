@@ -246,7 +246,7 @@ classroomRouter.get(
 /**
  * @swagger
  * /classrooms/{classroomId}:
- *   put:
+ *   patch:
  *     summary: Update a classroom's subject and price
  *     description: Only the assigned tutor with an active account may edit an active classroom. Returns the tutor classroom detail with the saved values.
  *     tags: [Classrooms]
@@ -280,7 +280,7 @@ classroomRouter.get(
  *       404: { description: Classroom not found, or the tutor is not assigned to it }
  *       409: { description: The classroom is completed, or was deactivated during the update }
  */
-classroomRouter.put(
+classroomRouter.patch(
   "/:classroomId",
   authMiddleware,
   requireActiveAccount,

@@ -1,19 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, CalendarDays, CircleAlert, Clock3 } from "lucide-react";
+import { ArrowLeft, BookOpen, CalendarDays, CircleAlert, Clock3, Pencil } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { ProfileAvatar } from "@/features/profile/profile-avatar";
 import { formatCurrency } from "@/features/profile/profile-details";
-import { ApiError, apiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
-import type { ClassroomDetail as ClassroomDetailData } from "@/types/classroom";
-
-type LoadState =
-  | { status: "loading" }
-  | { status: "ready"; classroom: ClassroomDetailData }
-  | { status: "error"; kind: "not-found" | "forbidden" | "general"; message: string };
+import { useClassroomDetail, type ClassroomErrorKind } from "./use-classroom-detail";
 
 function formatCreatedDate(isoDate: string): string {
   const date = new Date(isoDate);
@@ -21,12 +14,12 @@ function formatCreatedDate(isoDate: string): string {
   return new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(date);
 }
 
-function ErrorState({
+export function ClassroomErrorState({
   kind,
   message,
   onRetry,
 }: {
-  kind: "not-found" | "forbidden" | "general";
+  kind: ClassroomErrorKind;
   message: string;
   onRetry: () => void;
 }) {
@@ -57,48 +50,7 @@ function ErrorState({
 }
 
 export function ClassroomDetail({ classroomId }: { classroomId: string }) {
-  const [state, setState] = useState<LoadState>({ status: "loading" });
-  const [requestKey, setRequestKey] = useState(0);
-
-  const retry = useCallback(() => {
-    setState({ status: "loading" });
-    setRequestKey((key) => key + 1);
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    setState({ status: "loading" });
-
-    apiClient.get<ClassroomDetailData>(`/classrooms/${encodeURIComponent(classroomId)}`).then(
-      (classroom) => {
-        if (active) setState({ status: "ready", classroom });
-      },
-      (error: unknown) => {
-        if (!active) return;
-
-        const status = error instanceof ApiError ? error.status : undefined;
-        // A malformed ID (400) can never succeed on retry, so treat it like a missing classroom.
-        const kind =
-          status === 404 || status === 400 ? "not-found" : status === 403 ? "forbidden" : "general";
-        const message =
-          kind === "not-found"
-            ? "The classroom may have been removed or the link may be incorrect."
-            : kind === "forbidden"
-              ? "Your account is inactive. Reactivate it to view classroom details."
-              : "Please check your connection and try again.";
-
-        setState({
-          status: "error",
-          kind,
-          message,
-        });
-      }
-    );
-
-    return () => {
-      active = false;
-    };
-  }, [classroomId, requestKey]);
+  const { state, retry } = useClassroomDetail(classroomId);
 
   if (state.status === "loading") {
     return (
@@ -111,7 +63,7 @@ export function ClassroomDetail({ classroomId }: { classroomId: string }) {
   }
 
   if (state.status === "error") {
-    return <ErrorState kind={state.kind} message={state.message} onRetry={retry} />;
+    return <ClassroomErrorState kind={state.kind} message={state.message} onRetry={retry} />;
   }
 
   const { classroom } = state;
@@ -120,13 +72,24 @@ export function ClassroomDetail({ classroomId }: { classroomId: string }) {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <Link
-        href="/classroom"
-        className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
-      >
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        My Classroom
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href="/classroom"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+        >
+          <ArrowLeft aria-hidden="true" className="size-4" />
+          My Classroom
+        </Link>
+        {classroom.viewerRole === "tutor" && classroom.status === "active" && (
+          <Link
+            href={`/classroom/${encodeURIComponent(classroom.id)}/edit`}
+            className={buttonVariants({ variant: "outline" })}
+          >
+            <Pencil aria-hidden="true" className="size-4" />
+            Edit classroom
+          </Link>
+        )}
+      </div>
 
       <section className="mt-6 overflow-hidden rounded-3xl border border-hairline bg-white shadow-sm">
         <div className="bg-brand-plum-deepest px-6 py-7 text-white sm:px-9">
