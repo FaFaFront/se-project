@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-import { ProfileEditForm } from "@/components/profile/profile-edit-form";
+import { ProfileEditForm } from "@/features/profile/profile-edit-form";
 
 export const metadata: Metadata = {
   title: "Edit profile | Tutorist",

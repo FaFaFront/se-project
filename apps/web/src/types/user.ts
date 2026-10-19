@@ -2,11 +2,14 @@ import type { UserRole } from "@/types/auth";
 import type { Subject } from "@/types/subject";
 
 /** Shape of `GET /users/me`. */
+export type AccountStatus = "ACTIVE" | "INACTIVE";
+
 export type UserProfile = {
   id: string;
   name: string | null;
   email: string;
   role: UserRole;
+  accountStatus: AccountStatus;
   profileUrl: string | null;
   bio: string | null;
   /** Tutor only — null for students. */
@@ -16,6 +19,7 @@ export type UserProfile = {
   /** Student only — null for tutors. */
   goals: string | null;
   walletBalance: number;
+  profileComplete: boolean;
   createdAt: string;
   /** Subjects the tutor teaches; always empty for students. */
   subjects: Subject[];
@@ -38,6 +42,4 @@ export type PublicUser = {
 };
 
 /** Shape of a successful `PUT /users/profile` response. */
-export type ProfileUpdateResponse = UserProfile & {
-  profileComplete: boolean;
-};
+export type ProfileUpdateResponse = UserProfile;

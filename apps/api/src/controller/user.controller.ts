@@ -3,7 +3,7 @@ import { z } from "zod";
 import { successResponse } from "../common/utils/response.js";
 import { userService } from "../service/user.service.js";
 import type { AuthRequest } from "../common/middleware/auth.middleware.js";
-import { Role } from "@prisma/client";
+import { AccountStatus, Role } from "@prisma/client";
 import { BadRequestError, UnauthorizedError } from "../common/errors/app-error.js";
 
 const studentProfileFields = {
@@ -51,6 +51,14 @@ type ProfileData = z.infer<typeof studentProfileSchema> | z.infer<typeof tutorPr
 type ProfileUpdateRequest =
   | { role: typeof Role.student; data: z.infer<typeof studentProfileUpdateSchema> }
   | { role: typeof Role.tutor; data: z.infer<typeof tutorProfileUpdateSchema> };
+
+const accountStatusSchema = z
+  .object({
+    status: z.nativeEnum(AccountStatus, {
+      message: 'Account status must be either "ACTIVE" or "INACTIVE"',
+    }),
+  })
+  .strict();
 
 export const userController = {
   async submitProfile(req: AuthRequest, res: Response, next: NextFunction) {
@@ -120,6 +128,25 @@ export const userController = {
 
       const updatedUser = await userService.updateProfile(user.id, profileUpdate);
       res.status(200).json(successResponse(updatedUser, "Profile updated successfully"));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateAccountStatus(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const user = req.user;
+      if (!user) {
+        throw new UnauthorizedError("User not found in request");
+      }
+
+      const { status } = accountStatusSchema.parse(req.body);
+      const updatedUser = await userService.updateAccountStatus(user.id, status);
+      const message =
+        status === AccountStatus.INACTIVE
+          ? "Account is now inactive. Your data has been kept."
+          : "Account is now active.";
+      res.status(200).json(successResponse(updatedUser, message));
     } catch (error) {
       next(error);
     }

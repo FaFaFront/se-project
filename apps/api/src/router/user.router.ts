@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { userController } from "../controller/user.controller.js";
-import { authMiddleware } from "../common/middleware/auth.middleware.js";
+import { authMiddleware, requireActiveAccount } from "../common/middleware/auth.middleware.js";
 import type { AuthRequest } from "../common/middleware/auth.middleware.js";
 
 /**
@@ -49,6 +49,7 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *         name: { type: string, nullable: true, example: Student Name }
  *         email: { type: string, format: email }
  *         role: { type: string, enum: [student, tutor]}
+ *         accountStatus: { type: string, enum: [ACTIVE, INACTIVE], example: ACTIVE }
  *         profileUrl: { type: string, format: uri, nullable: true }
  *         bio: { type: string, nullable: true }
  *         hourlyRate:
@@ -160,7 +161,7 @@ router.use((req, res, next) => {
  *       400: { description: Validation error }
  *       401: { description: Unauthorized }
  */
-router.post("/profile", authMiddleware, userController.submitProfile);
+router.post("/profile", authMiddleware, requireActiveAccount, userController.submitProfile);
 
 /**
  * @swagger
@@ -225,6 +226,47 @@ router.get("/me", authMiddleware, userController.getProfile);
  *       409: { description: Initial profile completion is required }
  *       500: { description: Internal server error }
  */
-router.put("/profile", authMiddleware, userController.updateProfile);
+router.put("/profile", authMiddleware, requireActiveAccount, userController.updateProfile);
+
+/**
+ * @swagger
+ * /users/me/status:
+ *   patch:
+ *     summary: Set the authenticated user's account status
+ *     description: >
+ *       Soft-pauses or restores the account. Inactive accounts cannot sign in or
+ *       use other protected features, but the user row and related data are not
+ *       deleted. This is separate from account deletion.
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             additionalProperties: false
+ *             required: [status]
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [ACTIVE, INACTIVE]
+ *     responses:
+ *       200:
+ *         description: Account status updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Account is now inactive. Your data has been kept. }
+ *                 data:
+ *                   $ref: '#/components/schemas/UserProfile'
+ *       400: { description: Invalid status }
+ *       401: { description: Unauthorized }
+ */
+router.patch("/me/status", authMiddleware, userController.updateAccountStatus);
 
 export const userRouter = router;

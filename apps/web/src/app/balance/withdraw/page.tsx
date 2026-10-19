@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { WithdrawalForm } from "@/components/wallet/withdrawal-form";
+import { WithdrawalForm } from "@/features/wallet/withdrawal-form";
 
 export const metadata: Metadata = { title: "Withdraw balance | Tutorist" };
 
