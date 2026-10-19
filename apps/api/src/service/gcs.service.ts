@@ -18,7 +18,14 @@ const EXT_MAP: Record<string, string> = {
  */
 function createStorageClient(): Storage {
   if (env.GCS_SERVICE_ACCOUNT_KEY) {
-    const credentials = JSON.parse(env.GCS_SERVICE_ACCOUNT_KEY) as object;
+    let credentials: object;
+    try {
+      credentials = JSON.parse(env.GCS_SERVICE_ACCOUNT_KEY) as object;
+    } catch (error) {
+      throw new Error(
+        `Failed to parse GOOGLE_STORAGE_SERVICE_ACCOUNT_KEY: ${(error as Error).message}`
+      );
+    }
     return new Storage({ projectId: env.GCS_PROJECT_ID || undefined, credentials });
   }
   if (env.GCS_CREDENTIALS_PATH) {
@@ -31,8 +38,21 @@ function createStorageClient(): Storage {
   return new Storage({ projectId: env.GCS_PROJECT_ID || undefined });
 }
 
-const storage = createStorageClient();
-const bucket = storage.bucket(env.GCS_BUCKET);
+let storageClient: Storage | null = null;
+
+function getStorageClient(): Storage {
+  if (!storageClient) {
+    storageClient = createStorageClient();
+  }
+  return storageClient;
+}
+
+function getBucket() {
+  if (!env.GCS_BUCKET) {
+    throw new Error("Missing required env: GOOGLE_STORAGE_BUCKET");
+  }
+  return getStorageClient().bucket(env.GCS_BUCKET);
+}
 
 export function getExtension(contentType: string): string {
   return EXT_MAP[contentType] ?? "jpg";
@@ -47,6 +67,9 @@ export function getPublicUrl(key: string): string {
   if (env.GCS_PUBLIC_BASE_URL) {
     const base = env.GCS_PUBLIC_BASE_URL.replace(/\/$/, "");
     return `${base}/${key}`;
+  }
+  if (!env.GCS_BUCKET) {
+    throw new Error("Missing required env: GOOGLE_STORAGE_BUCKET");
   }
   return `https://storage.googleapis.com/${env.GCS_BUCKET}/${key}`;
 }
@@ -71,7 +94,7 @@ export async function getSignedUploadUrl(
     extensionHeaders["Content-Length"] = String(contentLength);
   }
 
-  const [url] = await bucket.file(key).getSignedUrl({
+  const [url] = await getBucket().file(key).getSignedUrl({
     version: "v4",
     action: "write",
     expires: Date.now() + expiresInSecs * 1000,

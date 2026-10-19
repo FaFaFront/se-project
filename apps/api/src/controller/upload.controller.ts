@@ -18,6 +18,17 @@ const ContentTypeSchema = z
     message: "Invalid file type. Only JPEG, PNG, WEBP, and GIF are allowed.",
   });
 
+const FolderSchema = z
+  .string()
+  .trim()
+  .min(1, "Folder name cannot be empty")
+  .max(100, "Folder name must be 100 characters or fewer")
+  .regex(
+    /^[a-zA-Z0-9_-]+$/,
+    "Folder name must only contain alphanumeric characters, dashes, or underscores"
+  )
+  .optional();
+
 const GetUploadUrlSchema = z
   .object({
     contentType: ContentTypeSchema,
@@ -26,7 +37,7 @@ const GetUploadUrlSchema = z
       .int("Content length must be an integer")
       .positive("Content length must be positive")
       .max(MAX_IMAGE_UPLOAD_BYTES, "Image must be 10 MiB or smaller"),
-    folder: z.string().optional(),
+    folder: FolderSchema,
   })
   .strict();
 
@@ -46,8 +57,8 @@ export const uploadController = {
 
       const { contentType, contentLength, folder } = GetUploadUrlSchema.parse(req.body);
 
-      // Build an object key scoped to the authenticated user by default
-      const prefix = folder ? folder.replace(/\/$/, "") : `users/${user.id}`;
+      // Ensure the key is always scoped under the authenticated user
+      const prefix = folder ? `users/${user.id}/${folder}` : `users/${user.id}`;
       const key = `${prefix}/${randomUUID()}.${getExtension(contentType)}`;
 
       const url = await getSignedUploadUrl(key, contentType, 900, contentLength);

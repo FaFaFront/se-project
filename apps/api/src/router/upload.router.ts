@@ -46,8 +46,8 @@ const router = Router();
  *               folder:
  *                 type: string
  *                 description: >
- *                   Optional bucket sub-folder (e.g. "profile-images").
- *                   Defaults to "users/{userId}" when omitted.
+ *                   Optional user sub-folder (e.g. "profile-images").
+ *                   Placed under "users/{userId}/{folder}".
  *                 example: profile-images
  *     responses:
  *       200:
