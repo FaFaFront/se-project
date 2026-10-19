@@ -12,6 +12,23 @@ export const classroomRouter = Router();
  * @swagger
  * components:
  *   schemas:
+ *     UpdateClassroomRequest:
+ *       type: object
+ *       additionalProperties: false
+ *       required: [subjectId, pricePerHour]
+ *       description: Only these fields are editable. Any other key (id, tutorId, studentId, status, createdAt, ...) is rejected with 400.
+ *       properties:
+ *         subjectId:
+ *           type: string
+ *           format: uuid
+ *           description: Subject assigned to the authenticated tutor.
+ *         pricePerHour:
+ *           type: number
+ *           minimum: 0.01
+ *           maximum: 99999999.99
+ *           multipleOf: 0.01
+ *           example: 40
+ *           description: Price for this classroom only. The tutor's default hourly rate is not changed.
  *     CreateClassroomRequest:
  *       type: object
  *       additionalProperties: false
@@ -28,6 +45,8 @@ export const classroomRouter = Router();
  *         pricePerHour:
  *           type: number
  *           minimum: 0.01
+ *           maximum: 99999999.99
+ *           multipleOf: 0.01
  *           description: Classroom-specific price override. Defaults to the tutor's hourlyRate when omitted.
  *     Classroom:
  *       type: object
@@ -226,6 +245,51 @@ classroomRouter.get(
 
 /**
  * @swagger
+ * /classrooms/{classroomId}:
+ *   put:
+ *     summary: Update a classroom's subject and price
+ *     description: Only the assigned tutor with an active account may edit an active classroom. Returns the tutor classroom detail with the saved values.
+ *     tags: [Classrooms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classroomId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/UpdateClassroomRequest' }
+ *     responses:
+ *       200:
+ *         description: Classroom updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required: [success, message, data]
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Classroom updated successfully }
+ *                 data: { $ref: '#/components/schemas/TutorClassroomDetail' }
+ *       400: { description: "Malformed classroom ID, invalid or extra body fields, or a subject not assigned to the tutor" }
+ *       401: { description: "Missing or invalid JWT, or the authenticated account no longer exists" }
+ *       403: { description: "Inactive account or not a tutor" }
+ *       404: { description: Classroom not found, or the tutor is not assigned to it }
+ *       409: { description: The classroom is completed, or was deactivated during the update }
+ */
+classroomRouter.put(
+  "/:classroomId",
+  authMiddleware,
+  requireActiveAccount,
+  requireRole("tutor"),
+  classroomController.updateClassroom
+);
+
+/**
+ * @swagger
  * /classrooms/{classroomId}/deactivate:
  *   patch:
  *     summary: Deactivate a classroom
@@ -267,8 +331,8 @@ classroomRouter.get(
  *                     status: { type: string, enum: [completed] }
  *       400: { description: Malformed classroom UUID or invalid request body }
  *       401: { description: "Missing or invalid JWT, or the authenticated account no longer exists" }
- *       403: { description: "Inactive account, student, or tutor not assigned to this classroom" }
- *       404: { description: Classroom not found }
+ *       403: { description: "Inactive account or not a tutor" }
+ *       404: { description: Classroom not found, or the tutor is not assigned to it }
  *       409: { description: Classroom changed concurrently and could not be completed; retry the request }
  *       500: { description: Unexpected server error }
  */
