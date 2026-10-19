@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, BookOpen, CalendarDays, CircleAlert, Clock3 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
-import { DeleteClassroomAction } from "@/features/classroom/delete-classroom-action";
+import { DeactivateClassroomAction } from "@/features/classroom/deactivate-classroom-action";
 import { ProfileAvatar } from "@/features/profile/profile-avatar";
 import { formatCurrency } from "@/features/profile/profile-details";
 import { ApiError, apiClient } from "@/lib/api-client";
@@ -168,7 +168,9 @@ export function ClassroomDetail({ classroomId }: { classroomId: string }) {
                   </p>
                 </div>
               </div>
-              {classroom.viewerRole === "tutor" && <DeleteClassroomAction />}
+              {classroom.viewerRole === "tutor" && classroom.status === "active" && (
+                <DeactivateClassroomAction />
+              )}
             </div>
           </div>
 

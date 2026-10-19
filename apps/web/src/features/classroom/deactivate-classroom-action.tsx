@@ -4,10 +4,10 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-function DeleteClassroomDialog({ onClose }: { onClose: () => void }) {
+function DeactivateClassroomDialog({ onClose }: { onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
-  const deleteRef = useRef<HTMLButtonElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
   const headingId = useId();
   const descriptionId = useId();
 
@@ -43,8 +43,8 @@ function DeleteClassroomDialog({ onClose }: { onClose: () => void }) {
         if (event.key !== "Tab") return;
         if (event.shiftKey && document.activeElement === cancelRef.current) {
           event.preventDefault();
-          deleteRef.current?.focus();
-        } else if (!event.shiftKey && document.activeElement === deleteRef.current) {
+          confirmRef.current?.focus();
+        } else if (!event.shiftKey && document.activeElement === confirmRef.current) {
           event.preventDefault();
           cancelRef.current?.focus();
         }
@@ -55,10 +55,10 @@ function DeleteClassroomDialog({ onClose }: { onClose: () => void }) {
         <Trash2 aria-hidden="true" className="size-6" />
       </div>
       <h2 id={headingId} className="text-heading-md text-ink">
-        Delete classroom?
+        Deactivate classroom?
       </h2>
       <p id={descriptionId} className="mt-3 break-words text-sm leading-6 text-ink/70">
-        Classroom history will be kept.
+        This classroom will be removed from your active list. Its data and history will be kept.
       </p>
 
       <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -72,20 +72,20 @@ function DeleteClassroomDialog({ onClose }: { onClose: () => void }) {
           Cancel
         </Button>
         <Button
-          ref={deleteRef}
+          ref={confirmRef}
           type="button"
           // UI preview only: dismissal does not mutate or navigate. API wiring comes later.
           onClick={dismiss}
           className="w-full bg-red-600 text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 sm:w-auto"
         >
-          Delete
+          Deactivate
         </Button>
       </div>
     </dialog>
   );
 }
 
-export function DeleteClassroomAction() {
+export function DeactivateClassroomAction() {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -105,9 +105,9 @@ export function DeleteClassroomAction() {
         className="ml-auto shrink-0 border-red-600 bg-canvas text-red-600 hover:bg-red-600 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2"
       >
         <Trash2 aria-hidden="true" className="size-4" />
-        Delete Classroom
+        Deactivate Classroom
       </Button>
-      {isOpen && <DeleteClassroomDialog onClose={close} />}
+      {isOpen && <DeactivateClassroomDialog onClose={close} />}
     </>
   );
 }
