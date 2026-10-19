@@ -38,6 +38,22 @@ const createClassroomSchema = z
   })
   .strict();
 
+const updateClassroomSchema = z
+  .object({
+    subjectId: z.string().uuid("Subject ID must be a valid UUID"),
+    pricePerHour: z
+      .number({ message: "Price per hour must be a number" })
+      .positive("Price per hour must be a positive number")
+      // pricePerHour is Decimal(10, 2) in the database.
+      .max(99_999_999.99, "Price per hour is too large")
+      .refine(
+        (value) => Number.isInteger(Number((value * 100).toFixed(6))),
+        "Price per hour can have at most 2 decimal places"
+      ),
+  })
+  // Unknown keys (id, tutorId, studentId, status, createdAt, ...) are rejected, not ignored.
+  .strict();
+
 const deactivateBodySchema = z.object({}).strict().optional();
 
 /** The tutor ID always comes from the verified token, never from the request. */
@@ -89,6 +105,22 @@ export const classroomController = {
         .set("Cache-Control", "no-store")
         .status(200)
         .json(successResponse(classroom, "Classroom retrieved successfully"));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateClassroom(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError("User not found in request");
+      }
+
+      const { classroomId } = classroomParamsSchema.parse(req.params);
+      const input = updateClassroomSchema.parse(req.body);
+      const classroom = await classroomService.updateClassroom(classroomId, req.user.id, input);
+
+      res.status(200).json(successResponse(classroom, "Classroom updated successfully"));
     } catch (error) {
       next(error);
     }

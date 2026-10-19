@@ -7,6 +7,7 @@ import {
 } from "../common/errors/app-error.js";
 import {
   classroomRepository,
+  type ClassroomDetailRow,
   type ClassroomListFilter,
 } from "../repository/classroom.repository.js";
 import { conversationRepository } from "../repository/conversation.repository.js";
@@ -27,6 +28,11 @@ type CreateClassroomInput = {
   pricePerHour?: number;
 };
 
+type UpdateClassroomInput = {
+  subjectId: string;
+  pricePerHour: number;
+};
+
 function mapParticipant(participant: {
   id: string;
   name: string | null;
@@ -39,15 +45,31 @@ function mapParticipant(participant: {
   };
 }
 
-async function requireAssignedClassroom(classroomId: string, tutorId: string) {
+async function requireAssignedClassroom(
+  classroomId: string,
+  tutorId: string,
+  action: "deactivate" | "edit"
+) {
   const classroom = await classroomRepository.findById(classroomId);
   if (!classroom) {
     throw new NotFoundError("Classroom not found");
   }
   if (classroom.tutorId !== tutorId) {
-    throw new ForbiddenError("Only the assigned tutor can deactivate this classroom");
+    throw new ForbiddenError(`Only the assigned tutor can ${action} this classroom`);
   }
   return classroom;
+}
+
+function mapTutorClassroomDetail(classroom: ClassroomDetailRow) {
+  return {
+    id: classroom.id,
+    subject: classroom.subject,
+    pricePerHour: Number(classroom.pricePerHour),
+    status: classroom.status,
+    viewerRole: "tutor" as const,
+    participant: mapParticipant(classroom.student),
+    createdAt: classroom.createdAt.toISOString(),
+  };
 }
 
 export const classroomService = {
@@ -126,25 +148,16 @@ export const classroomService = {
       throw new NotFoundError("Classroom not found");
     }
 
-    const commonDetail = {
-      id: classroom.id,
-      subject: classroom.subject,
-      pricePerHour: Number(classroom.pricePerHour),
-      status: classroom.status,
-    };
-
     if (classroom.tutorId === viewerId) {
-      return {
-        ...commonDetail,
-        viewerRole: "tutor" as const,
-        participant: mapParticipant(classroom.student),
-        createdAt: classroom.createdAt.toISOString(),
-      };
+      return mapTutorClassroomDetail(classroom);
     }
 
     if (classroom.studentId === viewerId) {
       return {
-        ...commonDetail,
+        id: classroom.id,
+        subject: classroom.subject,
+        pricePerHour: Number(classroom.pricePerHour),
+        status: classroom.status,
         viewerRole: "student" as const,
         participant: mapParticipant(classroom.tutor),
       };
@@ -154,16 +167,44 @@ export const classroomService = {
     throw new NotFoundError("Classroom not found");
   },
 
+  /** Changes only the subject and this classroom's price; the tutor's default rate is untouched. */
+  async updateClassroom(classroomId: string, tutorId: string, input: UpdateClassroomInput) {
+    const classroom = await requireAssignedClassroom(classroomId, tutorId, "edit");
+    if (classroom.status !== ClassroomStatus.active) {
+      throw new ConflictError("Completed classrooms cannot be edited");
+    }
+
+    const tutorSubject = await tutorRepository.findSubjectAssignment(tutorId, input.subjectId);
+    if (!tutorSubject) {
+      throw new BadRequestError("Selected subject is not assigned to this tutor");
+    }
+
+    const { count } = await classroomRepository.updateActiveDetails(classroomId, tutorId, {
+      subjectId: input.subjectId,
+      pricePerHour: new Prisma.Decimal(input.pricePerHour),
+    });
+    if (count === 0) {
+      // Deactivated between the check above and the update.
+      throw new ConflictError("Classroom changed during the update. Please reload and try again");
+    }
+
+    const updated = await classroomRepository.findDetailById(classroomId);
+    if (!updated) {
+      throw new NotFoundError("Classroom not found");
+    }
+    return mapTutorClassroomDetail(updated);
+  },
+
   async deactivate(classroomId: string, userId: string, role: string) {
     if (role !== Role.tutor) {
       throw new ForbiddenError("Only tutors can deactivate classrooms");
     }
 
-    const classroom = await requireAssignedClassroom(classroomId, userId);
+    const classroom = await requireAssignedClassroom(classroomId, userId, "deactivate");
     if (classroom.status !== ClassroomStatus.completed) {
       const { count } = await classroomRepository.completeActive(classroomId, userId);
       if (count === 0) {
-        const current = await requireAssignedClassroom(classroomId, userId);
+        const current = await requireAssignedClassroom(classroomId, userId, "deactivate");
         if (current.status !== ClassroomStatus.completed) {
           throw new ConflictError("Classroom changed during deactivation. Please try again");
         }

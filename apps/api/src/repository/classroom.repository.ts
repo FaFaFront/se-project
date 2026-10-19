@@ -32,8 +32,40 @@ const classroomSelect = {
   createdAt: true,
 } as const satisfies Prisma.ClassroomSelect;
 
+const classroomDetailSelect = {
+  id: true,
+  tutorId: true,
+  studentId: true,
+  pricePerHour: true,
+  status: true,
+  createdAt: true,
+  subject: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+  tutor: {
+    select: {
+      id: true,
+      name: true,
+      profileUrl: true,
+    },
+  },
+  student: {
+    select: {
+      id: true,
+      name: true,
+      profileUrl: true,
+    },
+  },
+} as const satisfies Prisma.ClassroomSelect;
+
 export type ClassroomListRow = Prisma.ClassroomGetPayload<{ select: typeof classroomListSelect }>;
 export type ClassroomRow = Prisma.ClassroomGetPayload<{ select: typeof classroomSelect }>;
+export type ClassroomDetailRow = Prisma.ClassroomGetPayload<{
+  select: typeof classroomDetailSelect;
+}>;
 
 export type ClassroomListFilter = {
   search?: string;
@@ -65,37 +97,10 @@ export const classroomRepository = {
     });
   },
 
-  async findDetailById(classroomId: string) {
+  async findDetailById(classroomId: string): Promise<ClassroomDetailRow | null> {
     return prisma.classroom.findUnique({
       where: { id: classroomId },
-      select: {
-        id: true,
-        tutorId: true,
-        studentId: true,
-        pricePerHour: true,
-        status: true,
-        createdAt: true,
-        subject: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        tutor: {
-          select: {
-            id: true,
-            name: true,
-            profileUrl: true,
-          },
-        },
-        student: {
-          select: {
-            id: true,
-            name: true,
-            profileUrl: true,
-          },
-        },
-      },
+      select: classroomDetailSelect,
     });
   },
 
@@ -115,6 +120,18 @@ export const classroomRepository = {
     return prisma.classroom.findUnique({
       where: { id: classroomId },
       select: { id: true, tutorId: true, status: true },
+    });
+  },
+
+  /** Only an active classroom owned by `tutorId` is changed; `count` is 0 otherwise. */
+  async updateActiveDetails(
+    classroomId: string,
+    tutorId: string,
+    data: { subjectId: string; pricePerHour: Prisma.Decimal }
+  ) {
+    return prisma.classroom.updateMany({
+      where: { id: classroomId, tutorId, status: ClassroomStatus.active },
+      data,
     });
   },
 
