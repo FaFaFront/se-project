@@ -49,8 +49,14 @@ export function registerMessageHandlers(
         socket.data.user.id,
         text
       );
-      io.to(roomName).emit(SOCKET_EVENTS.messageNew, { message });
-      respond?.({ success: true, data: { message } });
+      // Fanout is best-effort: the Redis adapter does not await PUBLISH. The
+      // success ACK confirms database persistence, not delivery to every socket.
+      try {
+        io.to(roomName).emit(SOCKET_EVENTS.messageNew, { message });
+      } catch {
+        console.error("Message broadcast failed after persistence");
+      }
+      respond?.({ success: true, data: { message, delivery: "persisted" } });
     } catch (error) {
       respond?.(mapMessageError(error));
     }

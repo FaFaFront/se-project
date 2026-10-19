@@ -4,7 +4,7 @@ import { env } from "./config/env.js";
 import { createSocketServer } from "./socket/socket.server.js";
 
 const httpServer = createServer(app);
-createSocketServer(httpServer);
+await createSocketServer(httpServer);
 
 if (process.env.VERCEL !== "1") {
   httpServer.listen(Number(env.PORT), () => {

@@ -1,11 +1,13 @@
 import { Redis } from "ioredis";
 import { env } from "./env.js";
 import { observeRedisPublishFailures } from "./redis-publisher.js";
+import { observeRedisSubscriptions } from "./redis-subscriber.js";
 
 export type RedisClients = {
   publisher: Redis;
   subscriber: Redis;
   isReady: () => boolean;
+  waitForInitialSubscriptions: () => Promise<void>;
 };
 
 export function createRedisClients(): RedisClients | null {
@@ -55,7 +57,7 @@ export function createRedisClients(): RedisClients | null {
   });
 
   let publisherHealthy = false;
-  let subscriberHealthy = false;
+  const subscriptions = observeRedisSubscriptions(subscriber);
   let publishFailureLogged = false;
   publisher.on("ready", () => {
     publisherHealthy = true;
@@ -75,20 +77,14 @@ export function createRedisClients(): RedisClients | null {
   publisher.on("close", () => {
     publisherHealthy = false;
   });
-  subscriber.on("ready", () => {
-    subscriberHealthy = true;
-  });
   subscriber.on("error", () => {
-    subscriberHealthy = false;
     console.error("Redis subscriber connection error");
-  });
-  subscriber.on("close", () => {
-    subscriberHealthy = false;
   });
 
   return {
     publisher,
     subscriber,
-    isReady: () => publisherHealthy && subscriberHealthy,
+    isReady: () => publisherHealthy && subscriptions.isReady(),
+    waitForInitialSubscriptions: subscriptions.waitForInitialSubscriptions,
   };
 }
