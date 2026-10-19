@@ -74,3 +74,8 @@ export type CreateClassroomRequest = {
   subjectId: string;
   pricePerHour?: number;
 };
+
+export type DeactivateClassroomResponse = {
+  id: string;
+  status: "completed";
+};

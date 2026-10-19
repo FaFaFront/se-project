@@ -169,7 +169,7 @@ export function ClassroomDetail({ classroomId }: { classroomId: string }) {
                 </div>
               </div>
               {classroom.viewerRole === "tutor" && classroom.status === "active" && (
-                <DeactivateClassroomAction />
+                <DeactivateClassroomAction key={classroom.id} classroomId={classroom.id} />
               )}
             </div>
           </div>
