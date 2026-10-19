@@ -86,8 +86,9 @@ const router = Router();
  *                   items:
  *                     $ref: '#/components/schemas/ConversationSummary'
  *       401: { description: Unauthorized }
+ *       403: { description: The authenticated account is inactive }
  */
-router.get("/", authMiddleware, conversationController.listConversations);
+router.get("/", authMiddleware, requireActiveAccount, conversationController.listConversations);
 
 /**
  * @swagger
