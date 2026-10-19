@@ -18,4 +18,5 @@ export const env = {
   DATABASE_URL: getEnv("DATABASE_URL"),
   CORS_ORIGIN: getEnvOptional("CORS_ORIGIN", "http://localhost:3000"),
   JWT_SECRET: getEnv("JWT_SECRET"),
+  REDIS_URL: getEnvOptional("REDIS_URL", ""),
 } as const;
