@@ -30,26 +30,28 @@ const classroomListQuerySchema = z.object({
     .transform((value) => (value === "all" || value === "" ? undefined : value)),
 });
 
+// Shared by create and update so both reject values Decimal(10, 2) can't store.
+const pricePerHourSchema = z
+  .number({ message: "Price per hour must be a number" })
+  .positive("Price per hour must be a positive number")
+  .max(99_999_999.99, "Price per hour is too large")
+  .refine(
+    (value) => Number.isInteger(Number((value * 100).toFixed(6))),
+    "Price per hour can have at most 2 decimal places"
+  );
+
 const createClassroomSchema = z
   .object({
     conversationId: z.string().uuid("Conversation ID must be a valid UUID"),
     subjectId: z.string().uuid("Subject ID must be a valid UUID"),
-    pricePerHour: z.number().positive("Price per hour must be a positive number").optional(),
+    pricePerHour: pricePerHourSchema.optional(),
   })
   .strict();
 
 const updateClassroomSchema = z
   .object({
     subjectId: z.string().uuid("Subject ID must be a valid UUID"),
-    pricePerHour: z
-      .number({ message: "Price per hour must be a number" })
-      .positive("Price per hour must be a positive number")
-      // pricePerHour is Decimal(10, 2) in the database.
-      .max(99_999_999.99, "Price per hour is too large")
-      .refine(
-        (value) => Number.isInteger(Number((value * 100).toFixed(6))),
-        "Price per hour can have at most 2 decimal places"
-      ),
+    pricePerHour: pricePerHourSchema,
   })
   // Unknown keys (id, tutorId, studentId, status, createdAt, ...) are rejected, not ignored.
   .strict();

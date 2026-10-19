@@ -45,17 +45,11 @@ function mapParticipant(participant: {
   };
 }
 
-async function requireAssignedClassroom(
-  classroomId: string,
-  tutorId: string,
-  action: "deactivate" | "edit"
-) {
+// Another tutor's classroom is reported as missing, like GET /:classroomId, so its existence isn't leaked.
+async function requireAssignedClassroom(classroomId: string, tutorId: string) {
   const classroom = await classroomRepository.findById(classroomId);
-  if (!classroom) {
+  if (!classroom || classroom.tutorId !== tutorId) {
     throw new NotFoundError("Classroom not found");
-  }
-  if (classroom.tutorId !== tutorId) {
-    throw new ForbiddenError(`Only the assigned tutor can ${action} this classroom`);
   }
   return classroom;
 }
@@ -169,7 +163,7 @@ export const classroomService = {
 
   /** Changes only the subject and this classroom's price; the tutor's default rate is untouched. */
   async updateClassroom(classroomId: string, tutorId: string, input: UpdateClassroomInput) {
-    const classroom = await requireAssignedClassroom(classroomId, tutorId, "edit");
+    const classroom = await requireAssignedClassroom(classroomId, tutorId);
     if (classroom.status !== ClassroomStatus.active) {
       throw new ConflictError("Completed classrooms cannot be edited");
     }
@@ -200,11 +194,11 @@ export const classroomService = {
       throw new ForbiddenError("Only tutors can deactivate classrooms");
     }
 
-    const classroom = await requireAssignedClassroom(classroomId, userId, "deactivate");
+    const classroom = await requireAssignedClassroom(classroomId, userId);
     if (classroom.status !== ClassroomStatus.completed) {
       const { count } = await classroomRepository.completeActive(classroomId, userId);
       if (count === 0) {
-        const current = await requireAssignedClassroom(classroomId, userId, "deactivate");
+        const current = await requireAssignedClassroom(classroomId, userId);
         if (current.status !== ClassroomStatus.completed) {
           throw new ConflictError("Classroom changed during deactivation. Please try again");
         }

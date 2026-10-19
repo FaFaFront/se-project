@@ -45,6 +45,8 @@ export const classroomRouter = Router();
  *         pricePerHour:
  *           type: number
  *           minimum: 0.01
+ *           maximum: 99999999.99
+ *           multipleOf: 0.01
  *           description: Classroom-specific price override. Defaults to the tutor's hourlyRate when omitted.
  *     Classroom:
  *       type: object
@@ -274,8 +276,8 @@ classroomRouter.get(
  *                 data: { $ref: '#/components/schemas/TutorClassroomDetail' }
  *       400: { description: "Malformed classroom ID, invalid or extra body fields, or a subject not assigned to the tutor" }
  *       401: { description: "Missing or invalid JWT, or the authenticated account no longer exists" }
- *       403: { description: "Inactive account, student, or tutor not assigned to this classroom" }
- *       404: { description: Classroom not found }
+ *       403: { description: "Inactive account or not a tutor" }
+ *       404: { description: Classroom not found, or the tutor is not assigned to it }
  *       409: { description: The classroom is completed, or was deactivated during the update }
  */
 classroomRouter.put(
@@ -329,8 +331,8 @@ classroomRouter.put(
  *                     status: { type: string, enum: [completed] }
  *       400: { description: Malformed classroom UUID or invalid request body }
  *       401: { description: "Missing or invalid JWT, or the authenticated account no longer exists" }
- *       403: { description: "Inactive account, student, or tutor not assigned to this classroom" }
- *       404: { description: Classroom not found }
+ *       403: { description: "Inactive account or not a tutor" }
+ *       404: { description: Classroom not found, or the tutor is not assigned to it }
  *       409: { description: Classroom changed concurrently and could not be completed; retry the request }
  *       500: { description: Unexpected server error }
  */
