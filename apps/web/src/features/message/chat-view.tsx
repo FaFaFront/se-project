@@ -37,7 +37,11 @@ export function ChatView({
       aria-label={`Conversation ${conversationId}`}
       className="flex h-[min(72vh,760px)] min-h-[420px] max-h-[760px] min-w-0 flex-col overflow-hidden rounded-2xl border border-hairline bg-canvas shadow-sm"
     >
-      <ChatHeader participant={participant} viewerRole={viewer.role} />
+      <ChatHeader
+        conversationId={conversationId}
+        participant={participant}
+        viewerRole={viewer.role}
+      />
       <MessageList messages={messages} currentUserId={viewer.id} />
       {statusMessage && (
         <div

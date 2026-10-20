@@ -24,7 +24,8 @@ export type MessageNewPayload = { message: ChatMessage };
 export type MessageSendErrorCode =
   "INVALID_MESSAGE" | "NOT_IN_CONVERSATION_ROOM" | "CONVERSATION_NOT_FOUND" | "INTERNAL_ERROR";
 export type MessageSendAck =
-  SocketAckSuccess<MessageNewPayload> | SocketAckFailure<MessageSendErrorCode>;
+  | SocketAckSuccess<MessageNewPayload & { delivery: "persisted" }>
+  | SocketAckFailure<MessageSendErrorCode>;
 
 export type SocketConnectionErrorCode =
   | "AUTH_TOKEN_MISSING"

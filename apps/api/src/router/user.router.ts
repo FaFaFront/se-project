@@ -22,6 +22,11 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *           minLength: 1
  *           maxLength: 100
  *           example: "Student Name"
+ *         profileUrl:
+ *           type: string
+ *           format: uri
+ *           nullable: true
+ *           example: "https://storage.googleapis.com/my-bucket/users/123/avatar.jpg"
  *         gradeLevel:
  *           type: string
  *           example: "10th Grade"
@@ -38,6 +43,11 @@ import type { AuthRequest } from "../common/middleware/auth.middleware.js";
  *           minLength: 1
  *           maxLength: 100
  *           example: "Tutor Name"
+ *         profileUrl:
+ *           type: string
+ *           format: uri
+ *           nullable: true
+ *           example: "https://storage.googleapis.com/my-bucket/users/123/avatar.jpg"
  *         hourlyRate:
  *           type: number
  *           exclusiveMinimum: 0

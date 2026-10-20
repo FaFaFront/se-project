@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { authMiddleware } from "../common/middleware/auth.middleware.js";
+import { authMiddleware, requireRole } from "../common/middleware/auth.middleware.js";
 import { walletController } from "../controller/wallet.controller.js";
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, requireRole("student"));
 
 /**
  * @swagger

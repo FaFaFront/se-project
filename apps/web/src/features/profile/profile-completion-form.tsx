@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/auth-context";
 import { apiClient } from "@/lib/api-client";
 import { getToken, getUser, saveUser } from "@/lib/auth-storage";
+import { uploadImageToGCS, ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_BYTES } from "@/lib/upload";
 import type { PublicUser } from "@/types/user";
 
 export const GRADE_LEVELS = [
@@ -94,12 +95,27 @@ export function ProfileCompletionForm() {
 
     if (!isValid) return;
 
-    const profileData = isStudent
-      ? { name: trimmedName, gradeLevel, goals: goals.trim() }
-      : { name: trimmedName, hourlyRate: hourlyRateNumber };
-
     try {
       setIsPending(true);
+
+      let uploadedProfileUrl: string | undefined = undefined;
+      if (profileImage) {
+        uploadedProfileUrl = await uploadImageToGCS(profileImage, "avatars");
+      }
+
+      const profileData = isStudent
+        ? {
+            name: trimmedName,
+            gradeLevel,
+            goals: goals.trim(),
+            ...(uploadedProfileUrl ? { profileUrl: uploadedProfileUrl } : {}),
+          }
+        : {
+            name: trimmedName,
+            hourlyRate: hourlyRateNumber,
+            ...(uploadedProfileUrl ? { profileUrl: uploadedProfileUrl } : {}),
+          };
+
       const updatedUser = await apiClient.post<PublicUser>("/users/profile", profileData);
 
       const currentUser = getUser();
@@ -242,7 +258,7 @@ export function ProfileCompletionForm() {
                 id={photoInputId}
                 name="profile_image"
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,image/gif"
                 className="sr-only"
                 aria-label="Choose profile photo"
                 aria-invalid={Boolean(profileImageError)}
@@ -251,8 +267,17 @@ export function ProfileCompletionForm() {
                   const file = event.target.files?.[0];
                   if (!file) return;
 
-                  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-                    setProfileImageError("Please choose a JPG, PNG, or WebP image.");
+                  if (
+                    !ALLOWED_IMAGE_TYPES.includes(file.type as (typeof ALLOWED_IMAGE_TYPES)[number])
+                  ) {
+                    setProfileImageError("Please choose a JPG, PNG, WebP, or GIF image.");
+                    event.target.value = "";
+                    setProfileImage(null);
+                    return;
+                  }
+
+                  if (file.size > MAX_IMAGE_SIZE_BYTES) {
+                    setProfileImageError("Image must be 10 MB or smaller.");
                     event.target.value = "";
                     setProfileImage(null);
                     return;

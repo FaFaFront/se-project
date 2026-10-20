@@ -11,12 +11,14 @@ export const CLASSROOM_STATUS_LABEL: Record<ClassroomStatus, string> = {
 /** Status filter on the tutor's classroom list; "all" sends no status filter. */
 export type ClassroomStatusFilter = ClassroomStatus | "all";
 
-/** Limited student summary — the API never includes contact details. */
-export type ClassroomStudentSummary = {
+export type ClassroomParticipant = {
   id: string;
   name: string | null;
   profileUrl: string | null;
 };
+
+/** Limited student summary — the API never includes contact details. */
+export type ClassroomStudentSummary = ClassroomParticipant;
 
 /** One row of `GET /classrooms`. */
 export type ClassroomListItem = {
@@ -33,4 +35,53 @@ export type ClassroomListQuery = {
   search: string;
   subjectId: string;
   status: ClassroomStatusFilter;
+};
+
+type ClassroomDetailBase = {
+  id: string;
+  subject: {
+    id: string;
+    name: string;
+  };
+  participant: ClassroomParticipant;
+  pricePerHour: number;
+  status: ClassroomStatus;
+};
+
+export type TutorClassroomDetail = ClassroomDetailBase & {
+  viewerRole: "tutor";
+  createdAt: string;
+};
+
+export type StudentClassroomDetail = ClassroomDetailBase & {
+  viewerRole: "student";
+};
+
+export type ClassroomDetail = TutorClassroomDetail | StudentClassroomDetail;
+
+export type Classroom = {
+  id: string;
+  tutorId: string;
+  studentId: string;
+  subjectId: string;
+  pricePerHour: number;
+  status: ClassroomStatus;
+  createdAt: string;
+};
+
+/** Body of `PATCH /classrooms/:classroomId`; both fields are required. */
+export type UpdateClassroomRequest = {
+  subjectId: string;
+  pricePerHour: number;
+};
+
+export type CreateClassroomRequest = {
+  conversationId: string;
+  subjectId: string;
+  pricePerHour?: number;
+};
+
+export type DeactivateClassroomResponse = {
+  id: string;
+  status: "completed";
 };

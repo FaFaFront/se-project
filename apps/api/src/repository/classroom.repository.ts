@@ -22,7 +22,50 @@ const classroomListSelect = {
   },
 } as const;
 
+const classroomSelect = {
+  id: true,
+  tutorId: true,
+  studentId: true,
+  subjectId: true,
+  pricePerHour: true,
+  status: true,
+  createdAt: true,
+} as const satisfies Prisma.ClassroomSelect;
+
+const classroomDetailSelect = {
+  id: true,
+  tutorId: true,
+  studentId: true,
+  pricePerHour: true,
+  status: true,
+  createdAt: true,
+  subject: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+  tutor: {
+    select: {
+      id: true,
+      name: true,
+      profileUrl: true,
+    },
+  },
+  student: {
+    select: {
+      id: true,
+      name: true,
+      profileUrl: true,
+    },
+  },
+} as const satisfies Prisma.ClassroomSelect;
+
 export type ClassroomListRow = Prisma.ClassroomGetPayload<{ select: typeof classroomListSelect }>;
+export type ClassroomRow = Prisma.ClassroomGetPayload<{ select: typeof classroomSelect }>;
+export type ClassroomDetailRow = Prisma.ClassroomGetPayload<{
+  select: typeof classroomDetailSelect;
+}>;
 
 export type ClassroomListFilter = {
   search?: string;
@@ -51,6 +94,51 @@ export const classroomRepository = {
       select: classroomListSelect,
       // id breaks ties between classrooms created in the same instant.
       orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+    });
+  },
+
+  async findDetailById(classroomId: string): Promise<ClassroomDetailRow | null> {
+    return prisma.classroom.findUnique({
+      where: { id: classroomId },
+      select: classroomDetailSelect,
+    });
+  },
+
+  async create(data: {
+    tutorId: string;
+    studentId: string;
+    subjectId: string;
+    pricePerHour: Prisma.Decimal;
+  }): Promise<ClassroomRow> {
+    return prisma.classroom.create({
+      data,
+      select: classroomSelect,
+    });
+  },
+
+  async findById(classroomId: string) {
+    return prisma.classroom.findUnique({
+      where: { id: classroomId },
+      select: { id: true, tutorId: true, status: true },
+    });
+  },
+
+  /** Only an active classroom owned by `tutorId` is changed; `count` is 0 otherwise. */
+  async updateActiveDetails(
+    classroomId: string,
+    tutorId: string,
+    data: { subjectId: string; pricePerHour: Prisma.Decimal }
+  ) {
+    return prisma.classroom.updateMany({
+      where: { id: classroomId, tutorId, status: ClassroomStatus.active },
+      data,
+    });
+  },
+
+  async completeActive(classroomId: string, tutorId: string) {
+    return prisma.classroom.updateMany({
+      where: { id: classroomId, tutorId, status: ClassroomStatus.active },
+      data: { status: ClassroomStatus.completed },
     });
   },
 };

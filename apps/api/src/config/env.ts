@@ -18,4 +18,11 @@ export const env = {
   DATABASE_URL: getEnv("DATABASE_URL"),
   CORS_ORIGIN: getEnvOptional("CORS_ORIGIN", "http://localhost:3000"),
   JWT_SECRET: getEnv("JWT_SECRET"),
+  REDIS_URL: getEnvOptional("REDIS_URL", ""),
+  // Google Cloud Storage
+  GCS_PROJECT_ID: getEnvOptional("GOOGLE_CLOUD_PROJECT_ID", ""),
+  GCS_BUCKET: getEnvOptional("GOOGLE_STORAGE_BUCKET", ""),
+  GCS_CREDENTIALS_PATH: getEnvOptional("GOOGLE_STORAGE_CREDENTIALS_PATH", ""),
+  GCS_SERVICE_ACCOUNT_KEY: getEnvOptional("GOOGLE_STORAGE_SERVICE_ACCOUNT_KEY", ""),
+  GCS_PUBLIC_BASE_URL: getEnvOptional("GCS_PUBLIC_BASE_URL", ""),
 } as const;

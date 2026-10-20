@@ -221,9 +221,8 @@ function EmptyState({ query, onShowAll, onClear }: EmptyStateProps) {
 }
 
 /**
- * My Classroom entry point. The /classroom prefix is open to both roles (the
- * detail route under it is meant for tutors and students alike, though it is
- * only a placeholder for now), so the tutor-only list is gated here by role.
+ * My Classroom entry point. The detail route is available to tutors and
+ * students, while this searchable list endpoint currently belongs to tutors.
  */
 export function ClassroomListPanel() {
   const { profile } = useAuth();
