@@ -27,6 +27,7 @@ const classroomListQuerySchema = z.object({
       message: 'Status must be one of "active", "completed", or "all"',
     })
     .optional()
+    // "all" and an empty value both mean "don't filter by status".
     .transform((value) => (value === "all" || value === "" ? undefined : value)),
 });
 

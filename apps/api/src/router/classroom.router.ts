@@ -124,7 +124,10 @@ export const classroomRouter = Router();
  * /classrooms:
  *   get:
  *     summary: List the authenticated tutor's classrooms
- *     description: Returns the tutor's classrooms, with optional combined search, subject, and status filters.
+ *     description: >
+ *       Returns only classrooms owned by the tutor in the access token; a tutor ID is never
+ *       accepted from the client. Search, subject, and status filters combine (AND). Results
+ *       are ordered newest first (createdAt desc, then id). An empty array means no match.
  *     tags: [Classrooms]
  *     security:
  *       - bearerAuth: []
@@ -132,13 +135,14 @@ export const classroomRouter = Router();
  *       - in: query
  *         name: search
  *         schema: { type: string, maxLength: 100 }
- *         description: Case-insensitive match against the student's or subject's name
+ *         description: Trimmed, case-insensitive match against the student's name or the subject name
  *       - in: query
  *         name: subjectId
  *         schema: { type: string, format: uuid }
  *       - in: query
  *         name: status
  *         schema: { type: string, enum: [active, completed, all] }
+ *         description: Omit or pass "all" to include every status
  *     responses:
  *       200:
  *         description: Classrooms retrieved successfully
