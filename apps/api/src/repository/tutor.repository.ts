@@ -67,6 +67,19 @@ export const tutorRepository = {
     });
   },
 
+  /** One publicly visible tutor, identified by their immutable user UUID. */
+  async findActiveById(tutorId: string): Promise<TutorListRow | null> {
+    return prisma.user.findFirst({
+      where: {
+        id: tutorId,
+        role: Role.tutor,
+        accountStatus: AccountStatus.ACTIVE,
+        profileComplete: true,
+      },
+      select: tutorListSelect,
+    });
+  },
+
   async findRatings(tutorIds: string[]): Promise<TutorRatingRow[]> {
     if (tutorIds.length === 0) {
       return [];
