@@ -12,6 +12,7 @@ model MeetSession {
   durationHours Decimal           @db.Decimal(4, 2)
   status        MeetSessionStatus @default(scheduled)
   meetLink      String
+  meetSpaceName String?
   startedAt     DateTime?
   endedAt       DateTime?
   amountCharged Decimal?          @db.Decimal(10, 2)
