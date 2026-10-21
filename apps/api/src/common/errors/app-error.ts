@@ -37,3 +37,15 @@ export class ConflictError extends AppError {
     super(message, 409);
   }
 }
+
+export class ConfigurationError extends AppError {
+  constructor(message = "Server configuration error") {
+    super(message, 500);
+  }
+}
+
+export class ExternalServiceError extends AppError {
+  constructor(message = "External service error", statusCode = 502) {
+    super(message, statusCode);
+  }
+}
