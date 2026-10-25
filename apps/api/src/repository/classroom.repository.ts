@@ -59,6 +59,18 @@ const classroomDetailSelect = {
       profileUrl: true,
     },
   },
+  sessions: {
+    select: {
+      id: true,
+      classroomId: true,
+      scheduledAt: true,
+      durationHours: true,
+      status: true,
+      meetLink: true,
+      meetSpaceName: true,
+    },
+    orderBy: [{ scheduledAt: "asc" as const }],
+  },
 } as const satisfies Prisma.ClassroomSelect;
 
 export type ClassroomListRow = Prisma.ClassroomGetPayload<{ select: typeof classroomListSelect }>;
@@ -119,7 +131,7 @@ export const classroomRepository = {
   async findById(classroomId: string) {
     return prisma.classroom.findUnique({
       where: { id: classroomId },
-      select: { id: true, tutorId: true, status: true },
+      select: { id: true, tutorId: true, studentId: true, status: true },
     });
   },
 

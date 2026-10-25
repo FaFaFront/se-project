@@ -11,6 +11,7 @@ import {
   type ClassroomListFilter,
 } from "../repository/classroom.repository.js";
 import { conversationRepository } from "../repository/conversation.repository.js";
+import { sessionRepository } from "../repository/session.repository.js";
 import { tutorRepository } from "../repository/tutor.repository.js";
 
 export type ClassroomListItem = {
@@ -63,6 +64,15 @@ function mapTutorClassroomDetail(classroom: ClassroomDetailRow) {
     viewerRole: "tutor" as const,
     participant: mapParticipant(classroom.student),
     createdAt: classroom.createdAt.toISOString(),
+    sessions: classroom.sessions.map((s) => ({
+      id: s.id,
+      classroomId: s.classroomId,
+      scheduledAt: s.scheduledAt.toISOString(),
+      durationHours: Number(s.durationHours),
+      status: s.status,
+      meetLink: s.meetLink,
+      meetSpaceName: s.meetSpaceName,
+    })),
   };
 }
 
@@ -154,6 +164,15 @@ export const classroomService = {
         status: classroom.status,
         viewerRole: "student" as const,
         participant: mapParticipant(classroom.tutor),
+        sessions: classroom.sessions.map((s) => ({
+          id: s.id,
+          classroomId: s.classroomId,
+          scheduledAt: s.scheduledAt.toISOString(),
+          durationHours: Number(s.durationHours),
+          status: s.status,
+          meetLink: s.meetLink,
+          meetSpaceName: s.meetSpaceName,
+        })),
       };
     }
 
@@ -196,6 +215,11 @@ export const classroomService = {
 
     const classroom = await requireAssignedClassroom(classroomId, userId);
     if (classroom.status !== ClassroomStatus.completed) {
+      if (await sessionRepository.hasOngoingForClassroom(classroomId)) {
+        throw new BadRequestError("Cannot deactivate a classroom with an ongoing session");
+      }
+      await sessionRepository.cancelAllScheduledForClassroom(classroomId);
+
       const { count } = await classroomRepository.completeActive(classroomId, userId);
       if (count === 0) {
         const current = await requireAssignedClassroom(classroomId, userId);
