@@ -1,4 +1,5 @@
 import type { Subject } from "@/types/subject";
+import type { ClassroomSession } from "@/types/session";
 
 export type ClassroomStatus = "active" | "completed";
 
@@ -46,6 +47,7 @@ type ClassroomDetailBase = {
   participant: ClassroomParticipant;
   pricePerHour: number;
   status: ClassroomStatus;
+  sessions: ClassroomSession[];
 };
 
 export type TutorClassroomDetail = ClassroomDetailBase & {
