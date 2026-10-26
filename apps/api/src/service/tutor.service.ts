@@ -1,5 +1,6 @@
 import { tutorRepository, type TutorListFilter } from "../repository/tutor.repository.js";
 import { NotFoundError } from "../common/errors/app-error.js";
+import { reviewRepository } from "../repository/review.repository.js";
 
 export type TutorSortBy = "rating" | "price" | "popularity";
 export type SortOrder = "asc" | "desc";
@@ -22,6 +23,16 @@ export type TutorListItem = {
   /** Distinct students who have had a classroom with this tutor. */
   studentCount: number;
 };
+
+export type TutorReview = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  student: { name: string | null; profileUrl: string | null };
+};
+
+export type TutorDetail = TutorListItem & { reviews: TutorReview[] };
 
 const DEFAULT_ORDER: Record<TutorSortBy, SortOrder> = {
   rating: "desc",
@@ -107,23 +118,33 @@ export const tutorService = {
       .map(({ item }) => item);
   },
 
-  async getTutor(tutorId: string): Promise<TutorListItem> {
+  async getTutor(tutorId: string): Promise<TutorDetail> {
     const tutor = await tutorRepository.findActiveById(tutorId);
     if (!tutor) {
       throw new NotFoundError("Tutor not found");
     }
 
-    const [ratings, popularity] = await Promise.all([
+    const [ratings, popularity, reviews] = await Promise.all([
       tutorRepository.findRatings([tutorId]),
       tutorRepository.findPopularity([tutorId]),
+      reviewRepository.findByTutor(tutorId),
     ]);
     const rating = ratings[0];
 
-    return toTutorListItem(
-      tutor,
-      rating?.averageRating ?? null,
-      rating?.reviewCount ?? 0,
-      popularity[0]?.studentCount ?? 0
-    );
+    return {
+      ...toTutorListItem(
+        tutor,
+        rating?.averageRating ?? null,
+        rating?.reviewCount ?? 0,
+        popularity[0]?.studentCount ?? 0
+      ),
+      reviews: reviews.map((review) => ({
+        id: review.id,
+        rating: review.rating,
+        comment: review.comment,
+        createdAt: review.createdAt.toISOString(),
+        student: review.student,
+      })),
+    };
   },
 };
