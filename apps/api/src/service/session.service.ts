@@ -41,6 +41,7 @@ function isWithinJoinWindow(opensAt: Date, endsAt: Date, now: Date) {
 function mapSession(
   session: SessionListRow,
   pricePerHour: Prisma.Decimal,
+  classroomStatus: ClassroomStatus,
   viewerRole: "tutor" | "student",
   now: Date
 ): ClassroomSessionItem {
@@ -55,7 +56,9 @@ function mapSession(
     cost: sessionCost(pricePerHour, session.durationHours).toFixed(2),
     // A UI hint only; POST /sessions/:sessionId/join re-checks everything, including balance.
     canJoinNow:
-      JOINABLE_STATUSES.includes(session.status) && isWithinJoinWindow(opensAt, endsAt, now),
+      classroomStatus === ClassroomStatus.active &&
+      JOINABLE_STATUSES.includes(session.status) &&
+      isWithinJoinWindow(opensAt, endsAt, now),
     viewerHasJoined:
       (viewerRole === "tutor" ? session.tutorJoinedAt : session.studentJoinedAt) !== null,
   };
@@ -72,7 +75,7 @@ export const sessionService = {
 
     const now = new Date();
     const sessions = (await sessionRepository.findByClassroom(classroomId)).map((session) =>
-      mapSession(session, classroom.pricePerHour, viewerRole, now)
+      mapSession(session, classroom.pricePerHour, classroom.status, viewerRole, now)
     );
 
     const isUpcoming = (s: ClassroomSessionItem) =>

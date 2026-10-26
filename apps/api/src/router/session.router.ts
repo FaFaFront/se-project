@@ -31,8 +31,9 @@ export const sessionRouter = Router();
  *         canJoinNow:
  *           type: boolean
  *           description: >
- *             Status is scheduled/ongoing and now is inside the join window. A UI hint only — it
- *             does not check the student's balance, which the join endpoint does.
+ *             Classroom is active, status is scheduled/ongoing, and now is inside the join
+ *             window. A UI hint only — it does not check the student's balance, which the join
+ *             endpoint does.
  *         viewerHasJoined:
  *           type: boolean
  *           description: Whether the authenticated participant has joined this session before.

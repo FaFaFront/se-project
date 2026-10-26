@@ -36,7 +36,7 @@ export const sessionRepository = {
   findClassroomForSessions(classroomId: string) {
     return prisma.classroom.findUnique({
       where: { id: classroomId },
-      select: { id: true, tutorId: true, studentId: true, pricePerHour: true },
+      select: { id: true, tutorId: true, studentId: true, pricePerHour: true, status: true },
     });
   },
 
