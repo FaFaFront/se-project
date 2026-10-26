@@ -5,6 +5,7 @@ import {
   requireRole,
 } from "../common/middleware/auth.middleware.js";
 import { classroomController } from "../controller/classroom.controller.js";
+import { sessionController } from "../controller/session.controller.js";
 
 export const classroomRouter = Router();
 
@@ -346,4 +347,44 @@ classroomRouter.patch(
   requireActiveAccount,
   requireRole("tutor"),
   classroomController.deactivate
+);
+
+/**
+ * @swagger
+ * /classrooms/{classroomId}/sessions:
+ *   get:
+ *     summary: List a classroom's sessions for its participants
+ *     description: >
+ *       Returns upcoming and past sessions with schedule, status, and cost (pricePerHour ×
+ *       durationHours). The Meet link is never included; get it from POST
+ *       /sessions/{sessionId}/join.
+ *     tags: [Classrooms, Sessions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classroomId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Sessions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Sessions retrieved successfully }
+ *                 data: { $ref: '#/components/schemas/ClassroomSessionList' }
+ *       400: { description: Malformed classroom ID }
+ *       401: { description: Missing or invalid authentication }
+ *       403: { description: The user's account is not active }
+ *       404: { description: Classroom not found, or the user is not assigned to it }
+ */
+classroomRouter.get(
+  "/:classroomId/sessions",
+  authMiddleware,
+  requireActiveAccount,
+  sessionController.listClassroomSessions
 );

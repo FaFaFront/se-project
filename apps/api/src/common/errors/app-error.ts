@@ -1,7 +1,11 @@
 export class AppError extends Error {
   constructor(
     message: string,
-    public readonly statusCode: number
+    public readonly statusCode: number,
+    /** Machine-readable code for errors the client must tell apart from others with the same status. */
+    public readonly code?: string,
+    /** Extra details returned to the client alongside `code`. */
+    public readonly data?: unknown
   ) {
     super(message);
     this.name = new.target.name;
@@ -47,5 +51,11 @@ export class ConfigurationError extends AppError {
 export class ExternalServiceError extends AppError {
   constructor(message = "External service error", statusCode = 502) {
     super(message, statusCode);
+  }
+}
+
+export class InsufficientBalanceError extends AppError {
+  constructor(details: { required: string; available: string }) {
+    super("Insufficient balance to join this session", 402, "INSUFFICIENT_BALANCE", details);
   }
 }

@@ -24,7 +24,7 @@ yarn install
 # start Postgres in Docker
 yarn db:create
 
-# generate the Prisma client and push the schema
+# generate the Prisma client and push the schemay
 yarn db:generate
 yarn db:push
 
