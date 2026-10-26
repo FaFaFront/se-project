@@ -91,13 +91,17 @@ export function TopUpForm() {
     const token = getToken();
     const current = () => alive.current && getToken() === token;
     const wasRetry = draft !== null;
-    const request: TopUpRecovery = draft ?? { version: 1, requestId: crypto.randomUUID(), amount };
     let sent = false;
     try {
       if (!navigator.locks)
         throw new Error(
           "This browser cannot safely coordinate top-up recovery. Use a supported browser over HTTPS or localhost."
         );
+      const request: TopUpRecovery = draft ?? {
+        version: 1,
+        requestId: crypto.randomUUID(),
+        amount,
+      };
       await navigator.locks.request(
         topUpRecoveryKey(profile.id),
         { ifAvailable: true },
