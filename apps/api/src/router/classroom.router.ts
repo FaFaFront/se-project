@@ -96,9 +96,28 @@ export const classroomRouter = Router();
  *         id: { type: string, format: uuid }
  *         name: { type: string, nullable: true, example: Alex Smith }
  *         profileUrl: { type: string, format: uri, nullable: true }
+ *     CreateReviewRequest:
+ *       type: object
+ *       additionalProperties: false
+ *       required: [rating]
+ *       properties:
+ *         rating: { type: integer, minimum: 1, maximum: 5, example: 5 }
+ *         comment:
+ *           type: string
+ *           nullable: true
+ *           maxLength: 1000
+ *           description: Optional. Trimmed; a blank comment is stored as null.
+ *     Review:
+ *       type: object
+ *       required: [id, rating, comment, createdAt]
+ *       properties:
+ *         id: { type: string, format: uuid }
+ *         rating: { type: integer, minimum: 1, maximum: 5, example: 5 }
+ *         comment: { type: string, nullable: true, example: Clear explanations and useful practice. }
+ *         createdAt: { type: string, format: date-time }
  *     TutorClassroomDetail:
  *       type: object
- *       required: [id, viewerRole, subject, participant, pricePerHour, status, createdAt]
+ *       required: [id, viewerRole, subject, participant, pricePerHour, status, createdAt, review]
  *       properties:
  *         id: { type: string, format: uuid }
  *         viewerRole: { type: string, enum: [tutor] }
@@ -107,9 +126,13 @@ export const classroomRouter = Router();
  *         pricePerHour: { type: number, example: 750 }
  *         status: { type: string, enum: [active, completed] }
  *         createdAt: { type: string, format: date-time }
+ *         review:
+ *           allOf: [{ $ref: '#/components/schemas/Review' }]
+ *           nullable: true
+ *           description: The student's review of this classroom, or null when not reviewed yet
  *     StudentClassroomDetail:
  *       type: object
- *       required: [id, viewerRole, subject, participant, pricePerHour, status]
+ *       required: [id, viewerRole, subject, participant, pricePerHour, status, review]
  *       properties:
  *         id: { type: string, format: uuid }
  *         viewerRole: { type: string, enum: [student] }
@@ -117,6 +140,10 @@ export const classroomRouter = Router();
  *         participant: { $ref: '#/components/schemas/ClassroomParticipantSummary' }
  *         pricePerHour: { type: number, example: 750 }
  *         status: { type: string, enum: [active, completed] }
+ *         review:
+ *           allOf: [{ $ref: '#/components/schemas/Review' }]
+ *           nullable: true
+ *           description: The student's review of this classroom, or null when not reviewed yet
  */
 
 /**
@@ -346,4 +373,49 @@ classroomRouter.patch(
   requireActiveAccount,
   requireRole("tutor"),
   classroomController.deactivate
+);
+
+/**
+ * @swagger
+ * /classrooms/{classroomId}/review:
+ *   post:
+ *     summary: Review the tutor of a completed classroom
+ *     description: Only the classroom's student may review it, once, after the classroom is completed. Reviews cannot be edited or deleted.
+ *     tags: [Classrooms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: classroomId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/CreateReviewRequest' }
+ *     responses:
+ *       201:
+ *         description: Review created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required: [success, message, data]
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Review submitted successfully }
+ *                 data: { $ref: '#/components/schemas/Review' }
+ *       400: { description: "Malformed classroom ID, rating missing or outside 1-5, comment over 1000 characters, or extra body fields" }
+ *       401: { description: "Missing or invalid JWT, or the authenticated account no longer exists" }
+ *       403: { description: "Inactive account, not a student, or the classroom is not completed" }
+ *       404: { description: Classroom not found, or the student is not assigned to it }
+ *       409: { description: The classroom has already been reviewed }
+ */
+classroomRouter.post(
+  "/:classroomId/review",
+  authMiddleware,
+  requireActiveAccount,
+  requireRole("student"),
+  classroomController.createReview
 );

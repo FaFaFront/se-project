@@ -6,6 +6,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { DeactivateClassroomAction } from "@/features/classroom/deactivate-classroom-action";
 import { ProfileAvatar } from "@/features/profile/profile-avatar";
 import { formatCurrency } from "@/features/profile/profile-details";
+import { ClassroomReview } from "@/features/reviews/classroom-review";
 import { cn } from "@/lib/utils";
 import { useClassroomDetail, type ClassroomErrorKind } from "./use-classroom-detail";
 
@@ -165,6 +166,8 @@ export function ClassroomDetail({ classroomId }: { classroomId: string }) {
               </div>
             )}
           </dl>
+
+          <ClassroomReview key={classroom.id} classroom={classroom} />
         </div>
       </section>
     </div>
