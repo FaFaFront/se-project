@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type TransactionType } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 import {
   readWithdrawalMetadata,
@@ -6,6 +6,8 @@ import {
   withdrawalTransactionId,
   type WithdrawalMetadata,
 } from "../common/utils/withdrawal-metadata.js";
+import { readTopUpMetadata, serializeTopUpMetadata } from "../common/utils/top-up-metadata.js";
+import { transactionRequestId } from "../common/utils/transaction-id.js";
 
 type WithdrawalInput = {
   userId: string;
@@ -18,12 +20,81 @@ type WithdrawalInput = {
   accountHolderName: string;
 };
 
-export const withdrawalRepository = {
-  findOwned(userId: string, id: string) {
-    return prisma.transaction.findFirst({ where: { id, userId, type: "withdrawal" } });
+export const transactionRepository = {
+  findOwned(userId: string, id: string, type?: TransactionType) {
+    return prisma.transaction.findFirst({ where: { id, userId, ...(type && { type }) } });
   },
 
-  submit(input: WithdrawalInput) {
+  async listOwned(userId: string, input: { page: number; limit: number; type?: TransactionType }) {
+    const where = { userId, ...(input.type && { type: input.type }) };
+    const [items, total] = await prisma.$transaction([
+      prisma.transaction.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        skip: (input.page - 1) * input.limit,
+        take: input.limit,
+      }),
+      prisma.transaction.count({ where }),
+    ]);
+    return { items, total };
+  },
+
+  submitTopUp(input: { userId: string; requestId: string; amount: Prisma.Decimal }) {
+    return prisma.$transaction(
+      async (tx) => {
+        const users = await tx.$queryRaw<{ role: string; walletBalance: Prisma.Decimal }[]>`
+        SELECT "role", "walletBalance" FROM "users" WHERE "id" = ${input.userId} FOR UPDATE
+      `;
+        const user = users[0];
+        if (!user) return { kind: "missing-user" } as const;
+        if (user.role !== "student") return { kind: "forbidden" } as const;
+
+        const id = transactionRequestId("topup", input.userId, input.requestId);
+        const existing = await tx.transaction.findUnique({ where: { id } });
+        if (existing) {
+          const metadata = readTopUpMetadata(existing);
+          if (
+            existing.userId !== input.userId ||
+            !metadata ||
+            metadata.requestId !== input.requestId ||
+            !existing.amount.equals(input.amount)
+          ) {
+            return { kind: "conflict" } as const;
+          }
+          return { kind: "success", transaction: existing, replayed: true } as const;
+        }
+
+        if (
+          new Prisma.Decimal(user.walletBalance).plus(input.amount).greaterThan("9999999999.99")
+        ) {
+          return { kind: "balance-overflow" } as const;
+        }
+        const wallet = await tx.user.update({
+          where: { id: input.userId },
+          data: { walletBalance: { increment: input.amount } },
+          select: { walletBalance: true },
+        });
+        const transaction = await tx.transaction.create({
+          data: {
+            id,
+            userId: input.userId,
+            type: "topup",
+            amount: input.amount,
+            note: serializeTopUpMetadata({
+              kind: "topup",
+              version: 1,
+              requestId: input.requestId,
+              balanceAfter: wallet.walletBalance.toFixed(2),
+            }),
+          },
+        });
+        return { kind: "success", transaction, replayed: false } as const;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted }
+    );
+  },
+
+  submitWithdrawal(input: WithdrawalInput) {
     return prisma.$transaction(
       async (tx) => {
         // Serialize requests for this wallet before checking idempotency or balance.

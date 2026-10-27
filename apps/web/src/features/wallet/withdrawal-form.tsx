@@ -12,7 +12,7 @@ import { apiClient, ApiError } from "@/lib/api-client";
 import { clearSession, getToken } from "@/lib/auth-storage";
 import { formatTHB, withdrawalCents } from "@/lib/withdrawal";
 import type { UserProfile } from "@/types/user";
-import { WITHDRAWAL_BANKS, type Withdrawal } from "@/types/withdrawal";
+import { WITHDRAWAL_BANKS, type Withdrawal } from "@/types/transaction";
 import {
   clearRecovery,
   isDefinitiveFirstRejection,
@@ -92,7 +92,7 @@ export function WithdrawalForm() {
             setBank(saved.bankCode);
             try {
               const recovered = await apiClient.get<Withdrawal>(
-                `/wallet/withdrawals/by-request/${saved.requestId}`
+                `/transactions/withdrawals/by-request/${saved.requestId}`
               );
               if (!current()) return;
               setReceipt(recovered);
@@ -267,7 +267,7 @@ export function WithdrawalForm() {
         setDraft(request);
         sent = true;
         const result = await apiClient
-          .post<Withdrawal>("/wallet/withdrawals", {
+          .post<Withdrawal>("/transactions/withdrawals", {
             requestId: request.requestId,
             amount: request.amount,
             bankCode: request.bankCode,

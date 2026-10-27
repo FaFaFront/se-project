@@ -6,8 +6,7 @@ import { subjectRouter } from "./router/subject.router.js";
 import { tutorRouter } from "./router/tutor.router.js";
 import { uploadRouter } from "./router/upload.router.js";
 import { userRouter } from "./router/user.router.js";
-import { walletRouter } from "./router/wallet.router.js";
-import { withdrawalRouter } from "./router/withdrawal.router.js";
+import { transactionRouter } from "./router/transaction.router.js";
 
 export const apiRoutes = Router();
 
@@ -18,5 +17,4 @@ apiRoutes.use("/subjects", subjectRouter);
 apiRoutes.use("/tutors", tutorRouter);
 apiRoutes.use("/upload", uploadRouter);
 apiRoutes.use("/users", userRouter);
-apiRoutes.use("/wallet/withdrawals", withdrawalRouter);
-apiRoutes.use("/wallet", walletRouter);
+apiRoutes.use("/transactions", transactionRouter);
