@@ -1,4 +1,4 @@
-import { MeetSessionStatus, Prisma } from "@prisma/client";
+import { ClassroomStatus, MeetSessionStatus, Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 
 // meetLink and meetSpaceName are deliberately absent: the link is only handed out by the join endpoint.
@@ -65,12 +65,25 @@ export const sessionRepository = {
   },
 
   /**
-   * Re-checks the status, applies the student balance gate, and records the first join, all
+   * Re-checks the classroom and session status, applies the student balance gate, and records the first join, all
    * under a lock on the student's wallet so parallel joins can't both pass the balance check.
    */
   join(input: JoinSessionInput): Promise<JoinSessionResult> {
     return prisma.$transaction(
       async (tx) => {
+        // Share-lock the classroom row so a concurrent deactivation (which updates that row)
+        // waits for this transaction, or has already committed and is seen by this read.
+        const classrooms = await tx.$queryRaw<{ status: string }[]>`
+          SELECT c."status"::text AS "status"
+          FROM "classrooms" c
+          JOIN "meet_sessions" s ON s."classroomId" = c."id"
+          WHERE s."id" = ${input.sessionId}
+          FOR SHARE OF c
+        `;
+        if (classrooms[0]?.status !== ClassroomStatus.active) {
+          return { kind: "not-joinable" } as const;
+        }
+
         if (input.role === "student" && input.studentId && input.cost) {
           const users = await tx.$queryRaw<{ walletBalance: Prisma.Decimal }[]>`
             SELECT "walletBalance" FROM "users" WHERE "id" = ${input.studentId} FOR UPDATE
