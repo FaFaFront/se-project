@@ -1,3 +1,4 @@
+import type { Review } from "@/types/review";
 import type { Subject } from "@/types/subject";
 
 export type ClassroomStatus = "active" | "completed";
@@ -46,6 +47,8 @@ type ClassroomDetailBase = {
   participant: ClassroomParticipant;
   pricePerHour: number;
   status: ClassroomStatus;
+  /** The student's review; null until one is submitted. */
+  review: Review | null;
 };
 
 export type TutorClassroomDetail = ClassroomDetailBase & {

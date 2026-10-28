@@ -1,5 +1,6 @@
 import { ClassroomStatus, Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
+import { reviewSelect } from "./review.repository.js";
 
 const classroomListSelect = {
   id: true,
@@ -59,6 +60,7 @@ const classroomDetailSelect = {
       profileUrl: true,
     },
   },
+  review: { select: reviewSelect },
 } as const satisfies Prisma.ClassroomSelect;
 
 export type ClassroomListRow = Prisma.ClassroomGetPayload<{ select: typeof classroomListSelect }>;
@@ -119,7 +121,7 @@ export const classroomRepository = {
   async findById(classroomId: string) {
     return prisma.classroom.findUnique({
       where: { id: classroomId },
-      select: { id: true, tutorId: true, status: true },
+      select: { id: true, tutorId: true, studentId: true, status: true },
     });
   },
 

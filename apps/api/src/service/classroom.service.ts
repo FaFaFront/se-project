@@ -11,6 +11,7 @@ import {
   type ClassroomListFilter,
 } from "../repository/classroom.repository.js";
 import { conversationRepository } from "../repository/conversation.repository.js";
+import { reviewRepository, type ReviewRow } from "../repository/review.repository.js";
 import { tutorRepository } from "../repository/tutor.repository.js";
 
 export type ClassroomListItem = {
@@ -31,6 +32,11 @@ type CreateClassroomInput = {
 type UpdateClassroomInput = {
   subjectId: string;
   pricePerHour: number;
+};
+
+type CreateReviewInput = {
+  rating: number;
+  comment?: string;
 };
 
 function mapParticipant(participant: {
@@ -54,6 +60,15 @@ async function requireAssignedClassroom(classroomId: string, tutorId: string) {
   return classroom;
 }
 
+function mapReview(review: ReviewRow) {
+  return {
+    id: review.id,
+    rating: review.rating,
+    comment: review.comment,
+    createdAt: review.createdAt.toISOString(),
+  };
+}
+
 function mapTutorClassroomDetail(classroom: ClassroomDetailRow) {
   return {
     id: classroom.id,
@@ -63,6 +78,7 @@ function mapTutorClassroomDetail(classroom: ClassroomDetailRow) {
     viewerRole: "tutor" as const,
     participant: mapParticipant(classroom.student),
     createdAt: classroom.createdAt.toISOString(),
+    review: classroom.review && mapReview(classroom.review),
   };
 }
 
@@ -154,6 +170,7 @@ export const classroomService = {
         status: classroom.status,
         viewerRole: "student" as const,
         participant: mapParticipant(classroom.tutor),
+        review: classroom.review && mapReview(classroom.review),
       };
     }
 
@@ -187,6 +204,35 @@ export const classroomService = {
       throw new NotFoundError("Classroom not found");
     }
     return mapTutorClassroomDetail(updated);
+  },
+
+  /** Reviews are one-shot: a completed classroom's student may submit exactly one. */
+  async createReview(classroomId: string, studentId: string, input: CreateReviewInput) {
+    const classroom = await classroomRepository.findById(classroomId);
+    // Same 404 as GET /:classroomId so non-participants can't probe which IDs exist.
+    if (!classroom || classroom.studentId !== studentId) {
+      throw new NotFoundError("Classroom not found");
+    }
+    if (classroom.status !== ClassroomStatus.completed) {
+      throw new ForbiddenError("Only completed classrooms can be reviewed");
+    }
+
+    try {
+      const review = await reviewRepository.create({
+        classroomId,
+        studentId,
+        tutorId: classroom.tutorId,
+        rating: input.rating,
+        comment: input.comment ?? null,
+      });
+      return mapReview(review);
+    } catch (error) {
+      // classroomId is unique, so a second review (even a concurrent one) fails here.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        throw new ConflictError("This classroom has already been reviewed");
+      }
+      throw error;
+    }
   },
 
   async deactivate(classroomId: string, userId: string, role: string) {

@@ -32,6 +32,31 @@ export const tutorRouter = Router();
  *           type: integer
  *           description: Number of distinct students who have learned with the tutor
  *           example: 30
+ *     TutorReview:
+ *       type: object
+ *       required: [id, rating, comment, createdAt, student]
+ *       properties:
+ *         id: { type: string, format: uuid }
+ *         rating: { type: integer, minimum: 1, maximum: 5, example: 5 }
+ *         comment: { type: string, nullable: true }
+ *         createdAt: { type: string, format: date-time }
+ *         student:
+ *           type: object
+ *           description: Reviewer display details only; no ID or contact details
+ *           required: [name, profileUrl]
+ *           properties:
+ *             name: { type: string, nullable: true, example: Student Name }
+ *             profileUrl: { type: string, format: uri, nullable: true }
+ *     TutorDetail:
+ *       allOf:
+ *         - $ref: '#/components/schemas/TutorListItem'
+ *         - type: object
+ *           required: [reviews]
+ *           properties:
+ *             reviews:
+ *               type: array
+ *               description: All of the tutor's reviews, newest first; rating and reviewCount summarise them
+ *               items: { $ref: '#/components/schemas/TutorReview' }
  */
 
 /**
@@ -90,7 +115,7 @@ tutorRouter.get("/", tutorController.listTutors);
  * /tutors/{tutorId}:
  *   get:
  *     summary: Get one active tutor
- *     description: Retrieves the public profile for the UUID selected from the tutor directory.
+ *     description: Retrieves the public profile for the UUID selected from the tutor directory, with the tutor's reviews and average rating.
  *     tags: [Tutors]
  *     parameters:
  *       - in: path
@@ -100,6 +125,14 @@ tutorRouter.get("/", tutorController.listTutors);
  *     responses:
  *       200:
  *         description: Tutor retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Tutor retrieved successfully. }
+ *                 data: { $ref: '#/components/schemas/TutorDetail' }
  *       400: { description: Tutor ID must be a valid UUID }
  *       404: { description: Tutor not found }
  */

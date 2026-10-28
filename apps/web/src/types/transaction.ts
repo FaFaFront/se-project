@@ -1,3 +1,26 @@
+export type TransactionType = "topup" | "session_charge" | "earning" | "withdrawal";
+
+export type Transaction = {
+  id: string;
+  userId: string;
+  type: TransactionType;
+  amount: string;
+  relatedSessionId: string | null;
+  note: string | null;
+  createdAt: string;
+};
+
+export type TransactionHistory = {
+  items: Transaction[];
+  page: number;
+  limit: number;
+  total: number;
+};
+
+export type TopUpOptions = { topUpAmounts: number[] };
+export type TopUpRequest = { requestId: string; amount: number };
+export type TopUp = Transaction & { type: "topup"; balanceAfter: string };
+
 export const WITHDRAWAL_BANKS = [
   { value: "KBANK", label: "Kasikornbank" },
   { value: "SCB", label: "Siam Commercial Bank" },
@@ -23,9 +46,8 @@ export type WithdrawalRequest = {
   password: string;
 };
 
-export type Withdrawal = {
-  id: string;
-  amount: string;
+export type Withdrawal = Transaction & {
+  type: "withdrawal";
   currency: "THB";
   status: "completed";
   destination: {

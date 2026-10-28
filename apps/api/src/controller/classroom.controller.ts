@@ -57,6 +57,26 @@ const updateClassroomSchema = z
   // Unknown keys (id, tutorId, studentId, status, createdAt, ...) are rejected, not ignored.
   .strict();
 
+const createReviewSchema = z
+  .object({
+    rating: z
+      .number({
+        required_error: "Rating is required",
+        invalid_type_error: "Rating must be a number",
+      })
+      .int("Rating must be a whole number")
+      .min(1, "Rating must be between 1 and 5")
+      .max(5, "Rating must be between 1 and 5"),
+    comment: z
+      .string({ invalid_type_error: "Comment must be text" })
+      .trim()
+      .max(1000, "Comment must be at most 1000 characters")
+      .nullish()
+      // A blank comment is stored as no comment.
+      .transform((value) => value || undefined),
+  })
+  .strict();
+
 const deactivateBodySchema = z.object({}).strict().optional();
 
 /** The tutor ID always comes from the verified token, never from the request. */
@@ -124,6 +144,22 @@ export const classroomController = {
       const classroom = await classroomService.updateClassroom(classroomId, req.user.id, input);
 
       res.status(200).json(successResponse(classroom, "Classroom updated successfully"));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async createReview(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        throw new UnauthorizedError("User not found in request");
+      }
+
+      const { classroomId } = classroomParamsSchema.parse(req.params);
+      const input = createReviewSchema.parse(req.body);
+      const review = await classroomService.createReview(classroomId, req.user.id, input);
+
+      res.status(201).json(successResponse(review, "Review submitted successfully"));
     } catch (error) {
       next(error);
     }
