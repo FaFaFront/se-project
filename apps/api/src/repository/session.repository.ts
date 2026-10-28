@@ -21,16 +21,15 @@ export const JOINABLE_STATUSES: MeetSessionStatus[] = [
 export type JoinSessionInput = {
   sessionId: string;
   role: "tutor" | "student";
-  /** Required for a student; the balance it must cover besides other unsettled joined sessions. */
+  /** Set for a student whose balance must cover the session cost besides other unsettled joined sessions. */
   studentId?: string;
-  cost?: Prisma.Decimal;
   now: Date;
 };
 
 export type JoinSessionResult =
   | { kind: "success"; meetLink: string }
   | { kind: "not-joinable" }
-  | { kind: "insufficient-balance"; available: Prisma.Decimal };
+  | { kind: "insufficient-balance"; available: Prisma.Decimal; required: Prisma.Decimal };
 
 export const sessionRepository = {
   findClassroomForSessions(classroomId: string) {
@@ -73,18 +72,23 @@ export const sessionRepository = {
       async (tx) => {
         // Share-lock the classroom row so a concurrent deactivation (which updates that row)
         // waits for this transaction, or has already committed and is seen by this read.
-        const classrooms = await tx.$queryRaw<{ status: string }[]>`
-          SELECT c."status"::text AS "status"
+        const classrooms = await tx.$queryRaw<
+          { status: string; pricePerHour: Prisma.Decimal; durationHours: Prisma.Decimal }[]
+        >`
+          SELECT c."status"::text AS "status", c."pricePerHour", s."durationHours"
           FROM "classrooms" c
           JOIN "meet_sessions" s ON s."classroomId" = c."id"
           WHERE s."id" = ${input.sessionId}
           FOR SHARE OF c
         `;
-        if (classrooms[0]?.status !== ClassroomStatus.active) {
+        const locked = classrooms[0];
+        if (locked?.status !== ClassroomStatus.active) {
           return { kind: "not-joinable" } as const;
         }
 
-        if (input.role === "student" && input.studentId && input.cost) {
+        if (input.role === "student" && input.studentId) {
+          // Priced from the row read under the lock, so a concurrent price edit can't be missed.
+          const cost = sessionCost(locked.pricePerHour, locked.durationHours);
           const users = await tx.$queryRaw<{ walletBalance: Prisma.Decimal }[]>`
             SELECT "walletBalance" FROM "users" WHERE "id" = ${input.studentId} FOR UPDATE
           `;
@@ -107,8 +111,8 @@ export const sessionRepository = {
             new Prisma.Decimal(0)
           );
           const available = new Prisma.Decimal(user.walletBalance).minus(reservedTotal);
-          if (available.lessThan(input.cost)) {
-            return { kind: "insufficient-balance", available } as const;
+          if (available.lessThan(cost)) {
+            return { kind: "insufficient-balance", available, required: cost } as const;
           }
         }
 

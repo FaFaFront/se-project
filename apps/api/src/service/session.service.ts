@@ -115,7 +115,6 @@ export const sessionService = {
       throw new ConflictError("The session has already ended");
     }
 
-    const cost = sessionCost(classroom.pricePerHour, session.durationHours);
     // A student who already joined has this session's cost committed, so a re-join (e.g. after
     // a dropped connection) skips the balance gate.
     const checkBalance = role === "student" && session.studentJoinedAt === null;
@@ -123,13 +122,13 @@ export const sessionService = {
     const result = await sessionRepository.join({
       sessionId,
       role,
-      ...(checkBalance && { studentId: classroom.studentId, cost }),
+      ...(checkBalance && { studentId: classroom.studentId }),
       now,
     });
 
     if (result.kind === "insufficient-balance") {
       throw new InsufficientBalanceError({
-        required: cost.toFixed(2),
+        required: result.required.toFixed(2),
         available: result.available.toFixed(2),
       });
     }
