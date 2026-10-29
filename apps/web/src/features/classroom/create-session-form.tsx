@@ -79,6 +79,7 @@ export function CreateSessionForm({ classroomId }: { classroomId: string }) {
       setError(
         err instanceof ApiError ? err.message : "Unable to schedule session. Please try again."
       );
+    } finally {
       submittingRef.current = false;
       setIsPending(false);
     }
