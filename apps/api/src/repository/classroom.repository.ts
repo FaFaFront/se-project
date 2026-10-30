@@ -1,5 +1,6 @@
 import { ClassroomStatus, Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
+import { reviewSelect } from "./review.repository.js";
 
 const classroomListSelect = {
   id: true,
@@ -71,6 +72,7 @@ const classroomDetailSelect = {
     },
     orderBy: [{ scheduledAt: "asc" as const }],
   },
+  review: { select: reviewSelect },
 } as const satisfies Prisma.ClassroomSelect;
 
 export type ClassroomListRow = Prisma.ClassroomGetPayload<{ select: typeof classroomListSelect }>;

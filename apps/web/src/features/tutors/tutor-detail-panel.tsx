@@ -7,50 +7,12 @@ import { MessageCircle, Star, Users } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ProfileAvatar } from "@/features/profile/profile-avatar";
 import { formatCurrency } from "@/features/profile/profile-details";
+import { formatReviewDate, ReviewStars } from "@/features/reviews/review-stars";
 import { ApiError, apiClient } from "@/lib/api-client";
-import { cn } from "@/lib/utils";
-import type { TutorListItem } from "@/types/tutor";
-
-type MockReview = {
-  reviewer: string;
-  rating: number;
-  comment: string;
-};
-
-const MOCK_REVIEWS: MockReview[] = [
-  {
-    reviewer: "Narin P.",
-    rating: 5,
-    comment:
-      "Clear explanations and useful practice questions. I felt much more confident after our lessons.",
-  },
-  {
-    reviewer: "Pim S.",
-    rating: 4,
-    comment:
-      "Very patient and well prepared. The lesson was easy to follow and matched what I needed to revise.",
-  },
-];
-
-function ReviewStars({ rating }: { rating: number }) {
-  return (
-    <span className="gap-xs flex" aria-label={`${rating} out of 5 stars`}>
-      {Array.from({ length: 5 }, (_, index) => (
-        <Star
-          key={index}
-          aria-hidden="true"
-          className={cn(
-            "size-4 text-amber-400",
-            index < rating ? "fill-amber-400" : "fill-transparent"
-          )}
-        />
-      ))}
-    </span>
-  );
-}
+import type { TutorDetail } from "@/types/tutor";
 
 export function TutorDetailPanel({ tutorId }: { tutorId: string }) {
-  const [tutor, setTutor] = useState<TutorListItem | null>(null);
+  const [tutor, setTutor] = useState<TutorDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -61,7 +23,7 @@ export function TutorDetailPanel({ tutorId }: { tutorId: string }) {
     setError(null);
 
     apiClient
-      .get<TutorListItem>(`/tutors/${encodeURIComponent(tutorId)}`)
+      .get<TutorDetail>(`/tutors/${encodeURIComponent(tutorId)}`)
       .then((data) => {
         if (!isStale) setTutor(data);
       })
@@ -190,22 +152,53 @@ export function TutorDetailPanel({ tutorId }: { tutorId: string }) {
       <section>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-heading-md text-ink-black">Student reviews</h2>
-          <p className="text-ink text-sm">Mocked data until reviews are available</p>
+          {tutor.rating !== null && (
+            <p className="text-ink text-sm">
+              {tutor.rating.toFixed(1)} average from {tutor.reviewCount}{" "}
+              {tutor.reviewCount === 1 ? "review" : "reviews"}
+            </p>
+          )}
         </div>
-        <div className="gap-base mt-5 flex flex-col">
-          {MOCK_REVIEWS.map((review) => (
-            <article
-              key={review.reviewer}
-              className="border-hairline bg-canvas rounded-[10px] border p-5 shadow-sm"
-            >
-              <div className="gap-base flex items-center justify-between">
-                <h3 className="text-body-emphasis text-ink-black">{review.reviewer}</h3>
-                <ReviewStars rating={review.rating} />
-              </div>
-              <p className="text-ink mt-3 leading-7">{review.comment}</p>
-            </article>
-          ))}
-        </div>
+        {tutor.reviews.length > 0 ? (
+          <div className="gap-base mt-5 flex flex-col">
+            {tutor.reviews.map((review) => (
+              <article
+                key={review.id}
+                className="border-hairline bg-canvas rounded-[10px] border p-5 shadow-sm"
+              >
+                <div className="gap-base flex flex-wrap items-center justify-between">
+                  <div className="gap-sm flex min-w-0 items-center">
+                    <ProfileAvatar
+                      src={review.student.profileUrl}
+                      name={review.student.name}
+                      size={36}
+                    />
+                    <div className="min-w-0">
+                      <h3 className="text-body-emphasis text-ink-black truncate">
+                        {review.student.name?.trim() || "Student"}
+                      </h3>
+                      <p className="text-placeholder text-xs">
+                        <time dateTime={review.createdAt}>
+                          {formatReviewDate(review.createdAt)}
+                        </time>
+                      </p>
+                    </div>
+                  </div>
+                  <ReviewStars rating={review.rating} />
+                </div>
+                {review.comment && (
+                  <p className="text-ink mt-3 whitespace-pre-line break-words leading-7">
+                    {review.comment}
+                  </p>
+                )}
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="border-hairline bg-canvas text-ink mt-5 rounded-[10px] border p-5 text-center text-sm">
+            No reviews yet. Students can review this tutor after a classroom is completed.
+          </p>
+        )}
       </section>
     </div>
   );

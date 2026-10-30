@@ -4,7 +4,7 @@ model Review {
   studentId   String
   tutorId     String
   rating      Int
-  comment     String
+  comment     String?
   createdAt   DateTime @default(now())
 
   classroom Classroom @relation(fields: [classroomId], references: [id])

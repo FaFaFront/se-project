@@ -1,3 +1,4 @@
+import type { TutorReview } from "@/types/review";
 import type { Subject } from "@/types/subject";
 
 export type TutorSortBy = "rating" | "price" | "popularity";
@@ -17,6 +18,9 @@ export type TutorListItem = {
   /** Distinct students who have learned with the tutor. */
   studentCount: number;
 };
+
+/** `GET /tutors/:id`: a list item plus every review, newest first. */
+export type TutorDetail = TutorListItem & { reviews: TutorReview[] };
 
 export type TutorListQuery = {
   search: string;

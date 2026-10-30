@@ -1,4 +1,4 @@
-import { WITHDRAWAL_BANKS, type WithdrawalRequest } from "../types/withdrawal";
+import { WITHDRAWAL_BANKS, type WithdrawalRequest } from "../types/transaction";
 
 type ThaiBankCode = WithdrawalRequest["bankCode"];
 const THAI_BANK_CODES = WITHDRAWAL_BANKS.map(({ value }) => value);
