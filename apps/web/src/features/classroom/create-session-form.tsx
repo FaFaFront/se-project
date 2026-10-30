@@ -102,7 +102,7 @@ export function CreateSessionForm({
             label="Date"
             type="date"
             value={date}
-            min={new Date().toISOString().slice(0, 10)}
+            min={new Intl.DateTimeFormat("en-CA").format(new Date())}
             onChange={(e) => {
               setDate(e.target.value);
               setFieldErrors((prev) => ({ ...prev, date: undefined }));

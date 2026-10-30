@@ -83,6 +83,7 @@ export const sessionService = {
   },
 
   async cancelSession(sessionId: string, tutorId: string): Promise<SessionItem> {
+    await sessionRepository.resolveStatuses();
     const session = await sessionRepository.findById(sessionId);
     if (!session) throw new NotFoundError("Session not found");
 

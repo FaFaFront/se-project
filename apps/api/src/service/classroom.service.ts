@@ -216,6 +216,7 @@ export const classroomService = {
 
     const classroom = await requireAssignedClassroom(classroomId, userId);
     if (classroom.status !== ClassroomStatus.completed) {
+      await sessionRepository.resolveStatuses();
       if (await sessionRepository.hasOngoingForClassroom(classroomId)) {
         throw new BadRequestError("Cannot deactivate a classroom with an ongoing session");
       }

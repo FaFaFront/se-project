@@ -379,8 +379,8 @@ classroomRouter.patch(
  *         scheduledAt: { type: string, format: date-time }
  *         durationHours: { type: number, example: 1.5 }
  *         status: { type: string, enum: [scheduled, ongoing, completed, cancelled] }
- *         meetLink: { type: string, format: uri, example: "https://meet.google.com/abc-defg-hij" }
- *         meetSpaceName: { type: string, nullable: true, example: "spaces/abc123" }
+ *         meetLink: { type: string, format: uri, example: "https://meet.jit.si/se-550e8400-e29b-41d4-a716-446655440000" }
+ *         meetSpaceName: { type: string, nullable: true, example: null }
  */
 
 /**
@@ -389,7 +389,7 @@ classroomRouter.patch(
  *   post:
  *     summary: Schedule a session in a classroom
  *     description: >
- *       Creates a Google Meet session for the classroom. The tutor must own the classroom
+ *       Creates a Jitsi Meet session for the classroom. The tutor must own the classroom
  *       and it must be active. `scheduledAt` must be at least 30 minutes in the future.
  *       `durationHours` must be 0.5–4 in 0.5-hour steps. The new session must not overlap
  *       any non-cancelled session for the same tutor or student.
@@ -422,7 +422,6 @@ classroomRouter.patch(
  *       403: { description: Inactive account or not a tutor }
  *       404: { description: Classroom not found or not owned by this tutor }
  *       409: { description: Time slot overlaps an existing session }
- *       502: { description: Google Meet space creation failed }
  */
 classroomRouter.post(
   "/:classroomId/sessions",
