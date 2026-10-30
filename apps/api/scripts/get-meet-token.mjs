@@ -26,7 +26,7 @@ const { refresh_token } = client.credentials;
 if (!refresh_token) {
   console.error(
     "No refresh_token returned. The account has already consented to this client.\n" +
-    "Revoke access at https://myaccount.google.com/permissions, then re-run this script."
+      "Revoke access at https://myaccount.google.com/permissions, then re-run this script."
   );
   process.exit(1);
 }
