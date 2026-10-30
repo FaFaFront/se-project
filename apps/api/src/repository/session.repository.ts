@@ -1,0 +1,171 @@
+import { ClassroomStatus, MeetSessionStatus, Prisma } from "@prisma/client";
+import { prisma } from "../config/prisma.js";
+
+// meetLink and meetSpaceName are deliberately absent: the link is only handed out by the join endpoint.
+const sessionListSelect = {
+  id: true,
+  scheduledAt: true,
+  durationHours: true,
+  status: true,
+  tutorJoinedAt: true,
+  studentJoinedAt: true,
+} as const satisfies Prisma.MeetSessionSelect;
+
+export type SessionListRow = Prisma.MeetSessionGetPayload<{ select: typeof sessionListSelect }>;
+
+export const JOINABLE_STATUSES: MeetSessionStatus[] = [
+  MeetSessionStatus.scheduled,
+  MeetSessionStatus.ongoing,
+];
+
+export type JoinSessionInput = {
+  sessionId: string;
+  role: "tutor" | "student";
+  /** Set for a student whose balance must cover the session cost besides other unsettled joined sessions. */
+  studentId?: string;
+};
+
+export type JoinSessionResult =
+  | { kind: "success"; meetLink: string }
+  | { kind: "not-joinable" }
+  | { kind: "insufficient-balance"; available: Prisma.Decimal; required: Prisma.Decimal };
+
+export const sessionRepository = {
+  findClassroomForSessions(classroomId: string) {
+    return prisma.classroom.findUnique({
+      where: { id: classroomId },
+      select: { id: true, tutorId: true, studentId: true, pricePerHour: true, status: true },
+    });
+  },
+
+  findByClassroom(classroomId: string): Promise<SessionListRow[]> {
+    return prisma.meetSession.findMany({
+      where: { classroomId },
+      select: sessionListSelect,
+      orderBy: [{ scheduledAt: "asc" }, { id: "asc" }],
+    });
+  },
+
+  findForJoin(sessionId: string) {
+    return prisma.meetSession.findUnique({
+      where: { id: sessionId },
+      select: {
+        id: true,
+        scheduledAt: true,
+        durationHours: true,
+        status: true,
+        studentJoinedAt: true,
+        classroom: {
+          select: { tutorId: true, studentId: true, status: true, pricePerHour: true },
+        },
+      },
+    });
+  },
+
+  /**
+   * Re-checks the classroom and session status and that the session hasn't ended, applies the
+   * student balance gate, and records the first join, all under a lock on the student's wallet so
+   * parallel joins can't both pass the balance check.
+   */
+  join(input: JoinSessionInput): Promise<JoinSessionResult> {
+    return prisma.$transaction(
+      async (tx) => {
+        // Share-lock the classroom row so a concurrent deactivation (which updates that row)
+        // waits for this transaction, or has already committed and is seen by this read.
+        const classrooms = await tx.$queryRaw<
+          {
+            status: string;
+            pricePerHour: Prisma.Decimal;
+            scheduledAt: Date;
+            durationHours: Prisma.Decimal;
+          }[]
+        >`
+          SELECT c."status"::text AS "status", c."pricePerHour", s."scheduledAt", s."durationHours"
+          FROM "classrooms" c
+          JOIN "meet_sessions" s ON s."classroomId" = c."id"
+          WHERE s."id" = ${input.sessionId}
+          FOR SHARE OF c
+        `;
+        const locked = classrooms[0];
+        if (locked?.status !== ClassroomStatus.active) {
+          return { kind: "not-joinable" } as const;
+        }
+
+        if (input.role === "student" && input.studentId) {
+          // Priced from the row read under the lock, so a concurrent price edit can't be missed.
+          const cost = sessionCost(locked.pricePerHour, locked.durationHours);
+          const users = await tx.$queryRaw<{ walletBalance: Prisma.Decimal }[]>`
+            SELECT "walletBalance" FROM "users" WHERE "id" = ${input.studentId} FOR UPDATE
+          `;
+          const user = users[0];
+          if (!user) return { kind: "not-joinable" } as const;
+
+          // Sessions the student already joined but that haven't been charged yet.
+          const reserved = await tx.meetSession.findMany({
+            where: {
+              id: { not: input.sessionId },
+              studentJoinedAt: { not: null },
+              amountCharged: null,
+              status: { in: JOINABLE_STATUSES },
+              classroom: { studentId: input.studentId },
+            },
+            select: { durationHours: true, classroom: { select: { pricePerHour: true } } },
+          });
+          const reservedTotal = reserved.reduce(
+            (sum, s) => sum.plus(sessionCost(s.classroom.pricePerHour, s.durationHours)),
+            new Prisma.Decimal(0)
+          );
+          const available = new Prisma.Decimal(user.walletBalance).minus(reservedTotal);
+          if (available.lessThan(cost)) {
+            return { kind: "insufficient-balance", available, required: cost } as const;
+          }
+        }
+
+        // Taken after the locks above: waiting for them may have carried us past the session's end.
+        const now = new Date();
+        if (now > sessionEndsAt(locked.scheduledAt, locked.durationHours)) {
+          return { kind: "not-joinable" } as const;
+        }
+
+        const joinedAtField = input.role === "tutor" ? "tutorJoinedAt" : "studentJoinedAt";
+        // Only the first join is recorded; a re-join leaves the original timestamp untouched.
+        await tx.meetSession.updateMany({
+          where: { id: input.sessionId, [joinedAtField]: null, status: { in: JOINABLE_STATUSES } },
+          data: { [joinedAtField]: now },
+        });
+        await tx.meetSession.updateMany({
+          where: { id: input.sessionId, status: MeetSessionStatus.scheduled },
+          data: { status: MeetSessionStatus.ongoing },
+        });
+        await tx.meetSession.updateMany({
+          where: { id: input.sessionId, startedAt: null, status: MeetSessionStatus.ongoing },
+          data: { startedAt: now },
+        });
+
+        const session = await tx.meetSession.findUnique({
+          where: { id: input.sessionId },
+          select: { status: true, meetLink: true },
+        });
+        // Cancelled or completed by someone else since the service checked it.
+        if (!session || !JOINABLE_STATUSES.includes(session.status)) {
+          return { kind: "not-joinable" } as const;
+        }
+        return { kind: "success", meetLink: session.meetLink } as const;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted }
+    );
+  },
+};
+
+const HOUR_MS = 60 * 60 * 1000;
+
+export function sessionEndsAt(scheduledAt: Date, durationHours: Prisma.Decimal) {
+  return new Date(scheduledAt.getTime() + Number(durationHours) * HOUR_MS);
+}
+
+/** pricePerHour × durationHours, rounded to the 2 decimals money is stored with. */
+export function sessionCost(pricePerHour: Prisma.Decimal, durationHours: Prisma.Decimal) {
+  return new Prisma.Decimal(pricePerHour)
+    .times(durationHours)
+    .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+}
