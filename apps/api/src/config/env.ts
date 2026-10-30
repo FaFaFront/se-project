@@ -32,6 +32,7 @@ export interface GoogleMeetOAuthConfig {
   clientId: string;
   clientSecret: string;
   redirectUri: string;
+  refreshToken: string | null;
 }
 
 export type GoogleMeetConfig = GoogleMeetServiceAccountConfig | GoogleMeetOAuthConfig;
@@ -143,6 +144,7 @@ export const env = {
   GCS_PUBLIC_BASE_URL: getEnvOptional("GCS_PUBLIC_BASE_URL", ""),
   // Google Meet (validated lazily by getGoogleMeetConfig)
   GOOGLE_MEET_OAUTH_CREDENTIALS_PATH: getEnvOptional("GOOGLE_MEET_OAUTH_CREDENTIALS_PATH", ""),
+  GOOGLE_MEET_REFRESH_TOKEN: getEnvOptional("GOOGLE_MEET_REFRESH_TOKEN", ""),
   GOOGLE_MEET_CREDENTIALS_PATH: getEnvOptional("GOOGLE_MEET_CREDENTIALS_PATH", ""),
   GOOGLE_MEET_SERVICE_ACCOUNT_KEY: getEnvOptional("GOOGLE_MEET_SERVICE_ACCOUNT_KEY", ""),
   GOOGLE_MEET_IMPERSONATE_USER: getEnvOptional("GOOGLE_MEET_IMPERSONATE_USER", ""),
@@ -163,6 +165,7 @@ export function getGoogleMeetConfig(): GoogleMeetConfig {
       authMode: "oauth",
       credentialsPath: absolutePath,
       ...oauthCredentials,
+      refreshToken: env.GOOGLE_MEET_REFRESH_TOKEN.trim() || null,
     };
   }
 

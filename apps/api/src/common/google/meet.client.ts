@@ -46,16 +46,22 @@ async function createMeetClient(): Promise<meet_v2.Meet> {
   const config = getGoogleMeetConfig();
 
   if (config.authMode === "oauth") {
-    const authorizedClient = await authenticate({
-      scopes: [...MEET_SCOPES],
-      keyfilePath: config.credentialsPath,
-    });
     const auth = new google.auth.OAuth2({
       clientId: config.clientId,
       clientSecret: config.clientSecret,
       redirectUri: config.redirectUri,
     });
-    auth.setCredentials(authorizedClient.credentials);
+    if (config.refreshToken) {
+      // Server/deployed mode: use pre-obtained refresh token (run scripts/get-meet-token.mjs once to get it)
+      auth.setCredentials({ refresh_token: config.refreshToken });
+    } else {
+      // Local dev only: interactive browser flow
+      const authorizedClient = await authenticate({
+        scopes: [...MEET_SCOPES],
+        keyfilePath: config.credentialsPath,
+      });
+      auth.setCredentials(authorizedClient.credentials);
+    }
     return google.meet({ version: "v2", auth });
   }
 

@@ -60,6 +60,18 @@ const classroomDetailSelect = {
       profileUrl: true,
     },
   },
+  sessions: {
+    select: {
+      id: true,
+      classroomId: true,
+      scheduledAt: true,
+      durationHours: true,
+      status: true,
+      meetLink: true,
+      meetSpaceName: true,
+    },
+    orderBy: [{ scheduledAt: "asc" as const }],
+  },
   review: { select: reviewSelect },
 } as const satisfies Prisma.ClassroomSelect;
 
