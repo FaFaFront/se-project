@@ -7,13 +7,13 @@ import {
 import {
   JOINABLE_STATUSES,
   sessionCost,
+  sessionEndsAt,
   sessionRepository,
   type SessionListRow,
 } from "../repository/session.repository.js";
 
 /** The Join button becomes available this long before scheduledAt. */
 const JOIN_WINDOW_LEAD_MS = 10 * 60 * 1000;
-const HOUR_MS = 60 * 60 * 1000;
 
 export type ClassroomSessionItem = {
   id: string;
@@ -30,7 +30,7 @@ export type ClassroomSessionItem = {
 function sessionTimes(scheduledAt: Date, durationHours: Prisma.Decimal) {
   return {
     opensAt: new Date(scheduledAt.getTime() - JOIN_WINDOW_LEAD_MS),
-    endsAt: new Date(scheduledAt.getTime() + Number(durationHours) * HOUR_MS),
+    endsAt: sessionEndsAt(scheduledAt, durationHours),
   };
 }
 
@@ -123,7 +123,6 @@ export const sessionService = {
       sessionId,
       role,
       ...(checkBalance && { studentId: classroom.studentId }),
-      now,
     });
 
     if (result.kind === "insufficient-balance") {

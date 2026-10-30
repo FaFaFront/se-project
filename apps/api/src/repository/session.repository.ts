@@ -23,7 +23,6 @@ export type JoinSessionInput = {
   role: "tutor" | "student";
   /** Set for a student whose balance must cover the session cost besides other unsettled joined sessions. */
   studentId?: string;
-  now: Date;
 };
 
 export type JoinSessionResult =
@@ -64,8 +63,9 @@ export const sessionRepository = {
   },
 
   /**
-   * Re-checks the classroom and session status, applies the student balance gate, and records the first join, all
-   * under a lock on the student's wallet so parallel joins can't both pass the balance check.
+   * Re-checks the classroom and session status and that the session hasn't ended, applies the
+   * student balance gate, and records the first join, all under a lock on the student's wallet so
+   * parallel joins can't both pass the balance check.
    */
   join(input: JoinSessionInput): Promise<JoinSessionResult> {
     return prisma.$transaction(
@@ -73,9 +73,14 @@ export const sessionRepository = {
         // Share-lock the classroom row so a concurrent deactivation (which updates that row)
         // waits for this transaction, or has already committed and is seen by this read.
         const classrooms = await tx.$queryRaw<
-          { status: string; pricePerHour: Prisma.Decimal; durationHours: Prisma.Decimal }[]
+          {
+            status: string;
+            pricePerHour: Prisma.Decimal;
+            scheduledAt: Date;
+            durationHours: Prisma.Decimal;
+          }[]
         >`
-          SELECT c."status"::text AS "status", c."pricePerHour", s."durationHours"
+          SELECT c."status"::text AS "status", c."pricePerHour", s."scheduledAt", s."durationHours"
           FROM "classrooms" c
           JOIN "meet_sessions" s ON s."classroomId" = c."id"
           WHERE s."id" = ${input.sessionId}
@@ -116,11 +121,17 @@ export const sessionRepository = {
           }
         }
 
+        // Taken after the locks above: waiting for them may have carried us past the session's end.
+        const now = new Date();
+        if (now > sessionEndsAt(locked.scheduledAt, locked.durationHours)) {
+          return { kind: "not-joinable" } as const;
+        }
+
         const joinedAtField = input.role === "tutor" ? "tutorJoinedAt" : "studentJoinedAt";
         // Only the first join is recorded; a re-join leaves the original timestamp untouched.
         await tx.meetSession.updateMany({
           where: { id: input.sessionId, [joinedAtField]: null, status: { in: JOINABLE_STATUSES } },
-          data: { [joinedAtField]: input.now },
+          data: { [joinedAtField]: now },
         });
         await tx.meetSession.updateMany({
           where: { id: input.sessionId, status: MeetSessionStatus.scheduled },
@@ -128,7 +139,7 @@ export const sessionRepository = {
         });
         await tx.meetSession.updateMany({
           where: { id: input.sessionId, startedAt: null, status: MeetSessionStatus.ongoing },
-          data: { startedAt: input.now },
+          data: { startedAt: now },
         });
 
         const session = await tx.meetSession.findUnique({
@@ -145,6 +156,12 @@ export const sessionRepository = {
     );
   },
 };
+
+const HOUR_MS = 60 * 60 * 1000;
+
+export function sessionEndsAt(scheduledAt: Date, durationHours: Prisma.Decimal) {
+  return new Date(scheduledAt.getTime() + Number(durationHours) * HOUR_MS);
+}
 
 /** pricePerHour × durationHours, rounded to the 2 decimals money is stored with. */
 export function sessionCost(pricePerHour: Prisma.Decimal, durationHours: Prisma.Decimal) {
