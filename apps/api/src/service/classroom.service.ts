@@ -146,6 +146,7 @@ export const classroomService = {
   },
 
   async getClassroomDetail(classroomId: string, viewerId: string) {
+    await sessionRepository.resolveStatuses();
     const classroom = await classroomRepository.findDetailById(classroomId);
 
     if (!classroom) {

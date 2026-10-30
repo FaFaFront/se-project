@@ -28,7 +28,9 @@ export function ConversationCard({ conversation }: { conversation: Conversation 
         <p className="text-ink/60 truncate text-xs">{lastMessage?.text ?? "No messages yet"}</p>
       </div>
       {lastMessage && (
-        <span className="text-ink/40 shrink-0 text-xs">{relativeTime(lastMessage.createdAt)}</span>
+        <span suppressHydrationWarning className="text-ink/40 shrink-0 text-xs">
+          {relativeTime(lastMessage.createdAt)}
+        </span>
       )}
     </Link>
   );

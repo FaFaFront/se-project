@@ -5,7 +5,7 @@ import {
   ForbiddenError,
   NotFoundError,
 } from "../common/errors/app-error.js";
-import { createMeetSpace } from "../common/google/meet.client.js";
+import { randomUUID } from "node:crypto";
 import { classroomRepository } from "../repository/classroom.repository.js";
 import { sessionRepository, type SessionRow } from "../repository/session.repository.js";
 
@@ -68,7 +68,8 @@ export const sessionService = {
       );
     }
 
-    const { spaceName, meetingUri } = await createMeetSpace();
+    const meetingUri = `https://meet.jit.si/se-${randomUUID()}`;
+    const spaceName = null;
 
     const session = await sessionRepository.create({
       classroomId,

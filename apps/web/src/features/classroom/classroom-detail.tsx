@@ -55,56 +55,76 @@ const SESSION_STATUS_CLASS: Record<string, string> = {
   cancelled: "bg-red-50 text-red-600",
 };
 
-function SessionList({ sessions, isTutor }: { sessions: ClassroomSession[]; isTutor: boolean }) {
+function sortSessions(sessions: ClassroomSession[]): ClassroomSession[] {
+  const byDate = (a: ClassroomSession, b: ClassroomSession) =>
+    new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
+  const active = sessions.filter((s) => s.status !== "cancelled").sort(byDate);
+  const cancelled = sessions.filter((s) => s.status === "cancelled").sort((a, b) => -byDate(a, b));
+  return [...active, ...cancelled];
+}
+
+function SessionList({
+  sessions,
+  isTutor,
+  onSessionCancelled,
+}: {
+  sessions: ClassroomSession[];
+  isTutor: boolean;
+  onSessionCancelled?: () => void;
+}) {
   if (sessions.length === 0) {
     return <p className="text-sm text-ink/60">No sessions scheduled yet.</p>;
   }
 
   return (
-    <ul className="space-y-3">
-      {sessions.map((session) => {
-        const canCancel = session.status === "scheduled" || session.status === "ongoing";
-        const showLink = session.status === "scheduled" || session.status === "ongoing";
-        return (
-          <li
-            key={session.id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-hairline bg-surface-lavender/40 px-5 py-4"
-          >
-            <div className="flex flex-wrap items-center gap-3">
-              <Video aria-hidden="true" className="size-4 shrink-0 text-primary" />
-              <div>
-                <p className="font-semibold text-ink">
+    <div className="max-h-60 overflow-y-auto">
+      <ul className="space-y-3 pb-1">
+        {sortSessions(sessions).map((session) => {
+          const canCancel = session.status === "scheduled" || session.status === "ongoing";
+          const showLink = session.status === "scheduled" || session.status === "ongoing";
+          return (
+            <li
+              key={session.id}
+              className="flex items-center justify-between gap-3 rounded-2xl border border-hairline bg-surface-lavender/40 px-5 py-4"
+            >
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <Video aria-hidden="true" className="size-4 shrink-0 text-primary" />
+                <span className="truncate text-sm font-semibold text-ink">
                   {formatSessionDateTime(session.scheduledAt)}
-                </p>
-                <p className="text-sm text-ink/60">{formatDuration(session.durationHours)}</p>
-              </div>
-              <span
-                className={cn(
-                  "rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                  SESSION_STATUS_CLASS[session.status] ?? "bg-surface-lavender text-ink/60"
-                )}
-              >
-                {SESSION_STATUS_LABEL[session.status] ?? session.status}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {showLink && (
-                <a
-                  href={session.meetLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}
+                </span>
+                <span className="shrink-0 text-sm text-ink/60">
+                  {formatDuration(session.durationHours)}
+                </span>
+                <span
+                  className={cn(
+                    "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                    SESSION_STATUS_CLASS[session.status] ?? "bg-surface-lavender text-ink/60"
+                  )}
                 >
-                  <ExternalLink aria-hidden="true" className="size-4" />
-                  Join Meet
-                </a>
-              )}
-              {isTutor && canCancel && <CancelSessionAction session={session} />}
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+                  {SESSION_STATUS_LABEL[session.status] ?? session.status}
+                </span>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                {showLink && (
+                  <a
+                    href={session.meetLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}
+                  >
+                    <ExternalLink aria-hidden="true" className="size-4" />
+                    Join Meet
+                  </a>
+                )}
+                {isTutor && canCancel && (
+                  <CancelSessionAction session={session} onSuccess={onSessionCancelled} />
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
@@ -266,11 +286,13 @@ export function ClassroomDetail({ classroomId }: { classroomId: string }) {
       <section className="overflow-hidden rounded-3xl border border-hairline bg-white shadow-sm">
         <div className="space-y-4 p-6 sm:p-9">
           <h2 className="font-outfit text-xl font-bold text-ink">Sessions</h2>
-          <SessionList sessions={classroom.sessions} isTutor={isTutor} />
+          <SessionList sessions={classroom.sessions} isTutor={isTutor} onSessionCancelled={retry} />
         </div>
       </section>
 
-      {isTutor && classroom.status === "active" && <CreateSessionForm classroomId={classroom.id} />}
+      {isTutor && classroom.status === "active" && (
+        <CreateSessionForm classroomId={classroom.id} onSuccess={retry} />
+      )}
     </div>
   );
 }

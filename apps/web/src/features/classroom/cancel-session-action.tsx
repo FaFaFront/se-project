@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ApiError, apiClient } from "@/lib/api-client";
 import type { ClassroomSession } from "@/types/session";
@@ -10,11 +9,12 @@ import type { ClassroomSession } from "@/types/session";
 function CancelSessionDialog({
   session,
   onClose,
+  onSuccess,
 }: {
   session: ClassroomSession;
   onClose: () => void;
+  onSuccess?: () => void;
 }) {
-  const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const submittingRef = useRef(false);
@@ -62,7 +62,7 @@ function CancelSessionDialog({
     try {
       await apiClient.patch<ClassroomSession>(`/sessions/${encodeURIComponent(session.id)}/cancel`);
       if (!mountedRef.current) return;
-      router.refresh();
+      onSuccess?.();
       dialogRef.current?.close();
     } catch (err) {
       if (!mountedRef.current) return;
@@ -147,7 +147,13 @@ function CancelSessionDialog({
   );
 }
 
-export function CancelSessionAction({ session }: { session: ClassroomSession }) {
+export function CancelSessionAction({
+  session,
+  onSuccess,
+}: {
+  session: ClassroomSession;
+  onSuccess?: () => void;
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -169,7 +175,7 @@ export function CancelSessionAction({ session }: { session: ClassroomSession }) 
         <X aria-hidden="true" className="size-4" />
         Cancel
       </Button>
-      {isOpen && <CancelSessionDialog session={session} onClose={close} />}
+      {isOpen && <CancelSessionDialog session={session} onClose={close} onSuccess={onSuccess} />}
     </>
   );
 }

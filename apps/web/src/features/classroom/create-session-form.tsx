@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { CalendarPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,8 +38,13 @@ function validate(date: string, time: string, duration: string): FieldErrors {
   return errors;
 }
 
-export function CreateSessionForm({ classroomId }: { classroomId: string }) {
-  const router = useRouter();
+export function CreateSessionForm({
+  classroomId,
+  onSuccess,
+}: {
+  classroomId: string;
+  onSuccess?: () => void;
+}) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [duration, setDuration] = useState("");
@@ -74,7 +78,7 @@ export function CreateSessionForm({ classroomId }: { classroomId: string }) {
       setDate("");
       setTime("");
       setDuration("");
-      router.refresh();
+      onSuccess?.();
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : "Unable to schedule session. Please try again."

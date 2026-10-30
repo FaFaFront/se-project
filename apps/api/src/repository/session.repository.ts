@@ -19,7 +19,7 @@ export const sessionRepository = {
     scheduledAt: Date;
     durationHours: Prisma.Decimal;
     meetLink: string;
-    meetSpaceName: string;
+    meetSpaceName: string | null;
   }): Promise<SessionRow> {
     return prisma.meetSession.create({ data, select: sessionSelect });
   },
@@ -84,5 +84,17 @@ export const sessionRepository = {
       where: { classroomId, status: MeetSessionStatus.ongoing },
     });
     return count > 0;
+  },
+
+  async resolveStatuses(): Promise<void> {
+    await prisma.$executeRaw`
+      UPDATE meet_sessions SET status = 'ongoing'
+      WHERE status = 'scheduled' AND "scheduledAt" <= NOW()
+    `;
+    await prisma.$executeRaw`
+      UPDATE meet_sessions SET status = 'completed'
+      WHERE status = 'ongoing'
+        AND "scheduledAt" + ("durationHours" * INTERVAL '1 hour') <= NOW()
+    `;
   },
 };
