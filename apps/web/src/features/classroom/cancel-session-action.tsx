@@ -60,7 +60,10 @@ function CancelSessionDialog({
     dialogRef.current?.focus();
 
     try {
-      await apiClient.patch<ClassroomSession>(`/sessions/${encodeURIComponent(session.id)}/cancel`);
+      await apiClient.patch<ClassroomSession>(
+        `/sessions/${encodeURIComponent(session.id)}/cancel`,
+        {}
+      );
       if (!mountedRef.current) return;
       onSuccess?.();
       dialogRef.current?.close();

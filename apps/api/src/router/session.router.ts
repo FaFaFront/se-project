@@ -10,6 +10,46 @@ export const sessionRouter = Router();
 
 /**
  * @swagger
+ * /sessions/{sessionId}:
+ *   get:
+ *     summary: Get a session as an assigned participant
+ *     tags: [Sessions]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: sessionId, required: true, schema: { type: string, format: uuid } }
+ *     responses:
+ *       200: { description: Session details, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, message: { type: string }, data: { $ref: '#/components/schemas/Session' } } } } } }
+ *       404: { description: Session missing or not assigned to the caller }
+ * /sessions/{sessionId}/attendance:
+ *   post:
+ *     summary: Record the authenticated participant's first Jitsi join
+ *     description: Accepts an empty JSON object only, during the scheduled interval. Browser reports are trusted.
+ *     tags: [Sessions]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: sessionId, required: true, schema: { type: string, format: uuid } }
+ *     requestBody:
+ *       content: { application/json: { schema: { type: object, additionalProperties: false } } }
+ *     responses:
+ *       200: { description: Attendance saved, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, message: { type: string }, data: { $ref: '#/components/schemas/Session' } } } } } }
+ *       400: { description: Outside attendance window, terminal session, or invalid body }
+ *       404: { description: Session missing or not assigned to the caller }
+ */
+sessionRouter.get(
+  "/:sessionId",
+  authMiddleware,
+  requireActiveAccount,
+  sessionController.getSession
+);
+sessionRouter.post(
+  "/:sessionId/attendance",
+  authMiddleware,
+  requireActiveAccount,
+  sessionController.recordAttendance
+);
+
+/**
+ * @swagger
  * /sessions/{sessionId}/cancel:
  *   patch:
  *     summary: Cancel a scheduled or ongoing session
@@ -17,6 +57,7 @@ export const sessionRouter = Router();
  *       Only the tutor who owns the classroom can cancel a session.
  *       The session must be in `scheduled` or `ongoing` status.
  *       Cancelled sessions are never charged.
+ *       Cancellation closes fifteen minutes after scheduled end; payment-pending sessions cannot be cancelled.
  *     tags: [Sessions]
  *     security:
  *       - bearerAuth: []

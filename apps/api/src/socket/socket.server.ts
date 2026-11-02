@@ -26,6 +26,10 @@ export async function createSocketServer(httpServer: HttpServer): Promise<AppSoc
   }
 
   const canBroadcast = () => !redis || redis.isReady();
+  httpServer.once("close", () => {
+    redis?.publisher.disconnect();
+    redis?.subscriber.disconnect();
+  });
 
   io.use(socketAuthMiddleware);
   io.on("connection", (socket) => registerConnectionHandlers(io, socket, canBroadcast));

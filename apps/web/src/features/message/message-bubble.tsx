@@ -1,11 +1,11 @@
-import type { ChatMessage } from "@/types/conversation";
+import type { TextChatMessage } from "@/types/conversation";
 
 type MessageBubbleProps = {
-  message: ChatMessage;
+  message: TextChatMessage;
   isOwnMessage: boolean;
 };
 
-function getRoleFallback(role: ChatMessage["sender"]["role"]): string {
+function getRoleFallback(role: TextChatMessage["sender"]["role"]): string {
   if (role === "student") return "Student";
   if (role === "tutor") return "Tutor";
   return "Unknown user";

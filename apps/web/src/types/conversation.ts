@@ -9,7 +9,8 @@ export type ConversationParticipant = {
 export type ConversationLastMessage = {
   text: string;
   createdAt: string;
-  senderId: string;
+  senderId: string | null;
+  type: "text" | "system";
 };
 
 export type Conversation = {
@@ -26,14 +27,26 @@ export type ChatParticipant = {
   profileUrl: string | null;
 };
 
-export type ChatMessage = {
+type MessageBase = {
   id: string;
   conversationId: string;
-  senderId: string;
   text: string;
   createdAt: string;
+};
+
+export type TextChatMessage = MessageBase & {
+  type: "text";
+  senderId: string;
   sender: ChatParticipant;
 };
+
+export type SystemChatMessage = MessageBase & {
+  type: "system";
+  senderId: null;
+  sender: null;
+};
+
+export type ChatMessage = TextChatMessage | SystemChatMessage;
 
 export type MessageHistory = {
   conversationId: string;

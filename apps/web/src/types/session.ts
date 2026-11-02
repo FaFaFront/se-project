@@ -1,4 +1,4 @@
-export type SessionStatus = "scheduled" | "ongoing" | "completed" | "cancelled";
+export type SessionStatus = "scheduled" | "ongoing" | "completed" | "cancelled" | "missed";
 
 export type ClassroomSession = {
   id: string;
@@ -9,6 +9,13 @@ export type ClassroomSession = {
   status: SessionStatus;
   meetLink: string;
   meetSpaceName: string | null;
+  startedAt: string | null;
+  endedAt: string | null;
+  tutorJoinedAt: string | null;
+  studentJoinedAt: string | null;
+  amountCharged: string | null;
+  attendanceTrackingEnabled: boolean;
+  paymentPending: boolean;
 };
 
 export type CreateSessionRequest = {

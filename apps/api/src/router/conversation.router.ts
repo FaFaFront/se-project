@@ -22,7 +22,8 @@ import { conversationController } from "../controller/conversation.controller.js
  *           properties:
  *             text: { type: string, example: "Hello!" }
  *             createdAt: { type: string, format: date-time }
- *             senderId: { type: string, format: uuid }
+ *             senderId: { type: string, format: uuid, nullable: true }
+ *             type: { type: string, enum: [text, system] }
  *         createdAt: { type: string, format: date-time }
  *     ConversationMessageSender:
  *       type: object
@@ -36,15 +37,18 @@ import { conversationController } from "../controller/conversation.controller.js
  *     ConversationMessage:
  *       type: object
  *       additionalProperties: false
- *       required: [id, conversationId, senderId, text, createdAt, sender]
+ *       required: [id, conversationId, type, senderId, text, createdAt, sender]
  *       properties:
  *         id: { type: string, format: uuid }
  *         conversationId: { type: string, format: uuid }
- *         senderId: { type: string, format: uuid }
+ *         senderId: { type: string, format: uuid, nullable: true }
+ *         type: { type: string, enum: [text, system] }
  *         text: { type: string, example: "Hello, are you available tomorrow?" }
  *         createdAt: { type: string, format: date-time, example: "2026-10-14T08:30:00.000Z" }
  *         sender:
- *           $ref: '#/components/schemas/ConversationMessageSender'
+ *           nullable: true
+ *           allOf:
+ *             - $ref: '#/components/schemas/ConversationMessageSender'
  *     MessageHistory:
  *       type: object
  *       additionalProperties: false

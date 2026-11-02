@@ -7,31 +7,25 @@ import {
 } from "../common/errors/app-error.js";
 import { randomUUID } from "node:crypto";
 import { classroomRepository } from "../repository/classroom.repository.js";
-import { sessionRepository, type SessionRow } from "../repository/session.repository.js";
+import { sessionRepository } from "../repository/session.repository.js";
+import { serializeSession } from "../common/utils/session-presenter.js";
 
-export type SessionItem = {
-  id: string;
-  classroomId: string;
-  scheduledAt: string;
-  durationHours: number;
-  status: string;
-  meetLink: string;
-  meetSpaceName: string | null;
-};
-
-function serializeSession(session: SessionRow): SessionItem {
-  return {
-    id: session.id,
-    classroomId: session.classroomId,
-    scheduledAt: session.scheduledAt.toISOString(),
-    durationHours: Number(session.durationHours),
-    status: session.status,
-    meetLink: session.meetLink,
-    meetSpaceName: session.meetSpaceName,
-  };
-}
+export type SessionItem = ReturnType<typeof serializeSession>;
 
 export const sessionService = {
+  async getSession(sessionId: string, userId: string): Promise<SessionItem> {
+    const session = await sessionRepository.findById(sessionId);
+    if (
+      !session ||
+      (session.classroom.tutorId !== userId && session.classroom.studentId !== userId)
+    )
+      throw new NotFoundError("Session not found");
+    return serializeSession(session);
+  },
+
+  async recordAttendance(sessionId: string, userId: string): Promise<SessionItem> {
+    return serializeSession(await sessionRepository.recordAttendance(sessionId, userId));
+  },
   async createSession(
     classroomId: string,
     tutorId: string,
@@ -83,7 +77,6 @@ export const sessionService = {
   },
 
   async cancelSession(sessionId: string, tutorId: string): Promise<SessionItem> {
-    await sessionRepository.resolveStatuses();
     const session = await sessionRepository.findById(sessionId);
     if (!session) throw new NotFoundError("Session not found");
 
@@ -98,7 +91,7 @@ export const sessionService = {
       throw new BadRequestError("Only scheduled or ongoing sessions can be cancelled");
     }
 
-    const updated = await sessionRepository.cancel(sessionId);
+    const updated = await sessionRepository.cancel(sessionId, tutorId);
     return serializeSession(updated);
   },
 };

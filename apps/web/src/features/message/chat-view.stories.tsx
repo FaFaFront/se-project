@@ -67,6 +67,7 @@ export const LongConversation: Story = {
         return {
           id: `long-preview-${index}`,
           conversationId: MOCK_CONVERSATION_ID,
+          type: "text",
           senderId: sender.id,
           text:
             index === 5

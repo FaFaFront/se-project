@@ -3,23 +3,29 @@ enum MeetSessionStatus {
   ongoing
   completed
   cancelled
+  missed
 }
 
 model MeetSession {
-  id            String            @id @default(uuid())
-  classroomId   String
-  scheduledAt   DateTime
-  durationHours Decimal           @db.Decimal(4, 2)
-  status        MeetSessionStatus @default(scheduled)
-  meetLink      String
-  meetSpaceName String?
-  startedAt     DateTime?
-  endedAt       DateTime?
-  amountCharged Decimal?          @db.Decimal(10, 2)
+  id                        String            @id @default(uuid())
+  classroomId               String
+  scheduledAt               DateTime
+  durationHours             Decimal           @db.Decimal(4, 2)
+  status                    MeetSessionStatus @default(scheduled)
+  meetLink                  String
+  meetSpaceName             String?
+  startedAt                 DateTime?
+  endedAt                   DateTime?
+  amountCharged             Decimal?          @db.Decimal(12, 2)
+  tutorJoinedAt             DateTime?
+  studentJoinedAt           DateTime?
+  settlementNotifiedAt      DateTime?
+  attendanceTrackingEnabled Boolean           @default(false)
 
   classroom    Classroom     @relation(fields: [classroomId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
   @@index([classroomId])
+  @@index([attendanceTrackingEnabled, status, scheduledAt])
   @@map("meet_sessions")
 }

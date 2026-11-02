@@ -31,13 +31,29 @@ export function MessageList({ messages, currentUserId, className }: MessageListP
         </p>
       ) : (
         <ol aria-label="Messages" className="flex flex-col gap-4">
-          {messages.map((message) => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              isOwnMessage={message.senderId === currentUserId}
-            />
-          ))}
+          {messages.map((message) =>
+            message.type === "system" ? (
+              <li
+                key={message.id}
+                className="mx-auto max-w-[90%] rounded-xl border border-hairline bg-canvas px-4 py-2 text-center text-sm text-ink/70"
+              >
+                <p className="text-xs font-semibold text-ink/60">System</p>
+                <p className="whitespace-pre-wrap break-words">{message.text}</p>
+                <time className="mt-1 block text-xs text-ink/60" dateTime={message.createdAt}>
+                  {new Intl.DateTimeFormat(undefined, {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  }).format(new Date(message.createdAt))}
+                </time>
+              </li>
+            ) : (
+              <MessageBubble
+                key={message.id}
+                message={message}
+                isOwnMessage={message.senderId === currentUserId}
+              />
+            )
+          )}
         </ol>
       )}
       <div ref={bottomSentinelRef} aria-hidden="true" />

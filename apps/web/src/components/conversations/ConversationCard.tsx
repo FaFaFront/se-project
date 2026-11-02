@@ -25,7 +25,10 @@ export function ConversationCard({ conversation }: { conversation: Conversation 
         <p className="text-ink-black truncate text-sm font-semibold">
           {otherParticipant.name ?? "Unknown"}
         </p>
-        <p className="text-ink/60 truncate text-xs">{lastMessage?.text ?? "No messages yet"}</p>
+        <p className="text-ink/60 truncate text-xs">
+          {lastMessage?.type === "system" ? "System: " : ""}
+          {lastMessage?.text ?? "No messages yet"}
+        </p>
       </div>
       {lastMessage && (
         <span suppressHydrationWarning className="text-ink/40 shrink-0 text-xs">

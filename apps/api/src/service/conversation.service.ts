@@ -1,16 +1,6 @@
 import { NotFoundError } from "../common/errors/app-error.js";
-import { conversationRepository, type MessageRow } from "../repository/conversation.repository.js";
-
-function serializeMessage(message: MessageRow) {
-  return {
-    id: message.id,
-    conversationId: message.conversationId,
-    senderId: message.senderId,
-    text: message.text,
-    createdAt: message.createdAt.toISOString(),
-    sender: message.sender,
-  };
-}
+import { conversationRepository } from "../repository/conversation.repository.js";
+import { serializeMessage } from "../common/utils/message-presenter.js";
 
 export const conversationService = {
   async listForUser(userId: string) {
@@ -27,6 +17,7 @@ export const conversationService = {
               text: lastMsg.text,
               createdAt: lastMsg.createdAt.toISOString(),
               senderId: lastMsg.senderId,
+              type: lastMsg.type,
             }
           : null,
         createdAt: row.createdAt.toISOString(),
