@@ -109,47 +109,46 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
         })}
       </div>
 
-      <div className={`hidden items-center justify-end lg:flex ${signedIn ? "gap-6" : "gap-3"}`}>
+      <div className="hidden items-center justify-end gap-3 lg:flex">
         {signedIn ? (
-          <div className="flex gap-6 items-center">
-            <div className="flex flex-col gap-[1px]">
-              <button
-                type="button"
-                onClick={() => router.push("/profile")}
-                aria-label="View your profile"
-                className="flex gap-4 items-center rounded-full transition-opacity hover:opacity-80"
+          <div className="flex items-center gap-3">
+            {(isStudent || isTutor) && (
+              <Button
+                variant="outline"
+                className="h-8 px-3 text-xs"
+                onClick={() => router.push(isTutor ? "/balance/withdraw" : "/balance/top-up")}
               >
-                {displayPhoto ? (
-                  <Image
-                    src={displayPhoto}
-                    alt="Profile"
-                    width={40}
-                    height={40}
-                    unoptimized
-                    className="h-10 w-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="h-10 w-10 rounded-full bg-primary"></div>
-                )}
-                <div className="flex flex-col gap-[1px] text-left">
-                  <p className="text-sm font-semibold">{displayName}</p>
-                  {displayBalance !== undefined && (
-                    <p className="text-xs">
-                      {currencySymbol}
-                      {displayBalance}
-                    </p>
-                  )}
-                </div>
-              </button>
-              {(isStudent || isTutor) && (
-                <Link
-                  href={isTutor ? "/balance/withdraw" : "/balance/top-up"}
-                  className="pl-14 text-xs font-semibold text-primary"
-                >
-                  {isTutor ? "Withdraw balance" : "Top up balance"}
-                </Link>
+                {isTutor ? "Withdraw balance" : "Top up balance"}
+              </Button>
+            )}
+            <button
+              type="button"
+              onClick={() => router.push("/profile")}
+              aria-label="View your profile"
+              className="border-hairline hover:border-primary hover:bg-surface-lavender flex items-center gap-2 rounded-full border bg-white py-1 pr-4 pl-1 transition-colors"
+            >
+              {displayPhoto ? (
+                <Image
+                  src={displayPhoto}
+                  alt="Profile"
+                  width={32}
+                  height={32}
+                  unoptimized
+                  className="h-8 w-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="h-8 w-8 rounded-full bg-primary"></div>
               )}
-            </div>
+              <div className="flex flex-col items-start gap-[1px] text-left">
+                <p className="text-ink-black text-sm leading-tight font-semibold">{displayName}</p>
+                {displayBalance !== undefined && (
+                  <p className="text-ink text-xs leading-tight">
+                    {currencySymbol}
+                    {displayBalance}
+                  </p>
+                )}
+              </div>
+            </button>
           </div>
         ) : (
           <>
