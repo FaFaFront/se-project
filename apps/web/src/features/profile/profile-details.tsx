@@ -10,6 +10,7 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/contexts/toast-context";
 import { ProfileAvatar } from "@/features/profile/profile-avatar";
 import { GRADE_LEVELS } from "@/features/profile/profile-completion-form";
 import { ApiError, apiClient } from "@/lib/api-client";
@@ -95,6 +96,7 @@ export function ProfileDetails({
 }: ProfileDetailsProps) {
   const router = useRouter();
   const { refresh, logout } = useAuth();
+  const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const submitting = useRef(false);
 
@@ -247,15 +249,17 @@ export function ProfileDetails({
       router.refresh();
       setIsEditing(false);
       setPhotoFile(null);
+      showToast("Your profile has been saved.");
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         clearSession();
         await logout();
         return;
       }
-      setSaveError(
-        error instanceof Error ? error.message : "Unable to save your profile. Please try again."
-      );
+      const message =
+        error instanceof Error ? error.message : "Unable to save your profile. Please try again.";
+      setSaveError(message);
+      showToast(message, "error");
     } finally {
       submitting.current = false;
       setSaving(false);
@@ -267,7 +271,7 @@ export function ProfileDetails({
       <section className={cn(CARD, "overflow-hidden")}>
         <div className="from-brand-plum-deepest to-primary h-32 bg-gradient-to-br sm:h-36" />
         <div className="px-6 pb-6 sm:px-8">
-          <div className="gap-base -mt-12 flex flex-col items-start justify-between sm:-mt-14 sm:flex-row sm:items-end">
+          <div className="gap-base -mt-6 flex flex-col items-start justify-between sm:flex-row sm:items-end">
             <div className="gap-base flex items-end">
               <div className="relative shrink-0">
                 <ProfileAvatar
