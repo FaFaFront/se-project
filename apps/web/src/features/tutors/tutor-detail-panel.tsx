@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ProfileAvatar } from "@/features/profile/profile-avatar";
 import { formatCurrency } from "@/features/profile/profile-details";
 import { formatReviewDate, ReviewStars } from "@/features/reviews/review-stars";
+import { TutorDetailSkeleton } from "@/features/tutors/tutor-detail-skeleton";
 import { ApiError, apiClient } from "@/lib/api-client";
 import type { TutorDetail } from "@/types/tutor";
 
@@ -70,9 +71,10 @@ export function TutorDetailPanel({ tutorId }: { tutorId: string }) {
 
   if (isLoading) {
     return (
-      <p className="text-ink py-12 text-center" role="status">
-        Loading tutor...
-      </p>
+      <div role="status">
+        <span className="sr-only">Loading tutor…</span>
+        <TutorDetailSkeleton />
+      </div>
     );
   }
 

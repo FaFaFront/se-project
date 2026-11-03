@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { TutorCard } from "@/features/tutors/tutor-card";
+import { TutorListSkeleton } from "@/features/tutors/tutor-card-skeleton";
 import { DEFAULT_SORT_ORDER, TutorFilters } from "@/features/tutors/tutor-filters";
 import { TutorsHero } from "@/features/tutors/tutors-hero";
 import { apiClient } from "@/lib/api-client";
@@ -123,11 +124,9 @@ export function TutorListPanel() {
       />
 
       {/* Always mounted so screen readers announce every change, errors included.
-          The result count is only announced, not shown — loading/error states stay visible. */}
-      <p
-        role="status"
-        className={cn("text-ink text-sm", !priceError && !error && !isLoading && "sr-only")}
-      >
+          Loading and the result count are only announced, not shown — the skeleton and
+          grid already show that visually. Errors stay visible. */}
+      <p role="status" className={cn("text-ink text-sm", !priceError && !error && "sr-only")}>
         {priceError
           ? "Fix the price range to see results."
           : error
@@ -145,7 +144,9 @@ export function TutorListPanel() {
         </div>
       ) : (
         <section aria-busy={isLoading} className="gap-base flex flex-col">
-          {!isLoading && tutors.length === 0 ? (
+          {isLoading ? (
+            <TutorListSkeleton count={PAGE_SIZE} />
+          ) : tutors.length === 0 ? (
             <div className="border-hairline gap-md flex flex-col items-center rounded-[10px] border border-dashed py-12 text-center">
               <p className="text-ink-black text-body-emphasis">No tutors match your criteria</p>
               {isFiltered && (
@@ -165,9 +166,7 @@ export function TutorListPanel() {
             </div>
           ) : (
             <>
-              <ul
-                className={`gap-base grid sm:grid-cols-2 lg:grid-cols-3 ${isLoading ? "opacity-60" : ""}`}
-              >
+              <ul className="gap-base grid sm:grid-cols-2 lg:grid-cols-3">
                 {visibleTutors.map((tutor) => (
                   <TutorCard key={tutor.id} tutor={tutor} />
                 ))}
