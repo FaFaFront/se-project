@@ -35,7 +35,7 @@ export function ChatView({
     <section
       aria-labelledby="chat-heading"
       aria-label={`Conversation ${conversationId}`}
-      className="flex h-[min(72vh,760px)] min-h-[420px] max-h-[760px] min-w-0 flex-col overflow-hidden rounded-2xl border border-hairline bg-canvas shadow-sm"
+      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-canvas"
     >
       <ChatHeader
         conversationId={conversationId}

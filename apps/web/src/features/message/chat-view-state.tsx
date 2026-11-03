@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 
-const chatCardClassName =
-  "flex h-[min(72vh,760px)] min-h-[420px] max-h-[760px] flex-col rounded-2xl border border-hairline bg-canvas shadow-sm";
+const chatCardClassName = "flex h-full min-h-0 flex-1 flex-col bg-canvas";
 
 export function ChatViewLoading() {
   return (

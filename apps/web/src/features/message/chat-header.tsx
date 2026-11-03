@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CreateClassroomModal } from "@/features/classroom/create-classroom-modal";
 import type { ChatParticipant } from "@/types/conversation";
@@ -42,6 +44,13 @@ export function ChatHeader({
       className={`flex flex-wrap items-center justify-between gap-3 border-b border-hairline bg-canvas px-4 py-4 sm:px-6 ${className ?? ""}`}
     >
       <div className="flex min-w-0 items-center gap-3">
+        <Link
+          href="/message"
+          aria-label="Back to chats"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full text-ink transition-colors hover:bg-surface-lavender md:hidden"
+        >
+          <ArrowLeft aria-hidden="true" className="size-5" />
+        </Link>
         <div
           aria-hidden="true"
           className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary"
