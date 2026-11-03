@@ -2,7 +2,7 @@ import { ClassroomStatus, Role } from "@prisma/client";
 import type { NextFunction, Response } from "express";
 import { z } from "zod";
 import type { AuthRequest } from "../common/middleware/auth.middleware.js";
-import { BadRequestError, ForbiddenError, UnauthorizedError } from "../common/errors/app-error.js";
+import { BadRequestError, UnauthorizedError } from "../common/errors/app-error.js";
 import { successResponse } from "../common/utils/response.js";
 import { classroomService } from "../service/classroom.service.js";
 
@@ -79,21 +79,13 @@ const createReviewSchema = z
 
 const deactivateBodySchema = z.object({}).strict().optional();
 
-/** The tutor ID always comes from the verified token, never from the request. */
-function tutorId(req: AuthRequest) {
-  if (!req.user) throw new UnauthorizedError("User not found in request");
-  if (req.user.role !== Role.tutor) {
-    throw new ForbiddenError("Only tutors can view their classroom list");
-  }
-  return req.user.id;
-}
-
 export const classroomController = {
-  async listTutorClassrooms(req: AuthRequest, res: Response, next: NextFunction) {
+  async listClassrooms(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const id = tutorId(req);
+      if (!req.user) throw new UnauthorizedError("User not found in request");
       const filter = classroomListQuerySchema.parse(req.query);
-      const classrooms = await classroomService.listTutorClassrooms(id, filter);
+      const role = req.user.role === Role.tutor ? Role.tutor : Role.student;
+      const classrooms = await classroomService.listClassroomsForUser(req.user.id, role, filter);
 
       res
         .set("Cache-Control", "no-store")

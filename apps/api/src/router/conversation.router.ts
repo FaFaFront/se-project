@@ -96,6 +96,49 @@ router.get("/", authMiddleware, requireActiveAccount, conversationController.lis
 
 /**
  * @swagger
+ * /conversations:
+ *   post:
+ *     summary: Find or create a conversation with another user
+ *     description: >
+ *       Returns the existing conversation between the authenticated user and `otherUserId`,
+ *       or creates one if none exists yet. Order of the two users does not matter.
+ *     tags: [Conversation]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             additionalProperties: false
+ *             required: [otherUserId]
+ *             properties:
+ *               otherUserId: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Conversation ready
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: { type: boolean, example: true }
+ *                 message: { type: string, example: Conversation ready }
+ *                 data:
+ *                   type: object
+ *                   required: [id]
+ *                   properties:
+ *                     id: { type: string, format: uuid }
+ *       400: { description: Invalid body, or otherUserId is the authenticated user }
+ *       401: { description: Unauthorized }
+ *       403: { description: The authenticated account is inactive }
+ *       404: { description: otherUserId does not exist }
+ */
+router.post("/", authMiddleware, requireActiveAccount, conversationController.startConversation);
+
+/**
+ * @swagger
  * /conversations/{conversationId}/messages:
  *   get:
  *     summary: Get the complete message history for a conversation

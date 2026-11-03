@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { MessageCircle, Star, Users } from "lucide-react";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { ProfileAvatar } from "@/features/profile/profile-avatar";
 import { formatCurrency } from "@/features/profile/profile-details";
 import { formatReviewDate, ReviewStars } from "@/features/reviews/review-stars";
@@ -12,10 +13,30 @@ import { ApiError, apiClient } from "@/lib/api-client";
 import type { TutorDetail } from "@/types/tutor";
 
 export function TutorDetailPanel({ tutorId }: { tutorId: string }) {
+  const router = useRouter();
   const [tutor, setTutor] = useState<TutorDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [isStartingChat, setIsStartingChat] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+
+  async function handleMessage() {
+    if (!tutor || isStartingChat) return;
+    setIsStartingChat(true);
+    setChatError(null);
+    try {
+      const conversation = await apiClient.post<{ id: string }>("/conversations", {
+        otherUserId: tutor.id,
+      });
+      router.push(`/message/${conversation.id}`);
+    } catch (requestError: unknown) {
+      setChatError(
+        requestError instanceof Error ? requestError.message : "Unable to start a conversation."
+      );
+      setIsStartingChat(false);
+    }
+  }
 
   useEffect(() => {
     let isStale = false;
@@ -114,13 +135,13 @@ export function TutorDetailPanel({ tutorId }: { tutorId: string }) {
             </div>
           </div>
 
-          <Link
-            href={`/message?tutor=${encodeURIComponent(tutor.id)}`}
-            className={buttonVariants()}
-          >
-            <MessageCircle aria-hidden="true" className="size-4" />
-            Message
-          </Link>
+          <div className="gap-sm flex flex-col items-end">
+            <Button onClick={handleMessage} isLoading={isStartingChat}>
+              <MessageCircle aria-hidden="true" className="size-4" />
+              Message
+            </Button>
+            {chatError && <p className="text-error text-xs">{chatError}</p>}
+          </div>
         </div>
 
         <div className="border-hairline mt-8 border-t pt-8">

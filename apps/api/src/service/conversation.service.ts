@@ -1,5 +1,6 @@
-import { NotFoundError } from "../common/errors/app-error.js";
+import { BadRequestError, NotFoundError } from "../common/errors/app-error.js";
 import { conversationRepository, type MessageRow } from "../repository/conversation.repository.js";
+import { userRepository } from "../repository/user.repository.js";
 import type { Prisma } from "@prisma/client";
 
 export function serializeMessage(message: MessageRow) {
@@ -106,5 +107,20 @@ export const conversationService = {
     await this.requireParticipant(conversationId, senderId);
     const message = await conversationRepository.createMessage(conversationId, senderId, text);
     return serializeMessage(message);
+  },
+
+  /** Finds the caller's conversation with `otherUserId`, or creates one. */
+  async getOrCreateConversation(currentUserId: string, otherUserId: string) {
+    if (currentUserId === otherUserId) {
+      throw new BadRequestError("Cannot start a conversation with yourself");
+    }
+    const otherUser = await userRepository.findProfileOwnerById(otherUserId);
+    if (!otherUser) throw new NotFoundError("User not found");
+
+    const conversation = await conversationRepository.findOrCreateForUsers(
+      currentUserId,
+      otherUserId
+    );
+    return { id: conversation.id };
   },
 };

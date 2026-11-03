@@ -6,8 +6,8 @@ import { formatCurrency } from "@/features/profile/profile-details";
 import { cn } from "@/lib/utils";
 import { CLASSROOM_STATUS_LABEL, type ClassroomListItem } from "@/types/classroom";
 
-/** Students may not have set a name yet; never fall back to their email. */
-const UNNAMED_STUDENT = "Unnamed student";
+/** A participant may not have set a name yet; never fall back to their email. */
+const UNNAMED_PARTICIPANT = "Unnamed user";
 
 function formatCreatedDate(isoDate: string): string {
   const date = new Date(isoDate);
@@ -16,7 +16,7 @@ function formatCreatedDate(isoDate: string): string {
 }
 
 export function ClassroomCard({ classroom }: { classroom: ClassroomListItem }) {
-  const studentName = classroom.student.name ?? UNNAMED_STUDENT;
+  const participantName = classroom.participant.name ?? UNNAMED_PARTICIPANT;
   const isActive = classroom.status === "active";
 
   return (
@@ -26,15 +26,15 @@ export function ClassroomCard({ classroom }: { classroom: ClassroomListItem }) {
         className="border-hairline bg-canvas gap-base hover:border-primary focus-visible:border-primary flex h-full flex-col rounded-[10px] border p-5 shadow-sm outline-none transition-colors"
       >
         <div className="gap-base flex items-center">
-          <ProfileAvatar src={classroom.student.profileUrl} name={studentName} size={48} />
+          <ProfileAvatar src={classroom.participant.profileUrl} name={participantName} size={48} />
           <div className="min-w-0 flex-1">
             <h2
               className={cn(
                 "text-body-emphasis truncate",
-                classroom.student.name ? "text-ink-black" : "text-placeholder"
+                classroom.participant.name ? "text-ink-black" : "text-placeholder"
               )}
             >
-              {studentName}
+              {participantName}
             </h2>
             <p className="text-ink gap-xs flex items-center text-sm">
               <BookOpen aria-hidden="true" className="size-4 shrink-0" />

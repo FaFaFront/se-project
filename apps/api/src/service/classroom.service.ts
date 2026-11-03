@@ -17,7 +17,8 @@ import { tutorRepository } from "../repository/tutor.repository.js";
 
 export type ClassroomListItem = {
   id: string;
-  student: { id: string; name: string | null; profileUrl: string | null };
+  /** The other participant: the student for a tutor viewer, the tutor for a student viewer. */
+  participant: { id: string; name: string | null; profileUrl: string | null };
   subject: { id: string; name: string };
   pricePerHour: number;
   status: ClassroomStatus;
@@ -85,15 +86,20 @@ function mapTutorClassroomDetail(classroom: ClassroomDetailRow) {
 }
 
 export const classroomService = {
-  async listTutorClassrooms(
-    tutorId: string,
+  /** Lists the signed-in user's own classrooms — the other side (student/tutor) depends on their role. */
+  async listClassroomsForUser(
+    userId: string,
+    role: Role,
     filter: ClassroomListFilter
   ): Promise<ClassroomListItem[]> {
-    const classrooms = await classroomRepository.findByTutor(tutorId, filter);
+    const classrooms =
+      role === Role.tutor
+        ? await classroomRepository.findByTutor(userId, filter)
+        : await classroomRepository.findByStudent(userId, filter);
 
     return classrooms.map((classroom) => ({
       id: classroom.id,
-      student: classroom.student,
+      participant: "student" in classroom ? classroom.student : classroom.tutor,
       subject: classroom.subject,
       pricePerHour: Number(classroom.pricePerHour),
       status: classroom.status,
