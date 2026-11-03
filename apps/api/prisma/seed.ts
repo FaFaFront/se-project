@@ -19,6 +19,10 @@ const SUBJECT_NAMES = [
   "Economics",
   "History",
   "Art",
+  "Geography",
+  "Music",
+  "Philosophy",
+  "French",
 ] as const;
 
 const FIRST_NAMES = [
