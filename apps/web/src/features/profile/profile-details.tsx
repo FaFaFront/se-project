@@ -70,12 +70,9 @@ function ReadOnlyField({ label, value }: { label: string; value?: string | null 
   return (
     <div className="gap-xs flex flex-col">
       <span className={FIELD_LABEL}>{label}</span>
-      <div
-        className={cn(
-          "bg-surface-disabled rounded-lg px-3.5 py-2.5 text-sm",
-          value ? "text-ink" : "text-placeholder"
-        )}
-      >
+      {/* Matches the real disabled-input style (disabled:text-placeholder) so it
+          reads as "disabled", not just "box with a color". */}
+      <div className="bg-surface-disabled text-placeholder rounded-lg px-3.5 py-2.5 text-sm">
         {value || EMPTY}
       </div>
     </div>
