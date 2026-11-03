@@ -71,10 +71,50 @@ function HeroSection() {
   );
 }
 
+const HOW_IT_WORKS_STEPS = [
+  {
+    number: "01",
+    title: "Find a tutor",
+    description: "Browse and filter tutors by subject, rating, and price.",
+  },
+  {
+    number: "02",
+    title: "Book a classroom",
+    description: "Schedule a session directly through the platform.",
+  },
+  {
+    number: "03",
+    title: "Start learning",
+    description: "Join your session and chat with your tutor in real time.",
+  },
+];
+
+function HowItWorksSection() {
+  return (
+    <section className="bg-surface-lavender px-4 py-16 lg:px-16">
+      <div className="mx-auto max-w-6xl">
+        <h2 className="font-outfit text-display-md text-brand-plum-deepest mb-10 text-center">
+          How it works
+        </h2>
+        <ol className="grid gap-8 lg:grid-cols-3 lg:divide-x lg:divide-primary/20">
+          {HOW_IT_WORKS_STEPS.map(({ number, title, description }) => (
+            <li key={number} className="flex flex-col gap-3 lg:px-8">
+              <span className="font-outfit text-display-md text-primary">{number}</span>
+              <h3 className="text-heading-md text-ink-black">{title}</h3>
+              <p className="text-body-sm text-ink/70">{description}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   return (
     <main>
       <HeroSection />
+      <HowItWorksSection />
     </main>
   );
 }
