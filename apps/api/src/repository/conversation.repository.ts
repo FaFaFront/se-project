@@ -158,10 +158,6 @@ export const conversationRepository = {
     tx?: Prisma.TransactionClient
   ): Promise<MessageRow> {
     const write = async (client: Prisma.TransactionClient) => {
-      const [a, b] = [tutorId, studentId].sort();
-      const pair = JSON.stringify([a, b]);
-      // Also serializes reversed callers, without taking wallet row locks.
-      await client.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended(${pair}, 0))`;
       if (eventKey) {
         const existing = await client.message.findUnique({
           where: { systemEventKey: eventKey },
@@ -169,22 +165,11 @@ export const conversationRepository = {
         });
         if (existing) return existing;
       }
-      const existing = await client.conversation.findFirst({
-        where: {
-          OR: [
-            { participantAId: a, participantBId: b },
-            { participantAId: b, participantBId: a },
-          ],
-        },
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        select: { id: true },
-      });
-      const conversation =
-        existing ??
-        (await client.conversation.create({
-          data: { participantAId: a, participantBId: b },
-          select: { id: true },
-        }));
+      const conversation = await conversationRepository.findOrCreateForUsers(
+        tutorId,
+        studentId,
+        client
+      );
       return client.message.create({
         data: {
           conversationId: conversation.id,
@@ -197,5 +182,37 @@ export const conversationRepository = {
       });
     };
     return tx ? write(tx) : prisma.$transaction(write);
+  },
+
+  /** Finds the conversation between the two users, or creates one. Order-independent. */
+  async findOrCreateForUsers(
+    userAId: string,
+    userBId: string,
+    tx?: Prisma.TransactionClient
+  ): Promise<{ id: string }> {
+    const run = async (client: Prisma.TransactionClient) => {
+      const [a, b] = [userAId, userBId].sort();
+      const pair = JSON.stringify([a, b]);
+      // Also serializes reversed callers, without taking wallet row locks.
+      await client.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended(${pair}, 0))`;
+      const existing = await client.conversation.findFirst({
+        where: {
+          OR: [
+            { participantAId: a, participantBId: b },
+            { participantAId: b, participantBId: a },
+          ],
+        },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        select: { id: true },
+      });
+      return (
+        existing ??
+        (await client.conversation.create({
+          data: { participantAId: a, participantBId: b },
+          select: { id: true },
+        }))
+      );
+    };
+    return tx ? run(tx) : prisma.$transaction(run);
   },
 };

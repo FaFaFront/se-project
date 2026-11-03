@@ -11,12 +11,32 @@ const conversationParamsSchema = z
   })
   .strict();
 
+const startConversationSchema = z
+  .object({
+    otherUserId: z.string().uuid("User ID must be a valid UUID"),
+  })
+  .strict();
+
 export const conversationController = {
   async listConversations(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       if (!req.user) throw new UnauthorizedError("User not found in request");
       const conversations = await conversationService.listForUser(req.user.id);
       res.status(200).json(successResponse(conversations, "Conversations retrieved successfully"));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async startConversation(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) throw new UnauthorizedError("User not found in request");
+      const { otherUserId } = startConversationSchema.parse(req.body);
+      const conversation = await conversationService.getOrCreateConversation(
+        req.user.id,
+        otherUserId
+      );
+      res.status(200).json(successResponse(conversation, "Conversation ready"));
     } catch (error) {
       next(error);
     }

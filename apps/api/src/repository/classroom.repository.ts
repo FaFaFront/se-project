@@ -4,26 +4,30 @@ import { reviewSelect } from "./review.repository.js";
 import { sessionSelect } from "./session.repository.js";
 import { BadRequestError, NotFoundError } from "../common/errors/app-error.js";
 
-const classroomListSelect = {
+// Only what a viewer needs to recognise the other participant — never email or contact details.
+const participantSummarySelect = {
+  id: true,
+  name: true,
+  profileUrl: true,
+} as const;
+
+const classroomListSelectForTutor = {
   id: true,
   pricePerHour: true,
   status: true,
   createdAt: true,
-  // Only what a tutor needs to recognise the student — never email or contact details.
-  student: {
-    select: {
-      id: true,
-      name: true,
-      profileUrl: true,
-    },
-  },
-  subject: {
-    select: {
-      id: true,
-      name: true,
-    },
-  },
-} as const;
+  student: { select: participantSummarySelect },
+  subject: { select: { id: true, name: true } },
+} as const satisfies Prisma.ClassroomSelect;
+
+const classroomListSelectForStudent = {
+  id: true,
+  pricePerHour: true,
+  status: true,
+  createdAt: true,
+  tutor: { select: participantSummarySelect },
+  subject: { select: { id: true, name: true } },
+} as const satisfies Prisma.ClassroomSelect;
 
 const classroomSelect = {
   id: true,
@@ -69,7 +73,12 @@ const classroomDetailSelect = {
   review: { select: reviewSelect },
 } as const satisfies Prisma.ClassroomSelect;
 
-export type ClassroomListRow = Prisma.ClassroomGetPayload<{ select: typeof classroomListSelect }>;
+export type ClassroomListRowForTutor = Prisma.ClassroomGetPayload<{
+  select: typeof classroomListSelectForTutor;
+}>;
+export type ClassroomListRowForStudent = Prisma.ClassroomGetPayload<{
+  select: typeof classroomListSelectForStudent;
+}>;
 export type ClassroomRow = Prisma.ClassroomGetPayload<{ select: typeof classroomSelect }>;
 export type ClassroomDetailRow = Prisma.ClassroomGetPayload<{
   select: typeof classroomDetailSelect;
@@ -110,7 +119,10 @@ export const classroomRepository = {
     });
   },
   /** Classrooms owned by `tutorId`, newest first, narrowed by every given filter (AND). */
-  async findByTutor(tutorId: string, filter: ClassroomListFilter): Promise<ClassroomListRow[]> {
+  async findByTutor(
+    tutorId: string,
+    filter: ClassroomListFilter
+  ): Promise<ClassroomListRowForTutor[]> {
     const { search, subjectId, status } = filter;
 
     return prisma.classroom.findMany({
@@ -125,7 +137,32 @@ export const classroomRepository = {
           ],
         }),
       },
-      select: classroomListSelect,
+      select: classroomListSelectForTutor,
+      // id breaks ties between classrooms created in the same instant.
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+    });
+  },
+
+  /** Classrooms attended by `studentId`, newest first, narrowed by every given filter (AND). */
+  async findByStudent(
+    studentId: string,
+    filter: ClassroomListFilter
+  ): Promise<ClassroomListRowForStudent[]> {
+    const { search, subjectId, status } = filter;
+
+    return prisma.classroom.findMany({
+      where: {
+        studentId,
+        ...(subjectId && { subjectId }),
+        ...(status && { status }),
+        ...(search && {
+          OR: [
+            { tutor: { name: { contains: search, mode: "insensitive" } } },
+            { subject: { name: { contains: search, mode: "insensitive" } } },
+          ],
+        }),
+      },
+      select: classroomListSelectForStudent,
       // id breaks ties between classrooms created in the same instant.
       orderBy: [{ createdAt: "desc" }, { id: "asc" }],
     });
@@ -174,5 +211,9 @@ export const classroomRepository = {
       where: { id: classroomId, tutorId, status: ClassroomStatus.active },
       data: { status: ClassroomStatus.completed },
     });
+  },
+
+  async countActiveByTutor(tutorId: string): Promise<number> {
+    return prisma.classroom.count({ where: { tutorId, status: ClassroomStatus.active } });
   },
 };

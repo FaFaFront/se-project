@@ -19,13 +19,11 @@ export type ClassroomParticipant = {
   profileUrl: string | null;
 };
 
-/** Limited student summary — the API never includes contact details. */
-export type ClassroomStudentSummary = ClassroomParticipant;
-
 /** One row of `GET /classrooms`. */
 export type ClassroomListItem = {
   id: string;
-  student: ClassroomStudentSummary;
+  /** The other participant: the student for a tutor viewer, the tutor for a student viewer. */
+  participant: ClassroomParticipant;
   subject: Subject;
   pricePerHour: number;
   status: ClassroomStatus;

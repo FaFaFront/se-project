@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/contexts/toast-context";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { getToken } from "@/lib/auth-storage";
 import {
@@ -18,6 +19,7 @@ import type { TopUp, TopUpOptions } from "@/types/transaction";
 export function TopUpForm() {
   const router = useRouter();
   const { profile, isLoading, error: authError, refresh } = useAuth();
+  const { showToast } = useToast();
   const [options, setOptions] = useState<TopUpOptions | null>(null);
   const [draft, setDraft] = useState<TopUpRecovery | null>(null);
   const [blocked, setBlocked] = useState(false);
@@ -141,6 +143,7 @@ export function TopUpForm() {
           setSuccess(
             `Confirmed $${Number(result.amount)} in demo credit. Your top-up was recorded once.`
           );
+          showToast(`Top-up of $${Number(result.amount)} confirmed.`);
           void refresh();
           router.refresh();
         }

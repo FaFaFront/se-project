@@ -10,8 +10,7 @@ export const metadata: Metadata = {
 export default function TutorsPage() {
   return (
     <main className="min-h-[calc(100vh-64px)] bg-[#faf9fc] px-4 py-6 sm:px-6 sm:py-10 lg:px-10">
-      <div className="gap-xl mx-auto flex w-full max-w-6xl flex-col">
-        <h1 className="text-heading-md text-ink-black">Find tutors</h1>
+      <div className="mx-auto w-full max-w-6xl">
         <TutorListPanel />
       </div>
     </main>

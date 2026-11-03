@@ -1,9 +1,12 @@
 "use client";
 
+import { useId } from "react";
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, Search } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { PriceRangeFilter } from "@/features/tutors/price-range-filter";
+import { cn } from "@/lib/utils";
 import type { Subject } from "@/types/subject";
 import type { SortOrder, TutorListQuery, TutorSortBy } from "@/types/tutor";
 
@@ -29,73 +32,45 @@ export interface TutorFiltersProps {
 
 export function TutorFilters({ query, subjects, onChange, priceError }: TutorFiltersProps) {
   const isAscending = query.order === "asc";
+  const searchId = useId();
 
   return (
-    <div className="gap-base flex flex-col">
-      <div className="relative">
-        <Search
-          aria-hidden="true"
-          className="text-placeholder pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
-        />
-        <Input
-          type="search"
-          aria-label="Search tutors by name"
-          placeholder="Search tutors by name"
-          value={query.search}
-          onChange={(event) => onChange({ search: event.target.value })}
-          className="pl-9"
-        />
-      </div>
-
-      <div className="gap-base flex flex-col md:flex-row md:items-end">
-        <Select
-          label="Subject"
-          className="w-full md:w-56"
-          value={query.subjectId}
-          onValueChange={(subjectId) => onChange({ subjectId })}
-          options={[
-            { label: "All subjects", value: "" },
-            ...subjects.map((subject) => ({ label: subject.name, value: subject.id })),
-          ]}
-        />
-
-        <fieldset className="gap-xs flex flex-col">
-          <legend className="text-ink-black mb-1 text-sm leading-[23px] font-semibold md:text-base md:leading-[26px]">
-            Price per hour
-          </legend>
-          <div className="gap-sm flex items-center">
-            <Input
-              type="number"
-              inputMode="decimal"
-              min={0}
-              aria-label="Minimum price"
-              placeholder="Min"
-              value={query.minPrice}
-              onChange={(event) => onChange({ minPrice: event.target.value })}
-              error={Boolean(priceError)}
-              wrapperClassName="w-full md:w-28"
+    <div className="gap-lg flex flex-col">
+      <div className="gap-base flex flex-col lg:flex-row lg:items-start">
+        <div className="gap-1 flex flex-1 flex-col">
+          <label
+            htmlFor={searchId}
+            className="text-ink-black text-sm leading-[23px] font-semibold md:text-base md:leading-[26px]"
+          >
+            Search
+          </label>
+          <div className="relative">
+            <Search
+              aria-hidden="true"
+              className="text-placeholder pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
             />
-            <span aria-hidden="true" className="text-placeholder">
-              –
-            </span>
             <Input
-              type="number"
-              inputMode="decimal"
-              min={0}
-              aria-label="Maximum price"
-              placeholder="Max"
-              value={query.maxPrice}
-              onChange={(event) => onChange({ maxPrice: event.target.value })}
-              error={Boolean(priceError)}
-              wrapperClassName="w-full md:w-28"
+              id={searchId}
+              type="search"
+              placeholder="Search tutors by name"
+              value={query.search}
+              onChange={(event) => onChange({ search: event.target.value })}
+              className="pl-9"
             />
           </div>
-        </fieldset>
+        </div>
 
-        <div className="gap-sm flex items-end md:ml-auto">
+        <PriceRangeFilter
+          className="w-full lg:w-44"
+          maxPrice={query.maxPrice}
+          onChange={onChange}
+          error={priceError}
+        />
+
+        <div className="gap-sm flex items-end lg:ml-auto">
           <Select
             label="Sort by"
-            className="w-full md:w-44"
+            className="w-full lg:w-44"
             value={query.sortBy}
             onValueChange={(value) => {
               const sortBy = value as TutorSortBy;
@@ -123,11 +98,43 @@ export function TutorFilters({ query, subjects, onChange, priceError }: TutorFil
         </div>
       </div>
 
-      {priceError && (
-        <p role="alert" className="text-error text-xs sm:text-sm">
-          {priceError}
-        </p>
-      )}
+      <fieldset className="gap-sm flex flex-col">
+        <legend className="sr-only">Subject</legend>
+        <div className="gap-sm flex flex-wrap" role="group" aria-label="Filter by subject">
+          <button
+            type="button"
+            onClick={() => onChange({ subjectId: "" })}
+            aria-pressed={query.subjectId === ""}
+            className={cn(
+              "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+              query.subjectId === ""
+                ? "border-primary bg-primary text-white"
+                : "border-hairline text-ink hover:border-primary bg-white"
+            )}
+          >
+            All subjects
+          </button>
+          {subjects.map((subject) => {
+            const isActive = query.subjectId === subject.id;
+            return (
+              <button
+                key={subject.id}
+                type="button"
+                onClick={() => onChange({ subjectId: isActive ? "" : subject.id })}
+                aria-pressed={isActive}
+                className={cn(
+                  "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+                  isActive
+                    ? "border-primary bg-primary text-white"
+                    : "border-hairline text-ink hover:border-primary bg-white"
+                )}
+              >
+                {subject.name}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
     </div>
   );
 }

@@ -64,17 +64,14 @@ export const classroomRouter = Router();
  *     ClassroomListItem:
  *       type: object
  *       additionalProperties: false
- *       required: [id, student, subject, pricePerHour, status, createdAt]
+ *       required: [id, participant, subject, pricePerHour, status, createdAt]
  *       properties:
  *         id: { type: string, format: uuid }
- *         student:
- *           type: object
- *           description: Limited student summary; contact details are never included
- *           required: [id, name, profileUrl]
- *           properties:
- *             id: { type: string, format: uuid }
- *             name: { type: string, nullable: true, example: Student Name }
- *             profileUrl: { type: string, format: uri, nullable: true }
+ *         participant:
+ *           allOf: [{ $ref: '#/components/schemas/ClassroomParticipantSummary' }]
+ *           description: >
+ *             The other participant — the student when the viewer is the tutor, or the tutor
+ *             when the viewer is the student. Contact details are never included.
  *         subject:
  *           type: object
  *           required: [id, name]
@@ -151,11 +148,12 @@ export const classroomRouter = Router();
  * @swagger
  * /classrooms:
  *   get:
- *     summary: List the authenticated tutor's classrooms
+ *     summary: List the authenticated user's own classrooms
  *     description: >
- *       Returns only classrooms owned by the tutor in the access token; a tutor ID is never
- *       accepted from the client. Search, subject, and status filters combine (AND). Results
- *       are ordered newest first (createdAt desc, then id). An empty array means no match.
+ *       Returns classrooms owned by the authenticated user, as a tutor or as a student
+ *       depending on their role; a user ID is never accepted from the client. Search, subject,
+ *       and status filters combine (AND). Results are ordered newest first (createdAt desc,
+ *       then id). An empty array means no match.
  *     tags: [Classrooms]
  *     security:
  *       - bearerAuth: []
@@ -163,7 +161,7 @@ export const classroomRouter = Router();
  *       - in: query
  *         name: search
  *         schema: { type: string, maxLength: 100 }
- *         description: Trimmed, case-insensitive match against the student's name or the subject name
+ *         description: Trimmed, case-insensitive match against the other participant's name or the subject name
  *       - in: query
  *         name: subjectId
  *         schema: { type: string, format: uuid }
@@ -186,14 +184,8 @@ export const classroomRouter = Router();
  *                   items: { $ref: '#/components/schemas/ClassroomListItem' }
  *       400: { description: Invalid query parameters }
  *       401: { description: Missing or invalid authentication }
- *       403: { description: Only tutors may list classrooms }
  */
-classroomRouter.get(
-  "/",
-  authMiddleware,
-  requireActiveAccount,
-  classroomController.listTutorClassrooms
-);
+classroomRouter.get("/", authMiddleware, requireActiveAccount, classroomController.listClassrooms);
 
 /**
  * @swagger

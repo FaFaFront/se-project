@@ -33,8 +33,8 @@ function isDefaultQuery(query: ClassroomListQuery): boolean {
   );
 }
 
-/** Tutor's own classrooms: search plus subject/status filters, all combined server-side. */
-function TutorClassroomList() {
+/** The signed-in user's own classrooms: search plus subject/status filters, all combined server-side. */
+function OwnClassroomList() {
   const [query, setQuery] = useState<ClassroomListQuery>(INITIAL_QUERY);
   const [debouncedSearch, setDebouncedSearch] = useState(query.search);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -220,19 +220,12 @@ function EmptyState({ query, onShowAll, onClear }: EmptyStateProps) {
   );
 }
 
-/**
- * My Classroom entry point. The detail route is available to tutors and
- * students, while this searchable list endpoint currently belongs to tutors.
- */
+/** My Classroom entry point — available to tutors and students alike. */
 export function ClassroomListPanel() {
   const { profile } = useAuth();
 
-  if (profile?.role !== "tutor") {
-    return (
-      <p className="text-ink text-sm">The classroom list is currently available for tutors only.</p>
-    );
-  }
+  if (!profile) return null;
 
-  // Keyed by user so switching accounts never shows the previous tutor's list.
-  return <TutorClassroomList key={profile.id} />;
+  // Keyed by user so switching accounts never shows the previous user's list.
+  return <OwnClassroomList key={profile.id} />;
 }

@@ -4,150 +4,276 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 const SALT_ROUNDS = 12;
+const TUTOR_PASSWORD = "Tutor123!";
+const STUDENT_PASSWORD = "Student123!";
+const USER_COUNT = 50;
 
-const conversationFixture = {
-  userA: {
-    id: "11111111-1111-4111-8111-111111111111",
-    name: "User A Student",
-    email: "student.a@example.com",
-    password: "TestStudentA123!",
-  },
-  userB: {
-    id: "22222222-2222-4222-8222-222222222222",
-    name: "User B Tutor",
-    email: "tutor.b@example.com",
-    password: "TestTutorB123!",
-  },
-  conversationId: "33333333-3333-4333-8333-333333333333",
-} as const;
+const SUBJECT_NAMES = [
+  "Mathematics",
+  "English",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "Computer Science",
+  "Thai Language",
+  "Economics",
+  "History",
+  "Art",
+  "Geography",
+  "Music",
+  "Philosophy",
+  "French",
+] as const;
+
+const FIRST_NAMES = [
+  "Ava",
+  "Liam",
+  "Mia",
+  "Noah",
+  "Emma",
+  "Ethan",
+  "Sophia",
+  "Lucas",
+  "Isabella",
+  "Mason",
+  "Chanida",
+  "Nattapong",
+  "Suda",
+  "Kittipong",
+  "Pimchanok",
+  "Anan",
+  "Siriporn",
+  "Thanakorn",
+  "Napat",
+  "Waraporn",
+  "Oliver",
+  "Charlotte",
+  "James",
+  "Amelia",
+  "Benjamin",
+] as const;
+
+const LAST_NAMES = [
+  "Carter",
+  "Bennett",
+  "Hayes",
+  "Foster",
+  "Reed",
+  "Simmons",
+  "Wattana",
+  "Suksawat",
+  "Charoensuk",
+  "Thongchai",
+  "Phetchara",
+  "Kittisak",
+  "Rattanakul",
+  "Chaiyaporn",
+  "Boonmee",
+] as const;
+
+const GRADE_LEVELS = [
+  "Grade 7",
+  "Grade 8",
+  "Grade 9",
+  "Grade 10",
+  "Grade 11",
+  "Grade 12",
+  "Year 1 University",
+  "Year 2 University",
+] as const;
+
+const REVIEW_COMMENTS = [
+  "Great tutor, explained everything clearly!",
+  "Very patient and helpful throughout our sessions.",
+  "My grades improved a lot after a few lessons.",
+  "Clear explanations and useful practice problems.",
+  "Highly recommend — always on time and well prepared.",
+  "Helped me understand concepts I'd struggled with for months.",
+  "Friendly and knowledgeable, would definitely book again.",
+  "Good tutor, though sessions sometimes ran a bit short.",
+  "Really engaging teaching style, made the subject fun.",
+  "Made a difficult topic much easier to understand.",
+  null,
+] as const;
+
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function pick<T>(items: readonly T[]): T {
+  return items[randomInt(0, items.length - 1)];
+}
+
+/** Fisher-Yates shuffle; does not mutate the input. */
+function shuffled<T>(items: readonly T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = randomInt(0, i);
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+/** Skewed toward positive ratings, like a real tutoring platform. */
+function randomRating(): number {
+  const weights = [1, 1, 2, 4, 6]; // ratings 1..5
+  let roll = Math.random() * weights.reduce((sum, weight) => sum + weight, 0);
+  for (let rating = 1; rating <= weights.length; rating++) {
+    roll -= weights[rating - 1];
+    if (roll <= 0) return rating;
+  }
+  return weights.length;
+}
+
+function nameFor(index: number): string {
+  const first = FIRST_NAMES[index % FIRST_NAMES.length];
+  const last = LAST_NAMES[(index * 7 + 3) % LAST_NAMES.length];
+  return `${first} ${last}`;
+}
+
+/** Real human headshots (not AI-generated placeholders); 1–70 are valid. */
+function profileUrlFor(seedOffset: number, index: number): string {
+  const imageNumber = ((seedOffset + index) % 70) + 1;
+  return `https://i.pravatar.cc/300?img=${imageNumber}`;
+}
+
+function subjectsFor(index: number): string[] {
+  const first = SUBJECT_NAMES[index % SUBJECT_NAMES.length];
+  const second = SUBJECT_NAMES[(index + 3) % SUBJECT_NAMES.length];
+  const subjects = [first, second];
+  if (index % 3 === 0) subjects.push(SUBJECT_NAMES[(index + 6) % SUBJECT_NAMES.length]);
+  return Array.from(new Set(subjects));
+}
+
+/** Clears every user and everything that depends on one, in FK-safe order. */
+async function clearUserData() {
+  await prisma.transaction.deleteMany();
+  await prisma.meetSession.deleteMany();
+  await prisma.classroomDocument.deleteMany();
+  await prisma.review.deleteMany();
+  await prisma.classroom.deleteMany();
+  await prisma.message.deleteMany();
+  await prisma.conversation.deleteMany();
+  await prisma.tutorSubject.deleteMany();
+  await prisma.user.deleteMany();
+}
 
 async function main() {
   await prisma.subject.createMany({
-    data: [{ name: "Mathematics" }, { name: "English" }, { name: "Physics" }],
+    data: SUBJECT_NAMES.map((name) => ({ name })),
     skipDuplicates: true,
   });
+  const subjects = await prisma.subject.findMany();
+  const subjectIdByName = new Map(subjects.map((subject) => [subject.name, subject.id]));
 
-  const [userAPasswordHash, userBPasswordHash] = await Promise.all([
-    bcrypt.hash(conversationFixture.userA.password, SALT_ROUNDS),
-    bcrypt.hash(conversationFixture.userB.password, SALT_ROUNDS),
+  console.log("Clearing existing student/tutor data...");
+  await clearUserData();
+
+  const [tutorPasswordHash, studentPasswordHash] = await Promise.all([
+    bcrypt.hash(TUTOR_PASSWORD, SALT_ROUNDS),
+    bcrypt.hash(STUDENT_PASSWORD, SALT_ROUNDS),
   ]);
 
-  const userA = await prisma.user.upsert({
-    where: { email: conversationFixture.userA.email },
-    update: {
-      name: conversationFixture.userA.name,
-      passwordHash: userAPasswordHash,
-      role: Role.student,
-      accountStatus: "ACTIVE",
-      gradeLevel: "Grade 10",
-      goals: "Improve mathematics and prepare for final examinations.",
-      hourlyRate: null,
-      profileComplete: true,
-    },
-    create: {
-      id: conversationFixture.userA.id,
-      name: conversationFixture.userA.name,
-      email: conversationFixture.userA.email,
-      passwordHash: userAPasswordHash,
-      role: Role.student,
-      gradeLevel: "Grade 10",
-      goals: "Improve mathematics and prepare for final examinations.",
-      profileComplete: true,
-    },
-  });
+  console.log(`Creating ${USER_COUNT} tutors...`);
+  const tutors: { id: string; hourlyRate: number; subjectIds: string[] }[] = [];
+  for (let i = 1; i <= USER_COUNT; i++) {
+    const name = nameFor(i);
+    const taughtSubjects = subjectsFor(i);
+    const hourlyRate = 200 + (i % 8) * 50;
 
-  const userB = await prisma.user.upsert({
-    where: { email: conversationFixture.userB.email },
-    update: {
-      name: conversationFixture.userB.name,
-      passwordHash: userBPasswordHash,
-      role: Role.tutor,
-      accountStatus: "ACTIVE",
-      hourlyRate: 35,
-      gradeLevel: null,
-      goals: null,
-      profileComplete: true,
-    },
-    create: {
-      id: conversationFixture.userB.id,
-      name: conversationFixture.userB.name,
-      email: conversationFixture.userB.email,
-      passwordHash: userBPasswordHash,
-      role: Role.tutor,
-      hourlyRate: 35,
-      profileComplete: true,
-    },
-  });
-
-  const conversation = await prisma.conversation.upsert({
-    where: {
-      participantAId_participantBId: {
-        participantAId: userA.id,
-        participantBId: userB.id,
+    const tutor = await prisma.user.create({
+      data: {
+        name,
+        email: `tutor${pad(i)}@gmail.com`,
+        passwordHash: tutorPasswordHash,
+        role: Role.tutor,
+        accountStatus: "ACTIVE",
+        profileUrl: profileUrlFor(0, i),
+        bio: `Experienced ${taughtSubjects.join(" and ")} tutor with ${1 + (i % 15)} years of teaching experience. Patient, friendly, and focused on helping students build real understanding.`,
+        hourlyRate,
+        walletBalance: 0,
+        profileComplete: true,
       },
-    },
-    update: {},
-    create: {
-      id: conversationFixture.conversationId,
-      participantAId: userA.id,
-      participantBId: userB.id,
-      createdAt: new Date("2026-10-14T08:00:00.000Z"),
-    },
-  });
+    });
 
-  const messages = [
-    {
-      id: "44444444-4444-4444-8444-444444444444",
-      senderId: userA.id,
-      text: "Hi! Are you available for a mathematics lesson tomorrow?",
-      createdAt: new Date("2026-10-14T08:30:00.000Z"),
-    },
-    {
-      id: "55555555-5555-4555-8555-555555555555",
-      senderId: userB.id,
-      text: "Yes, I am available after 4 PM.",
-      createdAt: new Date("2026-10-14T08:31:00.000Z"),
-    },
-    {
-      id: "66666666-6666-4666-8666-666666666666",
-      senderId: userA.id,
-      text: "Great, 5 PM works for me. Thank you!",
-      createdAt: new Date("2026-10-14T08:32:00.000Z"),
-    },
-  ];
+    const subjectIds = taughtSubjects.map((subjectName) => subjectIdByName.get(subjectName)!);
+    await prisma.tutorSubject.createMany({
+      data: subjectIds.map((subjectId) => ({ tutorId: tutor.id, subjectId })),
+      skipDuplicates: true,
+    });
+    tutors.push({ id: tutor.id, hourlyRate, subjectIds });
+  }
 
-  await prisma.$transaction(
-    messages.map((message) =>
-      prisma.message.upsert({
-        where: { id: message.id },
-        update: {
-          conversationId: conversation.id,
-          senderId: message.senderId,
-          text: message.text,
-          createdAt: message.createdAt,
+  console.log(`Creating ${USER_COUNT} students...`);
+  const studentIds: string[] = [];
+  for (let i = 1; i <= USER_COUNT; i++) {
+    const name = nameFor(i + USER_COUNT);
+    const gradeLevel = GRADE_LEVELS[i % GRADE_LEVELS.length];
+    const goalSubject = SUBJECT_NAMES[(i + 2) % SUBJECT_NAMES.length];
+
+    const student = await prisma.user.create({
+      data: {
+        name,
+        email: `student${pad(i)}@gmail.com`,
+        passwordHash: studentPasswordHash,
+        role: Role.student,
+        accountStatus: "ACTIVE",
+        profileUrl: profileUrlFor(70, i),
+        gradeLevel,
+        goals: `Improve my ${goalSubject} grades and get ready for upcoming exams.`,
+        walletBalance: 0,
+        profileComplete: true,
+      },
+    });
+    studentIds.push(student.id);
+  }
+
+  console.log("Creating mock classrooms and reviews...");
+  // Sequential on purpose: Supabase's pooler caps concurrent connections,
+  // and this only runs once as a seed script.
+  for (const tutor of tutors) {
+    // Each tutor gets a random handful of past/current students, mostly reviewed.
+    const pastStudentIds = shuffled(studentIds).slice(0, randomInt(0, 20));
+
+    for (const studentId of pastStudentIds) {
+      const willReview = Math.random() < 0.7;
+      const classroom = await prisma.classroom.create({
+        data: {
+          tutorId: tutor.id,
+          studentId,
+          subjectId: pick(tutor.subjectIds),
+          pricePerHour: tutor.hourlyRate,
+          status: willReview || Math.random() < 0.5 ? "completed" : "active",
         },
-        create: {
-          ...message,
-          conversationId: conversation.id,
-        },
-      })
-    )
-  );
+      });
 
-  console.log("Conversation test data is ready:");
+      if (willReview) {
+        await prisma.review.create({
+          data: {
+            classroomId: classroom.id,
+            studentId,
+            tutorId: tutor.id,
+            rating: randomRating(),
+            comment: pick(REVIEW_COMMENTS),
+          },
+        });
+      }
+    }
+  }
+
+  console.log("Seed complete:");
   console.table([
+    { role: "tutor", emails: "tutor01@gmail.com – tutor50@gmail.com", password: TUTOR_PASSWORD },
     {
-      user: "User A (student)",
-      email: conversationFixture.userA.email,
-      password: conversationFixture.userA.password,
-    },
-    {
-      user: "User B (tutor)",
-      email: conversationFixture.userB.email,
-      password: conversationFixture.userB.password,
+      role: "student",
+      emails: "student01@gmail.com – student50@gmail.com",
+      password: STUDENT_PASSWORD,
     },
   ]);
-  console.log(`Conversation ID: ${conversation.id}`);
 }
 
 main()
