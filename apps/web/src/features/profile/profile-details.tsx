@@ -1,18 +1,16 @@
 "use client";
 
-import { LogOut, Mail, Pencil } from "lucide-react";
-import Link from "next/link";
+import { Pencil } from "lucide-react";
 
 import { ProfileAvatar } from "@/features/profile/profile-avatar";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types/user";
 
 export interface ProfileDetailsProps {
   profile: UserProfile;
   className?: string;
-  onLogout?: () => void;
-  isLoggingOut?: boolean;
+  onEdit?: () => void;
   onToggleAccountStatus?: () => void;
   isStatusUpdating?: boolean;
   statusError?: string | null;
@@ -37,22 +35,19 @@ export function formatJoinedDate(isoDate: string): string {
   return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(date);
 }
 
-function MetaRow({ label, value }: { label: string; value: string }) {
+/** A read-only value, styled like a disabled input so it reads as "this came from somewhere real". */
+function ReadOnlyField({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="gap-xs flex flex-col">
-      <span className="text-ink/60 text-xs font-semibold tracking-wide uppercase">{label}</span>
-      <span className="text-ink-black text-body-emphasis">{value}</span>
-    </div>
-  );
-}
-
-function Field({ label, value }: { label: string; value?: string | null }) {
-  return (
-    <div className="gap-xs text-body-md flex flex-col">
-      <dt className="text-label-md text-ink-black">{label}</dt>
-      {/* The size token stays on the wrapper: passing it and a text colour through
-          cn() together lets tailwind-merge drop one of them. */}
-      <dd className={value ? "text-ink" : "text-placeholder"}>{value || EMPTY}</dd>
+      <span className="text-ink-black text-sm font-medium">{label}</span>
+      <div
+        className={cn(
+          "bg-surface-disabled rounded-lg px-3.5 py-2.5 text-sm",
+          value ? "text-ink" : "text-placeholder"
+        )}
+      >
+        {value || EMPTY}
+      </div>
     </div>
   );
 }
@@ -61,8 +56,7 @@ function Field({ label, value }: { label: string; value?: string | null }) {
 export function ProfileDetails({
   profile,
   className,
-  onLogout,
-  isLoggingOut,
+  onEdit,
   onToggleAccountStatus,
   isStatusUpdating,
   statusError,
@@ -72,46 +66,76 @@ export function ProfileDetails({
   const isActive = profile.accountStatus === "ACTIVE";
 
   return (
-    <div className={cn("gap-base grid items-start lg:grid-cols-3", className)}>
-      <section className={cn(CARD, "flex flex-col items-center px-6 py-8 text-center")}>
-        <ProfileAvatar
-          src={profile.profileUrl}
-          name={profile.name}
-          size={120}
-          className="ring-primary/10 ring-4"
-        />
+    <div className={cn("gap-base flex flex-col", className)}>
+      <section className={cn(CARD, "overflow-hidden")}>
+        <div className="from-brand-plum-deepest via-primary to-amber-200 h-24 bg-gradient-to-r sm:h-28" />
+        <div className="px-6 pb-6 sm:px-8">
+          <div className="gap-base -mt-12 flex flex-col items-start justify-between sm:-mt-14 sm:flex-row sm:items-end">
+            <div className="gap-base flex items-end">
+              <ProfileAvatar
+                src={profile.profileUrl}
+                name={profile.name}
+                size={96}
+                className="ring-canvas ring-4"
+              />
+              <div className="min-w-0 pb-1">
+                <h1 className="text-heading-md text-ink-black max-w-full truncate">
+                  {profile.name ?? "Your profile"}
+                </h1>
+                <p className="text-ink/60 truncate text-sm">{profile.email}</p>
+              </div>
+            </div>
 
-        <h1 className="text-heading-md text-ink-black mt-5 max-w-full truncate">
-          {profile.name ?? "Your profile"}
-        </h1>
+            <div className="gap-sm flex items-center">
+              <span className="bg-primary/5 text-primary shrink-0 rounded-lg px-3 py-1 text-xs font-semibold capitalize">
+                {profile.role}
+              </span>
+              {onEdit && (
+                <Button type="button" onClick={onEdit} className="shrink-0">
+                  <Pencil aria-hidden="true" className="size-4 shrink-0" />
+                  Edit
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
 
-        <span className="bg-primary/5 text-primary mt-2 rounded-lg px-3 py-1 text-xs font-semibold capitalize">
-          {profile.role}
-        </span>
+      <section className={cn(CARD, "p-6 sm:p-8")}>
+        <div className="gap-x-xl gap-y-lg grid sm:grid-cols-2">
+          <ReadOnlyField label="Full name" value={profile.name} />
+          <ReadOnlyField label="Email" value={profile.email} />
 
-        <p className="text-ink gap-sm mt-4 flex w-full min-w-0 items-center justify-center text-sm">
-          <Mail aria-hidden="true" className="size-4 shrink-0" />
-          <span className="truncate">{profile.email}</span>
-        </p>
+          {isStudent ? (
+            <>
+              <ReadOnlyField label="Grade level" value={profile.gradeLevel} />
+              <ReadOnlyField label="Member since" value={formatJoinedDate(profile.createdAt)} />
+            </>
+          ) : (
+            <>
+              <ReadOnlyField
+                label="Hourly rate"
+                value={
+                  profile.hourlyRate === null
+                    ? EMPTY
+                    : `${formatCurrency(profile.hourlyRate)} / hour`
+                }
+              />
+              <ReadOnlyField label="Member since" value={formatJoinedDate(profile.createdAt)} />
+            </>
+          )}
 
-        <div className="border-hairline gap-lg mt-6 flex w-full flex-col border-t pt-6 text-left">
+          <ReadOnlyField label="Wallet balance" value={formatCurrency(profile.walletBalance)} />
+
           {!isStudent && (
-            <div className="rounded-xl border border-hairline bg-white p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex flex-col">
-                  <span className="text-ink/60 text-xs font-semibold tracking-wide uppercase">
-                    Account status
-                  </span>
-                  <span
-                    className={cn(
-                      "mt-1 text-sm font-semibold",
-                      isActive ? "text-success" : "text-error"
-                    )}
-                  >
-                    {isActive ? "Active" : "Inactive"}
-                  </span>
-                </div>
-
+            <div className="gap-xs flex flex-col">
+              <span className="text-ink-black text-sm font-medium">Account status</span>
+              <div className="bg-surface-disabled flex items-center justify-between rounded-lg px-3.5 py-2.5">
+                <span
+                  className={cn("text-sm font-semibold", isActive ? "text-success" : "text-error")}
+                >
+                  {isActive ? "Active" : "Inactive"}
+                </span>
                 <button
                   type="button"
                   aria-label={isActive ? "Deactivate account" : "Activate account"}
@@ -119,94 +143,68 @@ export function ProfileDetails({
                   disabled={!onToggleAccountStatus || isStatusUpdating}
                   onClick={onToggleAccountStatus}
                   className={cn(
-                    "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60",
+                    "focus-visible:ring-primary/20 relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:ring-4 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60",
                     isActive ? "bg-success" : "bg-ink/20"
                   )}
                 >
                   <span
                     className={cn(
-                      "absolute left-1 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200",
+                      "absolute left-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200",
                       isActive ? "translate-x-5" : "translate-x-0"
                     )}
                   />
                 </button>
               </div>
+            </div>
+          )}
+        </div>
 
-              {statusError && <p className="text-error mt-3 text-xs font-medium">{statusError}</p>}
-              {statusMessage && (
-                <p className="text-success mt-3 text-xs font-medium">{statusMessage}</p>
-              )}
-              {isStatusUpdating && (
-                <p className="text-ink/60 mt-3 text-xs font-medium">Updating account status…</p>
+        {(statusError || statusMessage || isStatusUpdating) && !isStudent && (
+          <p
+            className={cn(
+              "mt-3 text-xs font-medium",
+              statusError ? "text-error" : statusMessage ? "text-success" : "text-ink/60"
+            )}
+          >
+            {statusError ?? statusMessage ?? "Updating account status…"}
+          </p>
+        )}
+
+        <div className="border-hairline mt-lg gap-lg flex flex-col border-t pt-6">
+          <div className="gap-xs flex flex-col">
+            <span className="text-ink-black text-sm font-medium">About</span>
+            <p className={cn("text-sm", profile.bio ? "text-ink" : "text-placeholder")}>
+              {profile.bio || EMPTY}
+            </p>
+          </div>
+
+          {isStudent ? (
+            <div className="gap-xs flex flex-col">
+              <span className="text-ink-black text-sm font-medium">Learning goals</span>
+              <p className={cn("text-sm", profile.goals ? "text-ink" : "text-placeholder")}>
+                {profile.goals || EMPTY}
+              </p>
+            </div>
+          ) : (
+            <div className="gap-xs flex flex-col">
+              <span className="text-ink-black text-sm font-medium">Subjects you teach</span>
+              {profile.subjects.length === 0 ? (
+                <span className="text-placeholder text-sm">{EMPTY}</span>
+              ) : (
+                <ul className="gap-sm flex flex-wrap">
+                  {profile.subjects.map((subject) => (
+                    <li
+                      key={subject.id}
+                      className="border-hairline text-ink rounded-lg border px-3 py-1 text-sm"
+                    >
+                      {subject.name}
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           )}
-
-          <MetaRow label="Wallet balance" value={formatCurrency(profile.walletBalance)} />
-          <MetaRow label="Member since" value={formatJoinedDate(profile.createdAt)} />
-          {!isStudent && (
-            <MetaRow
-              label="Hourly rate"
-              value={
-                profile.hourlyRate === null ? EMPTY : `${formatCurrency(profile.hourlyRate)} / hour`
-              }
-            />
-          )}
-          <Link href="/profile/edit" className={cn(buttonVariants(), "w-full")}>
-            <Pencil aria-hidden="true" className="size-4 shrink-0" />
-            Edit Profile
-          </Link>
-          {onLogout && (
-            <Button
-              type="button"
-              variant="outline"
-              className="text-error border-error w-full"
-              onClick={onLogout}
-              isLoading={isLoggingOut}
-            >
-              <LogOut aria-hidden="true" className="size-4 shrink-0" />
-              Log out
-            </Button>
-          )}
         </div>
-      </section>
-
-      <section className={cn(CARD, "gap-xl flex flex-col px-6 py-8 sm:px-8 lg:col-span-2")}>
-        <dl className="gap-xl flex flex-col">
-          <Field label="About" value={profile.bio} />
-
-          {isStudent ? (
-            <>
-              <div className="border-hairline border-t" />
-              <Field label="Grade level" value={profile.gradeLevel} />
-              <div className="border-hairline border-t" />
-              <Field label="Learning goals" value={profile.goals} />
-            </>
-          ) : (
-            <>
-              <div className="border-hairline border-t" />
-              <div className="gap-xs flex flex-col">
-                <dt className="text-label-md text-ink-black">Subjects you teach</dt>
-                <dd>
-                  {profile.subjects.length === 0 ? (
-                    <span className="text-placeholder text-body-md">{EMPTY}</span>
-                  ) : (
-                    <ul className="gap-sm flex flex-wrap">
-                      {profile.subjects.map((subject) => (
-                        <li
-                          key={subject.id}
-                          className="border-hairline text-ink rounded-lg border px-3 py-1 text-sm"
-                        >
-                          {subject.name}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </dd>
-              </div>
-            </>
-          )}
-        </dl>
       </section>
     </div>
   );

@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ProfileDetails } from "@/features/profile/profile-details";
+import { ProfileEditForm } from "@/features/profile/profile-edit-form";
 import { useAuth } from "@/contexts/auth-context";
 import { ApiError, apiClient } from "@/lib/api-client";
 import type { UserProfile } from "@/types/user";
@@ -16,15 +17,10 @@ import type { UserProfile } from "@/types/user";
 export function ProfilePanel() {
   const router = useRouter();
   const { profile, refresh, logout } = useAuth();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [isStatusUpdating, setIsStatusUpdating] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-
-  const handleLogout = useCallback(async () => {
-    setIsLoggingOut(true);
-    await logout();
-  }, [logout]);
 
   const handleAccountStatusToggle = useCallback(async () => {
     if (!profile) return;
@@ -58,11 +54,16 @@ export function ProfilePanel() {
 
   if (!profile) return null;
 
+  if (isEditing) {
+    return (
+      <ProfileEditForm onCancel={() => setIsEditing(false)} onSaved={() => setIsEditing(false)} />
+    );
+  }
+
   return (
     <ProfileDetails
       profile={profile}
-      onLogout={handleLogout}
-      isLoggingOut={isLoggingOut}
+      onEdit={() => setIsEditing(true)}
       onToggleAccountStatus={handleAccountStatusToggle}
       isStatusUpdating={isStatusUpdating}
       statusError={statusError}

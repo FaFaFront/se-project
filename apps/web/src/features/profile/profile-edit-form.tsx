@@ -33,7 +33,14 @@ function haveSameSubjectIds(left: string[], right: string[]) {
   return JSON.stringify([...left].sort()) === JSON.stringify([...right].sort());
 }
 
-export function ProfileEditForm() {
+export interface ProfileEditFormProps {
+  /** Called when the user cancels without saving. */
+  onCancel?: () => void;
+  /** Called right after a successful save. */
+  onSaved?: () => void;
+}
+
+export function ProfileEditForm({ onCancel, onSaved }: ProfileEditFormProps = {}) {
   const router = useRouter();
   const { refresh } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -192,6 +199,7 @@ export function ProfileEditForm() {
       setSaved(true);
       void refresh();
       router.refresh();
+      onSaved?.();
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         clearSession();
@@ -246,7 +254,7 @@ export function ProfileEditForm() {
   }
 
   return (
-    <div className="rounded-3xl border border-hairline bg-white shadow-sm">
+    <div className="rounded-[10px] border border-hairline bg-white shadow-sm">
       <section className="min-w-0 p-5 sm:p-6">
         <h1 className="font-outfit text-2xl font-semibold text-ink">
           Edit {isStudent ? "student" : "tutor"} profile
@@ -422,7 +430,18 @@ export function ProfileEditForm() {
                 />
               </>
             )}
-            <div className="flex justify-end border-t border-hairline pt-3 sm:col-span-2">
+            <div className="flex flex-col-reverse justify-end gap-3 border-t border-hairline pt-3 sm:col-span-2 sm:flex-row">
+              {onCancel && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={saving}
+                  onClick={onCancel}
+                  className="h-10 w-full rounded-xl px-8 sm:w-auto"
+                >
+                  Cancel
+                </Button>
+              )}
               <Button
                 type="submit"
                 isLoading={saving}
