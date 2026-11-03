@@ -1,16 +1,27 @@
 "use client";
 
-import { Pencil } from "lucide-react";
+import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Camera, Pencil } from "lucide-react";
 
-import { ProfileAvatar } from "@/features/profile/profile-avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/auth-context";
+import { ProfileAvatar } from "@/features/profile/profile-avatar";
+import { GRADE_LEVELS } from "@/features/profile/profile-completion-form";
+import { ApiError, apiClient } from "@/lib/api-client";
+import { clearSession, getToken, saveSession } from "@/lib/auth-storage";
+import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_BYTES, uploadImageToGCS } from "@/lib/upload";
 import { cn } from "@/lib/utils";
-import type { UserProfile } from "@/types/user";
+import type { Subject } from "@/types/subject";
+import type { ProfileUpdateResponse, UserProfile } from "@/types/user";
 
 export interface ProfileDetailsProps {
   profile: UserProfile;
   className?: string;
-  onEdit?: () => void;
   onToggleAccountStatus?: () => void;
   isStatusUpdating?: boolean;
   statusError?: string | null;
@@ -24,6 +35,24 @@ const EMPTY = "Not set yet";
 // (hairline/70 renders Tailwind's default grey, success/10 renders transparent).
 // Every other token below is used at full strength on purpose.
 const CARD = "rounded-[10px] border border-hairline bg-canvas shadow-sm";
+// Matches the label style every design-system input renders internally, so a
+// field looks the same whether it's a read-only box or a real input.
+const FIELD_LABEL =
+  "text-ink-black text-sm leading-[23px] font-semibold md:text-base md:leading-[26px]";
+
+type Fields = { gradeLevel: string; goals: string; hourlyRate: string };
+
+function fieldsFromProfile(profile: UserProfile): Fields {
+  return {
+    gradeLevel: profile.gradeLevel ?? "",
+    goals: profile.goals ?? "",
+    hourlyRate: profile.hourlyRate === null ? "" : String(profile.hourlyRate),
+  };
+}
+
+function haveSameSubjectIds(left: string[], right: string[]) {
+  return JSON.stringify([...left].sort()) === JSON.stringify([...right].sort());
+}
 
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
@@ -39,7 +68,7 @@ export function formatJoinedDate(isoDate: string): string {
 function ReadOnlyField({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="gap-xs flex flex-col">
-      <span className="text-ink-black text-sm font-medium">{label}</span>
+      <span className={FIELD_LABEL}>{label}</span>
       <div
         className={cn(
           "bg-surface-disabled rounded-lg px-3.5 py-2.5 text-sm",
@@ -52,46 +81,255 @@ function ReadOnlyField({ label, value }: { label: string; value?: string | null 
   );
 }
 
-/** Read-only view of the signed-in user's profile. */
+/**
+ * The signed-in user's profile: a read-only view that turns into an inline
+ * edit form (same card, same layout) when "Edit" is pressed — no navigation.
+ */
 export function ProfileDetails({
   profile,
   className,
-  onEdit,
   onToggleAccountStatus,
   isStatusUpdating,
   statusError,
   statusMessage,
 }: ProfileDetailsProps) {
+  const router = useRouter();
+  const { refresh, logout } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const submitting = useRef(false);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState(profile.name ?? "");
+  const [about, setAbout] = useState(profile.bio ?? "");
+  const [fields, setFields] = useState<Fields>(fieldsFromProfile(profile));
+  const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>(
+    profile.subjects.map((subject) => subject.id)
+  );
+  const [touched, setTouched] = useState<Partial<Record<keyof Fields, boolean>>>({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [photoError, setPhotoError] = useState("");
+
   const isStudent = profile.role === "student";
   const isActive = profile.accountStatus === "ACTIVE";
+
+  useEffect(() => {
+    if (!photoFile) {
+      setPhotoPreview("");
+      return;
+    }
+    const previewUrl = URL.createObjectURL(photoFile);
+    setPhotoPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [photoFile]);
+
+  useEffect(() => {
+    if (!isEditing || isStudent || availableSubjects.length > 0) return;
+    let active = true;
+    apiClient
+      .get<Subject[]>("/subjects")
+      .then((subjects) => {
+        if (active) setAvailableSubjects(subjects);
+      })
+      // The subject picker just stays empty if this fails; saving other fields still works.
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [isEditing, isStudent, availableSubjects.length]);
+
+  const rate = Number(fields.hourlyRate);
+  // Match the controller schema: trimmed required strings, or a finite positive number.
+  const errors = {
+    gradeLevel: fields.gradeLevel.trim() ? "" : "Please select your grade level.",
+    goals: fields.goals.trim() ? "" : "Please enter your learning goals.",
+    hourlyRate:
+      fields.hourlyRate.trim() && Number.isFinite(rate) && rate > 0
+        ? ""
+        : "Enter an hourly rate greater than 0.",
+  };
+  const valid =
+    Boolean(name.trim()) &&
+    name.trim().length <= 100 &&
+    about.trim().length <= 1000 &&
+    (isStudent ? !errors.gradeLevel && !errors.goals : !errors.hourlyRate);
+  const changed = Boolean(
+    name.trim() !== (profile.name ?? "").trim() ||
+    about.trim() !== (profile.bio ?? "").trim() ||
+    photoFile !== null ||
+    (isStudent
+      ? fields.gradeLevel.trim() !== (profile.gradeLevel ?? "").trim() ||
+        fields.goals.trim() !== (profile.goals ?? "").trim()
+      : (fields.hourlyRate.trim() !== "" && rate !== profile.hourlyRate) ||
+        !haveSameSubjectIds(
+          selectedSubjectIds,
+          profile.subjects.map((subject) => subject.id)
+        ))
+  );
+
+  function startEditing() {
+    setName(profile.name ?? "");
+    setAbout(profile.bio ?? "");
+    setFields(fieldsFromProfile(profile));
+    setSelectedSubjectIds(profile.subjects.map((subject) => subject.id));
+    setTouched({});
+    setPhotoFile(null);
+    setPhotoError("");
+    setSaveError("");
+    setIsEditing(true);
+  }
+
+  function cancelEditing() {
+    setIsEditing(false);
+    setPhotoFile(null);
+    setPhotoError("");
+    setSaveError("");
+  }
+
+  function edit(field: keyof Fields, value: string) {
+    setFields((current) => ({ ...current, [field]: value }));
+    setSaveError("");
+  }
+
+  function touch(field: keyof Fields) {
+    setTouched((current) => ({ ...current, [field]: true }));
+  }
+
+  function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type as (typeof ALLOWED_IMAGE_TYPES)[number])) {
+      setPhotoError("Please choose a JPG, PNG, WebP, or GIF image.");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      setPhotoError("Image must be 10 MB or smaller.");
+      event.target.value = "";
+      return;
+    }
+
+    setPhotoError("");
+    setPhotoFile(file);
+    setSaveError("");
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitting.current || !valid || !changed) return;
+    submitting.current = true;
+    setSaving(true);
+    setSaveError("");
+
+    try {
+      let uploadedUrl = profile.profileUrl;
+      if (photoFile) uploadedUrl = await uploadImageToGCS(photoFile, "avatars");
+
+      const updated = await apiClient.put<ProfileUpdateResponse>("/users/profile", {
+        name: name.trim(),
+        profileUrl: uploadedUrl,
+        bio: about.trim() || null,
+        ...(isStudent
+          ? { gradeLevel: fields.gradeLevel.trim(), goals: fields.goals.trim() }
+          : { hourlyRate: rate, subjectIds: selectedSubjectIds }),
+      });
+
+      const token = getToken();
+      if (token) {
+        const { id, name: updatedName, email, role, profileUrl } = updated;
+        saveSession({ token, user: { id, name: updatedName, email, role, profileUrl } });
+      }
+      await refresh();
+      router.refresh();
+      setIsEditing(false);
+      setPhotoFile(null);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearSession();
+        await logout();
+        return;
+      }
+      setSaveError(
+        error instanceof Error ? error.message : "Unable to save your profile. Please try again."
+      );
+    } finally {
+      submitting.current = false;
+      setSaving(false);
+    }
+  }
 
   return (
     <div className={cn("gap-base flex flex-col", className)}>
       <section className={cn(CARD, "overflow-hidden")}>
-        <div className="from-brand-plum-deepest via-primary to-amber-200 h-24 bg-gradient-to-r sm:h-28" />
+        <div className="from-brand-plum-deepest to-primary h-32 bg-gradient-to-br sm:h-36" />
         <div className="px-6 pb-6 sm:px-8">
           <div className="gap-base -mt-12 flex flex-col items-start justify-between sm:-mt-14 sm:flex-row sm:items-end">
             <div className="gap-base flex items-end">
-              <ProfileAvatar
-                src={profile.profileUrl}
-                name={profile.name}
-                size={96}
-                className="ring-canvas ring-4"
-              />
+              <div className="relative shrink-0">
+                <ProfileAvatar
+                  src={photoPreview || profile.profileUrl}
+                  name={name || profile.name}
+                  size={96}
+                  className="ring-canvas ring-4"
+                />
+                {isEditing && (
+                  <>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="sr-only"
+                      aria-label="Change profile photo"
+                      onChange={handlePhotoChange}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      aria-label="Change profile photo"
+                      className="bg-primary ring-canvas hover:bg-primary/80 absolute right-0 bottom-0 flex size-8 items-center justify-center rounded-full text-white shadow-sm ring-2 transition-colors"
+                    >
+                      <Camera aria-hidden="true" className="size-4" />
+                    </button>
+                  </>
+                )}
+              </div>
               <div className="min-w-0 pb-1">
                 <h1 className="text-heading-md text-ink-black max-w-full truncate">
-                  {profile.name ?? "Your profile"}
+                  {(isEditing ? name : profile.name) || "Your profile"}
                 </h1>
                 <p className="text-ink/60 truncate text-sm">{profile.email}</p>
+                {isEditing && photoError && (
+                  <p role="alert" className="text-error mt-1 text-xs">
+                    {photoError}
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="gap-sm flex items-center">
+            <div className="gap-sm flex shrink-0 items-center">
               <span className="bg-primary/5 text-primary shrink-0 rounded-lg px-3 py-1 text-xs font-semibold capitalize">
                 {profile.role}
               </span>
-              {onEdit && (
-                <Button type="button" onClick={onEdit} className="shrink-0">
+              {isEditing ? (
+                <>
+                  <Button type="button" variant="outline" disabled={saving} onClick={cancelEditing}>
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    form="profile-edit-form"
+                    isLoading={saving}
+                    disabled={saving || !valid || !changed}
+                  >
+                    Save changes
+                  </Button>
+                </>
+              ) : (
+                <Button type="button" onClick={startEditing}>
                   <Pencil aria-hidden="true" className="size-4 shrink-0" />
                   Edit
                 </Button>
@@ -102,109 +340,213 @@ export function ProfileDetails({
       </section>
 
       <section className={cn(CARD, "p-6 sm:p-8")}>
-        <div className="gap-x-xl gap-y-lg grid sm:grid-cols-2">
-          <ReadOnlyField label="Full name" value={profile.name} />
-          <ReadOnlyField label="Email" value={profile.email} />
+        <form id="profile-edit-form" noValidate onSubmit={handleSubmit}>
+          <fieldset disabled={saving} className="gap-x-xl gap-y-lg grid sm:grid-cols-2">
+            <legend className="sr-only">Profile information</legend>
 
-          {isStudent ? (
-            <>
-              <ReadOnlyField label="Grade level" value={profile.gradeLevel} />
-              <ReadOnlyField label="Member since" value={formatJoinedDate(profile.createdAt)} />
-            </>
-          ) : (
-            <>
+            {isEditing ? (
+              <Input
+                label="Full name"
+                maxLength={100}
+                value={name}
+                required
+                error={!name.trim()}
+                errorMessage="Please enter your name."
+                onChange={(event) => {
+                  setName(event.target.value);
+                  setSaveError("");
+                }}
+                className="rounded-lg"
+              />
+            ) : (
+              <ReadOnlyField label="Full name" value={profile.name} />
+            )}
+
+            <ReadOnlyField label="Email" value={profile.email} />
+
+            {isStudent ? (
+              isEditing ? (
+                <Select
+                  label="Grade level"
+                  placeholder="Select your grade level"
+                  options={
+                    fields.gradeLevel && !GRADE_LEVELS.includes(fields.gradeLevel)
+                      ? [fields.gradeLevel, ...GRADE_LEVELS]
+                      : GRADE_LEVELS
+                  }
+                  value={fields.gradeLevel}
+                  onValueChange={(value) => {
+                    edit("gradeLevel", value);
+                    touch("gradeLevel");
+                  }}
+                  disabled={saving}
+                  error={Boolean(touched.gradeLevel && errors.gradeLevel)}
+                  errorMessage={errors.gradeLevel}
+                  className="w-full [&>button]:h-10 [&>button]:rounded-lg [&>button]:px-3.5"
+                />
+              ) : (
+                <ReadOnlyField label="Grade level" value={profile.gradeLevel} />
+              )
+            ) : isEditing ? (
+              <Input
+                label="Hourly rate ($)"
+                type="number"
+                inputMode="decimal"
+                step="any"
+                required
+                value={fields.hourlyRate}
+                onChange={(event) => edit("hourlyRate", event.target.value)}
+                onBlur={() => touch("hourlyRate")}
+                error={Boolean(touched.hourlyRate && errors.hourlyRate)}
+                errorMessage={errors.hourlyRate}
+                className="rounded-lg"
+              />
+            ) : (
               <ReadOnlyField
                 label="Hourly rate"
                 value={
                   profile.hourlyRate === null
-                    ? EMPTY
+                    ? null
                     : `${formatCurrency(profile.hourlyRate)} / hour`
                 }
               />
-              <ReadOnlyField label="Member since" value={formatJoinedDate(profile.createdAt)} />
-            </>
-          )}
+            )}
 
-          <ReadOnlyField label="Wallet balance" value={formatCurrency(profile.walletBalance)} />
+            <ReadOnlyField label="Member since" value={formatJoinedDate(profile.createdAt)} />
+            <ReadOnlyField label="Wallet balance" value={formatCurrency(profile.walletBalance)} />
 
-          {!isStudent && (
-            <div className="gap-xs flex flex-col">
-              <span className="text-ink-black text-sm font-medium">Account status</span>
-              <div className="bg-surface-disabled flex items-center justify-between rounded-lg px-3.5 py-2.5">
-                <span
-                  className={cn("text-sm font-semibold", isActive ? "text-success" : "text-error")}
-                >
-                  {isActive ? "Active" : "Inactive"}
-                </span>
-                <button
-                  type="button"
-                  aria-label={isActive ? "Deactivate account" : "Activate account"}
-                  aria-pressed={isActive}
-                  disabled={!onToggleAccountStatus || isStatusUpdating}
-                  onClick={onToggleAccountStatus}
-                  className={cn(
-                    "focus-visible:ring-primary/20 relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:ring-4 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60",
-                    isActive ? "bg-success" : "bg-ink/20"
-                  )}
-                >
+            {!isStudent && (
+              <div className="gap-xs flex flex-col">
+                <span className={FIELD_LABEL}>Account status</span>
+                <div className="bg-surface-disabled flex items-center justify-between rounded-lg px-3.5 py-2.5">
                   <span
                     className={cn(
-                      "absolute left-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200",
-                      isActive ? "translate-x-5" : "translate-x-0"
+                      "text-sm font-semibold",
+                      isActive ? "text-success" : "text-error"
                     )}
-                  />
-                </button>
+                  >
+                    {isActive ? "Active" : "Inactive"}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={isActive ? "Deactivate account" : "Activate account"}
+                    aria-pressed={isActive}
+                    disabled={!onToggleAccountStatus || isStatusUpdating}
+                    onClick={onToggleAccountStatus}
+                    className={cn(
+                      "focus-visible:ring-primary/20 relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:ring-4 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60",
+                      isActive ? "bg-success" : "bg-ink/20"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "absolute left-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200",
+                        isActive ? "translate-x-5" : "translate-x-0"
+                      )}
+                    />
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-
-        {(statusError || statusMessage || isStatusUpdating) && !isStudent && (
-          <p
-            className={cn(
-              "mt-3 text-xs font-medium",
-              statusError ? "text-error" : statusMessage ? "text-success" : "text-ink/60"
             )}
-          >
-            {statusError ?? statusMessage ?? "Updating account status…"}
-          </p>
-        )}
 
-        <div className="border-hairline mt-lg gap-lg flex flex-col border-t pt-6">
-          <div className="gap-xs flex flex-col">
-            <span className="text-ink-black text-sm font-medium">About</span>
-            <p className={cn("text-sm", profile.bio ? "text-ink" : "text-placeholder")}>
-              {profile.bio || EMPTY}
-            </p>
-          </div>
-
-          {isStudent ? (
-            <div className="gap-xs flex flex-col">
-              <span className="text-ink-black text-sm font-medium">Learning goals</span>
-              <p className={cn("text-sm", profile.goals ? "text-ink" : "text-placeholder")}>
-                {profile.goals || EMPTY}
+            {(statusError || statusMessage || isStatusUpdating) && !isStudent && (
+              <p
+                className={cn(
+                  "text-xs font-medium sm:col-span-2",
+                  statusError ? "text-error" : statusMessage ? "text-success" : "text-ink/60"
+                )}
+              >
+                {statusError ?? statusMessage ?? "Updating account status…"}
               </p>
-            </div>
-          ) : (
-            <div className="gap-xs flex flex-col">
-              <span className="text-ink-black text-sm font-medium">Subjects you teach</span>
-              {profile.subjects.length === 0 ? (
-                <span className="text-placeholder text-sm">{EMPTY}</span>
+            )}
+
+            <div className="border-hairline gap-lg flex flex-col border-t pt-6 sm:col-span-2">
+              {isEditing ? (
+                <Textarea
+                  label="About"
+                  placeholder="Tell us a little about yourself."
+                  maxLength={1000}
+                  value={about}
+                  onChange={(event) => {
+                    setAbout(event.target.value);
+                    setSaveError("");
+                  }}
+                  className="min-h-24 rounded-lg"
+                />
               ) : (
-                <ul className="gap-sm flex flex-wrap">
-                  {profile.subjects.map((subject) => (
-                    <li
-                      key={subject.id}
-                      className="border-hairline text-ink rounded-lg border px-3 py-1 text-sm"
-                    >
-                      {subject.name}
-                    </li>
-                  ))}
-                </ul>
+                <div className="gap-xs flex flex-col">
+                  <span className={FIELD_LABEL}>About</span>
+                  <p className={cn("text-sm", profile.bio ? "text-ink" : "text-placeholder")}>
+                    {profile.bio || EMPTY}
+                  </p>
+                </div>
+              )}
+
+              {isStudent ? (
+                isEditing ? (
+                  <Textarea
+                    label="Learning goals"
+                    required
+                    value={fields.goals}
+                    onChange={(event) => edit("goals", event.target.value)}
+                    onBlur={() => touch("goals")}
+                    error={Boolean(touched.goals && errors.goals)}
+                    errorMessage={errors.goals}
+                    placeholder="What would you like to learn?"
+                    className="min-h-24 rounded-lg"
+                  />
+                ) : (
+                  <div className="gap-xs flex flex-col">
+                    <span className={FIELD_LABEL}>Learning goals</span>
+                    <p className={cn("text-sm", profile.goals ? "text-ink" : "text-placeholder")}>
+                      {profile.goals || EMPTY}
+                    </p>
+                  </div>
+                )
+              ) : isEditing ? (
+                <MultiSelect
+                  label="Subjects you teach"
+                  placeholder="Select subjects"
+                  options={availableSubjects.map((subject) => ({
+                    label: subject.name,
+                    value: subject.id,
+                  }))}
+                  value={selectedSubjectIds}
+                  onValueChange={(subjectIds) => {
+                    setSelectedSubjectIds(subjectIds);
+                    setSaveError("");
+                  }}
+                  disabled={saving}
+                  className="w-full [&>button]:h-10 [&>button]:rounded-lg [&>button]:px-3.5"
+                />
+              ) : (
+                <div className="gap-xs flex flex-col">
+                  <span className={FIELD_LABEL}>Subjects you teach</span>
+                  {profile.subjects.length === 0 ? (
+                    <span className="text-placeholder text-sm">{EMPTY}</span>
+                  ) : (
+                    <ul className="gap-sm flex flex-wrap">
+                      {profile.subjects.map((subject) => (
+                        <li
+                          key={subject.id}
+                          className="border-hairline text-ink rounded-lg border px-3 py-1 text-sm"
+                        >
+                          {subject.name}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               )}
             </div>
+          </fieldset>
+
+          {saveError && (
+            <p role="alert" className="text-error mt-4 text-sm">
+              {saveError}
+            </p>
           )}
-        </div>
+        </form>
       </section>
     </div>
   );
