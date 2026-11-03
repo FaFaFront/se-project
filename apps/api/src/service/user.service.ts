@@ -5,6 +5,7 @@ import {
   type UserProfileRow,
 } from "../repository/user.repository.js";
 import { subjectRepository } from "../repository/subject.repository.js";
+import { classroomRepository } from "../repository/classroom.repository.js";
 import {
   NotFoundError,
   BadRequestError,
@@ -179,6 +180,15 @@ export const userService = {
 
     if (profileOwner.role === Role.student) {
       throw new ForbiddenError("Students cannot change their account status");
+    }
+
+    if (accountStatus === AccountStatus.INACTIVE) {
+      const activeClassroomCount = await classroomRepository.countActiveByTutor(userId);
+      if (activeClassroomCount > 0) {
+        throw new ConflictError(
+          "Cannot deactivate your account while you have active classrooms. Complete or deactivate them first."
+        );
+      }
     }
 
     try {

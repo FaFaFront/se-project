@@ -212,4 +212,8 @@ export const classroomRepository = {
       data: { status: ClassroomStatus.completed },
     });
   },
+
+  async countActiveByTutor(tutorId: string): Promise<number> {
+    return prisma.classroom.count({ where: { tutorId, status: ClassroomStatus.active } });
+  },
 };

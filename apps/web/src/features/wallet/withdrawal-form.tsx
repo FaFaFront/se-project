@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { PasswordForm } from "@/components/ui/password-form";
 import { useAuth } from "@/contexts/auth-context";
+import { useToast } from "@/contexts/toast-context";
 import { apiClient, ApiError } from "@/lib/api-client";
 import { clearSession, getToken } from "@/lib/auth-storage";
 import { formatTHB, withdrawalCents } from "@/lib/withdrawal";
@@ -28,6 +29,7 @@ const LOGIN = "/login?next=/balance/withdraw";
 export function WithdrawalForm() {
   const router = useRouter();
   const { refresh } = useAuth();
+  const { showToast } = useToast();
   const [balance, setBalance] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
   const [bank, setBank] = useState("");
@@ -296,6 +298,7 @@ export function WithdrawalForm() {
         setHolder("");
         setBank("");
         setAmount("");
+        showToast(`Withdrawal of ${formatTHB(withdrawalCents(result.amount)!)} completed.`);
         void refresh();
         router.refresh();
         await refreshBalance(current, true);

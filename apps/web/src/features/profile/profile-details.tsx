@@ -416,51 +416,6 @@ export function ProfileDetails({
             <ReadOnlyField label="Member since" value={formatJoinedDate(profile.createdAt)} />
             <ReadOnlyField label="Wallet balance" value={formatCurrency(profile.walletBalance)} />
 
-            {!isStudent && (
-              <div className="gap-xs flex flex-col">
-                <span className={FIELD_LABEL}>Account status</span>
-                <div className="bg-surface-disabled flex items-center justify-between rounded-lg px-3.5 py-2.5">
-                  <span
-                    className={cn(
-                      "text-sm font-semibold",
-                      isActive ? "text-success" : "text-error"
-                    )}
-                  >
-                    {isActive ? "Active" : "Inactive"}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label={isActive ? "Deactivate account" : "Activate account"}
-                    aria-pressed={isActive}
-                    disabled={!onToggleAccountStatus || isStatusUpdating}
-                    onClick={onToggleAccountStatus}
-                    className={cn(
-                      "focus-visible:ring-primary/20 relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 focus-visible:ring-4 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60",
-                      isActive ? "bg-success" : "bg-ink/20"
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "absolute left-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200",
-                        isActive ? "translate-x-5" : "translate-x-0"
-                      )}
-                    />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {(statusError || statusMessage || isStatusUpdating) && !isStudent && (
-              <p
-                className={cn(
-                  "text-xs font-medium sm:col-span-2",
-                  statusError ? "text-error" : statusMessage ? "text-success" : "text-ink/60"
-                )}
-              >
-                {statusError ?? statusMessage ?? "Updating account status…"}
-              </p>
-            )}
-
             <div className="border-hairline gap-lg flex flex-col border-t pt-6 sm:col-span-2">
               {isEditing ? (
                 <Textarea
@@ -549,6 +504,46 @@ export function ProfileDetails({
           )}
         </form>
       </section>
+
+      {!isStudent && (
+        <section className="border-error overflow-hidden rounded-[10px] border">
+          <div className="px-6 py-4 sm:px-8">
+            <h2 className="text-error text-body-emphasis">Danger zone</h2>
+          </div>
+          <div className="border-error gap-base flex flex-wrap items-center justify-between border-t px-6 py-5 sm:px-8">
+            <div className="max-w-md">
+              <p className="text-ink-black text-sm font-semibold">
+                {isActive ? "Deactivate account" : "Activate account"}
+              </p>
+              <p className="text-ink/60 mt-1 text-xs">
+                {isActive
+                  ? "You won't be visible to students, and classroom, messaging, and session actions will be blocked until you reactivate. Your data is kept."
+                  : "Your account is currently inactive. Reactivate to appear in search again and resume classroom, messaging, and session actions."}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className={isActive ? "text-error border-error" : undefined}
+              disabled={!onToggleAccountStatus || isStatusUpdating}
+              isLoading={isStatusUpdating}
+              onClick={onToggleAccountStatus}
+            >
+              {isActive ? "Deactivate account" : "Activate account"}
+            </Button>
+          </div>
+          {(statusError || statusMessage) && (
+            <p
+              className={cn(
+                "px-6 pb-4 text-xs font-medium sm:px-8",
+                statusError ? "text-error" : "text-success"
+              )}
+            >
+              {statusError ?? statusMessage}
+            </p>
+          )}
+        </section>
+      )}
     </div>
   );
 }

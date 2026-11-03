@@ -246,7 +246,8 @@ router.put("/profile", authMiddleware, requireActiveAccount, userController.upda
  *     description: >
  *       Soft-pauses or restores the account. Inactive accounts cannot sign in or
  *       use other protected features, but the user row and related data are not
- *       deleted. This is separate from account deletion.
+ *       deleted. This is separate from account deletion. A tutor cannot deactivate
+ *       while they have any active classroom.
  *     tags: [User]
  *     security:
  *       - bearerAuth: []
@@ -276,6 +277,8 @@ router.put("/profile", authMiddleware, requireActiveAccount, userController.upda
  *                   $ref: '#/components/schemas/UserProfile'
  *       400: { description: Invalid status }
  *       401: { description: Unauthorized }
+ *       403: { description: Students cannot change their account status }
+ *       409: { description: Tutor has at least one active classroom }
  */
 router.patch("/me/status", authMiddleware, userController.updateAccountStatus);
 
