@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Menu, X } from "lucide-react";
+import { LogOut, Menu, User, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -30,9 +30,11 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
   const pathname = usePathname();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { profile } = useAuth();
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const { profile, logout } = useAuth();
   const menuToggleRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const signedIn = isLoggedIn ?? profile !== null;
   const displayName = userName ?? profile?.name ?? profile?.email;
@@ -83,6 +85,32 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
     };
   }, [isSidebarOpen]);
 
+  useEffect(() => {
+    if (!isProfileMenuOpen) return;
+
+    const closeOnOutsideOrEscape = (event: MouseEvent | KeyboardEvent) => {
+      if (event instanceof KeyboardEvent) {
+        if (event.key === "Escape") setIsProfileMenuOpen(false);
+        return;
+      }
+      if (!profileMenuRef.current?.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideOrEscape);
+    document.addEventListener("keydown", closeOnOutsideOrEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideOrEscape);
+      document.removeEventListener("keydown", closeOnOutsideOrEscape);
+    };
+  }, [isProfileMenuOpen]);
+
+  async function handleLogout() {
+    setIsProfileMenuOpen(false);
+    await logout();
+  }
+
   return (
     <nav className="sticky top-0 z-30 flex items-center justify-between bg-white px-4 py-3 lg:px-16 shadow-sm">
       <div className="lg:flex lg:items-center">
@@ -121,34 +149,70 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
                 {isTutor ? "Withdraw balance" : "Top up balance"}
               </Button>
             )}
-            <button
-              type="button"
-              onClick={() => router.push("/profile")}
-              aria-label="View your profile"
-              className="border-hairline hover:border-primary hover:bg-surface-lavender flex items-center gap-2 rounded-full border bg-white py-1 pr-4 pl-1 transition-colors"
-            >
-              {displayPhoto ? (
-                <Image
-                  src={displayPhoto}
-                  alt="Profile"
-                  width={32}
-                  height={32}
-                  unoptimized
-                  className="h-8 w-8 rounded-full object-cover"
-                />
-              ) : (
-                <div className="h-8 w-8 rounded-full bg-primary"></div>
-              )}
-              <div className="flex flex-col items-start gap-[1px] text-left">
-                <p className="text-ink-black text-sm leading-tight font-semibold">{displayName}</p>
-                {displayBalance !== undefined && (
-                  <p className="text-ink text-xs leading-tight">
-                    {currencySymbol}
-                    {displayBalance}
-                  </p>
+            <div className="relative" ref={profileMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsProfileMenuOpen((open) => !open)}
+                aria-label="Open profile menu"
+                aria-haspopup="menu"
+                aria-expanded={isProfileMenuOpen}
+                className="border-hairline hover:border-primary hover:bg-surface-lavender flex items-center gap-2 rounded-full border bg-white py-1 pr-4 pl-1 transition-colors"
+              >
+                {displayPhoto ? (
+                  <Image
+                    src={displayPhoto}
+                    alt="Profile"
+                    width={32}
+                    height={32}
+                    unoptimized
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-full bg-primary"></div>
                 )}
-              </div>
-            </button>
+                <div className="flex flex-col items-start gap-[1px] text-left">
+                  <p className="text-ink-black text-sm leading-tight font-semibold">
+                    {displayName}
+                  </p>
+                  {displayBalance !== undefined && (
+                    <p className="text-ink text-xs leading-tight">
+                      {currencySymbol}
+                      {displayBalance}
+                    </p>
+                  )}
+                </div>
+              </button>
+
+              {isProfileMenuOpen && (
+                <div
+                  role="menu"
+                  aria-label="Profile menu"
+                  className="border-hairline bg-canvas absolute top-full right-0 z-10 mt-2 w-48 overflow-hidden rounded-xl border py-1 shadow-lg"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      router.push("/profile");
+                    }}
+                    className="text-ink hover:bg-surface-lavender flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm transition-colors"
+                  >
+                    <User aria-hidden="true" className="size-4" />
+                    Profile settings
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={handleLogout}
+                    className="text-error hover:bg-surface-lavender flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm transition-colors"
+                  >
+                    <LogOut aria-hidden="true" className="size-4" />
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <>
@@ -224,7 +288,7 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
           <div className="border-hairline my-6 border-t" />
 
           {signedIn ? (
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4">
               <div className="flex items-center gap-2">
                 {displayPhoto ? (
                   <Image
@@ -262,16 +326,28 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
                   )}
                 </div>
               </div>
-              <Button
-                variant="outline"
-                className="text-xs font-semibold px-4 py-2"
-                onClick={() => {
-                  router.push("/profile");
-                  setIsSidebarOpen(false);
-                }}
-              >
-                Edit Profile
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 px-4 py-2 text-xs font-semibold"
+                  onClick={() => {
+                    router.push("/profile");
+                    setIsSidebarOpen(false);
+                  }}
+                >
+                  Edit Profile
+                </Button>
+                <Button
+                  variant="outline"
+                  className="text-error flex-1 px-4 py-2 text-xs font-semibold"
+                  onClick={() => {
+                    setIsSidebarOpen(false);
+                    void handleLogout();
+                  }}
+                >
+                  Log out
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
