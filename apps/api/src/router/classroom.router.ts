@@ -405,9 +405,16 @@ classroomRouter.patch(
  *         classroomId: { type: string, format: uuid }
  *         scheduledAt: { type: string, format: date-time }
  *         durationHours: { type: number, example: 1.5 }
- *         status: { type: string, enum: [scheduled, ongoing, completed, cancelled] }
+ *         status: { type: string, enum: [scheduled, ongoing, completed, cancelled, missed] }
  *         meetLink: { type: string, format: uri, example: "https://meet.jit.si/se-550e8400-e29b-41d4-a716-446655440000" }
  *         meetSpaceName: { type: string, nullable: true, example: null }
+ *         startedAt: { type: string, format: date-time, nullable: true }
+ *         endedAt: { type: string, format: date-time, nullable: true }
+ *         tutorJoinedAt: { type: string, format: date-time, nullable: true }
+ *         studentJoinedAt: { type: string, format: date-time, nullable: true }
+ *         amountCharged: { type: string, nullable: true, example: "150.00" }
+ *         attendanceTrackingEnabled: { type: boolean }
+ *         paymentPending: { type: boolean }
  */
 
 /**

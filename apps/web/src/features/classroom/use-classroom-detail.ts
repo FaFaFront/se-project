@@ -25,34 +25,50 @@ export function useClassroomDetail(classroomId: string) {
     let active = true;
     setState({ status: "loading" });
 
-    apiClient.get<ClassroomDetail>(`/classrooms/${encodeURIComponent(classroomId)}`).then(
-      (classroom) => {
-        if (active) setState({ status: "ready", classroom });
-      },
-      (error: unknown) => {
-        if (!active) return;
+    const load = (background = false) =>
+      apiClient.get<ClassroomDetail>(`/classrooms/${encodeURIComponent(classroomId)}`).then(
+        (classroom) => {
+          if (active) setState({ status: "ready", classroom });
+        },
+        (error: unknown) => {
+          if (!active) return;
+          if (background) return;
 
-        const status = error instanceof ApiError ? error.status : undefined;
-        // A malformed ID (400) can never succeed on retry, so treat it like a missing classroom.
-        const kind =
-          status === 404 || status === 400 ? "not-found" : status === 403 ? "forbidden" : "general";
-        const message =
-          kind === "not-found"
-            ? "The classroom may have been removed or the link may be incorrect."
-            : kind === "forbidden"
-              ? "Your account is inactive. Reactivate it to view classroom details."
-              : "Please check your connection and try again.";
+          const status = error instanceof ApiError ? error.status : undefined;
+          // A malformed ID (400) can never succeed on retry, so treat it like a missing classroom.
+          const kind =
+            status === 404 || status === 400
+              ? "not-found"
+              : status === 403
+                ? "forbidden"
+                : "general";
+          const message =
+            kind === "not-found"
+              ? "The classroom may have been removed or the link may be incorrect."
+              : kind === "forbidden"
+                ? "Your account is inactive. Reactivate it to view classroom details."
+                : "Please check your connection and try again.";
 
-        setState({
-          status: "error",
-          kind,
-          message,
-        });
-      }
-    );
+          setState({
+            status: "error",
+            kind,
+            message,
+          });
+        }
+      );
+    void load();
+    const timer = setInterval(() => {
+      void load(true);
+    }, 30_000);
+    const onFocus = () => {
+      void load(true);
+    };
+    window.addEventListener("focus", onFocus);
 
     return () => {
       active = false;
+      clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
     };
   }, [classroomId, requestKey]);
 

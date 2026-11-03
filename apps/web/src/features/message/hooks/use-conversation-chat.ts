@@ -6,6 +6,19 @@ import { connectChatSocket, disconnectChatSocket, getChatSocket } from "@/lib/so
 import { SOCKET_EVENTS, type SocketConnectionErrorData } from "@/types/chat-socket";
 import type { ChatMessage, ChatParticipant, MessageHistory } from "@/types/conversation";
 import { mergeMessages } from "../utils/merge-messages";
+import { useAuth } from "@/contexts/auth-context";
+
+export function createSystemMessageRefresh(refresh: () => Promise<void>) {
+  const seen = new Set<string>();
+  return async (messages: ChatMessage[], source: "live" | "history" = "live") => {
+    const unseen = messages.filter((message) => message.type === "system" && !seen.has(message.id));
+    // AuthProvider resolves even on a transient API failure. Always revalidate after
+    // history recovery, including notices whose earlier live refresh may have failed.
+    if (source !== "history" && unseen.length === 0) return;
+    for (const message of unseen) seen.add(message.id);
+    await refresh();
+  };
+}
 
 type ChatState = {
   participant: ChatParticipant | null;
@@ -31,6 +44,7 @@ function connectionErrorMessage(error: Error & { data?: SocketConnectionErrorDat
 }
 
 export function useConversationChat(conversationId: string, enabled: boolean) {
+  const { refresh } = useAuth();
   const [state, setState] = useState<ChatState>(initialState);
   const [retryCount, setRetryCount] = useState(0);
   const joinedRef = useRef(false);
@@ -50,6 +64,7 @@ export function useConversationChat(conversationId: string, enabled: boolean) {
     let joinSequence = 0;
     const lifecycle = ++lifecycleRef.current;
     const socket = getChatSocket();
+    const refreshForMessages = createSystemMessageRefresh(refresh);
 
     async function joinAndLoad() {
       const sequence = ++joinSequence;
@@ -85,6 +100,7 @@ export function useConversationChat(conversationId: string, enabled: boolean) {
           `/conversations/${encodeURIComponent(conversationId)}/messages`
         );
         if (!active || sequence !== joinSequence) return;
+        void refreshForMessages(history.messages, "history");
         setState((current) => ({
           ...current,
           participant: history.participant,
@@ -116,6 +132,7 @@ export function useConversationChat(conversationId: string, enabled: boolean) {
         ...current,
         messages: mergeMessages(current.messages, message),
       }));
+      void refreshForMessages([message]);
     }
 
     function onDisconnect() {
@@ -162,7 +179,7 @@ export function useConversationChat(conversationId: string, enabled: boolean) {
       if (socket.connected) socket.emit(SOCKET_EVENTS.conversationLeave, { conversationId });
       disconnectChatSocket();
     };
-  }, [conversationId, enabled, retryCount]);
+  }, [conversationId, enabled, retryCount, refresh]);
 
   const sendMessage = useCallback(
     async (text: string) => {

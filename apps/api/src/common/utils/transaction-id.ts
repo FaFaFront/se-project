@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 /** Domain-separated UUIDv5: request details never affect retry identity. */
 export function transactionRequestId(
-  type: "withdrawal" | "topup",
+  type: "withdrawal" | "topup" | "session_charge" | "earning",
   userId: string,
   requestId: string
 ): string {

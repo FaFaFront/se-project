@@ -21,6 +21,7 @@ export function createMockMessages(conversationId: string): ChatMessage[] {
     {
       id: "44444444-4444-4444-8444-444444444444",
       conversationId,
+      type: "text",
       senderId: mockStudentParticipant.id,
       text: "Hi Jamie! I would like to review quadratic equations before my exam.",
       createdAt: "2026-10-14T08:30:00.000Z",
@@ -29,6 +30,7 @@ export function createMockMessages(conversationId: string): ChatMessage[] {
     {
       id: "55555555-5555-4555-8555-555555555555",
       conversationId,
+      type: "text",
       senderId: mockTutorParticipant.id,
       text: "Absolutely. We can work through a few examples and build up to the harder problems.",
       createdAt: "2026-10-14T08:31:00.000Z",
@@ -37,6 +39,7 @@ export function createMockMessages(conversationId: string): ChatMessage[] {
     {
       id: "66666666-6666-4666-8666-666666666666",
       conversationId,
+      type: "text",
       senderId: mockStudentParticipant.id,
       text: "That sounds great. Tomorrow afternoon works well for me.",
       createdAt: "2026-10-14T08:32:00.000Z",

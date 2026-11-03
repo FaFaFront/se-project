@@ -1,6 +1,8 @@
 import { ClassroomStatus, Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 import { reviewSelect } from "./review.repository.js";
+import { sessionSelect } from "./session.repository.js";
+import { BadRequestError, NotFoundError } from "../common/errors/app-error.js";
 
 const classroomListSelect = {
   id: true,
@@ -61,15 +63,7 @@ const classroomDetailSelect = {
     },
   },
   sessions: {
-    select: {
-      id: true,
-      classroomId: true,
-      scheduledAt: true,
-      durationHours: true,
-      status: true,
-      meetLink: true,
-      meetSpaceName: true,
-    },
+    select: sessionSelect,
     orderBy: [{ scheduledAt: "asc" as const }],
   },
   review: { select: reviewSelect },
@@ -89,6 +83,32 @@ export type ClassroomListFilter = {
 };
 
 export const classroomRepository = {
+  async deactivateWithSessions(classroomId: string, tutorId: string) {
+    return prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "classrooms" WHERE "id" = ${classroomId} FOR UPDATE`;
+      const classroom = await tx.classroom.findUnique({ where: { id: classroomId } });
+      if (!classroom || classroom.tutorId !== tutorId)
+        throw new NotFoundError("Classroom not found");
+      if (classroom.status === "completed") return;
+      await tx.$queryRaw`SELECT "id" FROM "meet_sessions" WHERE "classroomId" = ${classroomId} ORDER BY "id" FOR UPDATE`;
+      const now = new Date();
+      const unsettled = await tx.meetSession.count({
+        where: {
+          classroomId,
+          OR: [{ status: "ongoing" }, { status: "scheduled", scheduledAt: { lte: now } }],
+        },
+      });
+      if (unsettled > 0)
+        throw new BadRequestError(
+          "Cannot deactivate a classroom with an ongoing or payment-pending session"
+        );
+      await tx.meetSession.updateMany({
+        where: { classroomId, status: "scheduled" },
+        data: { status: "cancelled" },
+      });
+      await tx.classroom.update({ where: { id: classroomId }, data: { status: "completed" } });
+    });
+  },
   /** Classrooms owned by `tutorId`, newest first, narrowed by every given filter (AND). */
   async findByTutor(tutorId: string, filter: ClassroomListFilter): Promise<ClassroomListRow[]> {
     const { search, subjectId, status } = filter;

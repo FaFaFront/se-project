@@ -1,3 +1,4 @@
+import { lockSession } from "./session.repository.js";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 
@@ -18,6 +19,7 @@ const messageSelect = {
   id: true,
   conversationId: true,
   senderId: true,
+  type: true,
   text: true,
   createdAt: true,
   sender: {
@@ -54,6 +56,42 @@ export type ConversationParticipantsRow = Prisma.ConversationGetPayload<{
 }>;
 
 export const conversationRepository = {
+  async createSettlementNotice(id: string) {
+    return prisma.$transaction(async (tx) => {
+      await lockSession(tx, id);
+      const session = await tx.meetSession.findUnique({
+        where: { id },
+        include: { classroom: true },
+      });
+      if (
+        !session ||
+        !session.attendanceTrackingEnabled ||
+        session.settlementNotifiedAt ||
+        !["completed", "missed"].includes(session.status) ||
+        !session.endedAt ||
+        session.amountCharged === null
+      )
+        return null;
+      const date = new Intl.DateTimeFormat("en-GB", {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: "Asia/Bangkok",
+      }).format(session.scheduledAt);
+      const text =
+        session.status === "completed"
+          ? `Session on ${date} (Bangkok) completed. THB ${session.amountCharged.toFixed(2)} was deducted from the student's wallet and credited to the tutor's wallet.`
+          : `Session on ${date} (Bangkok) was missed because one or both participants did not press Join Meet during the booked time. Nobody was charged. Please book a new session.`;
+      const message = await conversationRepository.createSystemMessage(
+        session.classroom.tutorId,
+        session.classroom.studentId,
+        text,
+        `session:${id}:settlement`,
+        tx
+      );
+      await tx.meetSession.update({ where: { id }, data: { settlementNotifiedAt: new Date() } });
+      return message;
+    });
+  },
   async findAllForUser(userId: string) {
     return prisma.conversation.findMany({
       where: { OR: [{ participantAId: userId }, { participantBId: userId }] },
@@ -63,7 +101,7 @@ export const conversationRepository = {
         messages: {
           orderBy: { createdAt: "desc" },
           take: 1,
-          select: { text: true, createdAt: true, senderId: true },
+          select: { text: true, createdAt: true, senderId: true, type: true },
         },
       },
     });
@@ -107,8 +145,57 @@ export const conversationRepository = {
 
   async createMessage(conversationId: string, senderId: string, text: string): Promise<MessageRow> {
     return prisma.message.create({
-      data: { conversationId, senderId, text },
+      data: { conversationId, senderId, text, type: "text" },
       select: messageSelect,
     });
+  },
+
+  async createSystemMessage(
+    tutorId: string,
+    studentId: string,
+    text: string,
+    eventKey?: string,
+    tx?: Prisma.TransactionClient
+  ): Promise<MessageRow> {
+    const write = async (client: Prisma.TransactionClient) => {
+      const [a, b] = [tutorId, studentId].sort();
+      const pair = JSON.stringify([a, b]);
+      // Also serializes reversed callers, without taking wallet row locks.
+      await client.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended(${pair}, 0))`;
+      if (eventKey) {
+        const existing = await client.message.findUnique({
+          where: { systemEventKey: eventKey },
+          select: messageSelect,
+        });
+        if (existing) return existing;
+      }
+      const existing = await client.conversation.findFirst({
+        where: {
+          OR: [
+            { participantAId: a, participantBId: b },
+            { participantAId: b, participantBId: a },
+          ],
+        },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        select: { id: true },
+      });
+      const conversation =
+        existing ??
+        (await client.conversation.create({
+          data: { participantAId: a, participantBId: b },
+          select: { id: true },
+        }));
+      return client.message.create({
+        data: {
+          conversationId: conversation.id,
+          senderId: null,
+          type: "system",
+          text,
+          systemEventKey: eventKey,
+        },
+        select: messageSelect,
+      });
+    };
+    return tx ? write(tx) : prisma.$transaction(write);
   },
 };

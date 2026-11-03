@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   BookOpen,
   CalendarDays,
   CircleAlert,
   Clock3,
-  ExternalLink,
   Pencil,
   Video,
 } from "lucide-react";
@@ -21,6 +21,8 @@ import type { ClassroomSession } from "@/types/session";
 import { CancelSessionAction } from "./cancel-session-action";
 import { CreateSessionForm } from "./create-session-form";
 import { useClassroomDetail, type ClassroomErrorKind } from "./use-classroom-detail";
+import { sessionActions } from "./session-state";
+import { JoinSessionAction } from "./join-session-action";
 
 function formatCreatedDate(isoDate: string): string {
   const date = new Date(isoDate);
@@ -47,13 +49,15 @@ const SESSION_STATUS_LABEL: Record<string, string> = {
   ongoing: "Ongoing",
   completed: "Completed",
   cancelled: "Cancelled",
+  missed: "Missed",
 };
 
 const SESSION_STATUS_CLASS: Record<string, string> = {
   scheduled: "bg-blue-50 text-blue-700",
-  ongoing: "bg-success/20 text-success",
-  completed: "bg-surface-lavender text-ink/60",
+  ongoing: "bg-green-50 text-green-700",
+  completed: "bg-green-50 text-green-700",
   cancelled: "bg-red-50 text-red-600",
+  missed: "bg-amber-50 text-amber-800",
 };
 
 function sortSessions(sessions: ClassroomSession[]): ClassroomSession[] {
@@ -73,6 +77,11 @@ function SessionList({
   isTutor: boolean;
   onSessionCancelled?: () => void;
 }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1_000);
+    return () => clearInterval(timer);
+  }, []);
   if (sessions.length === 0) {
     return <p className="text-sm text-ink/60">No sessions scheduled yet.</p>;
   }
@@ -81,7 +90,7 @@ function SessionList({
     <div className="max-h-60 overflow-y-auto">
       <ul className="space-y-3 pb-1">
         {sortSessions(sessions).map((session) => {
-          const canCancel = session.status === "scheduled" || session.status === "ongoing";
+          const { canCancel, canJoin } = sessionActions(session, now);
           const showLink = session.status === "scheduled" || session.status === "ongoing";
           return (
             <li
@@ -99,23 +108,26 @@ function SessionList({
                 <span
                   className={cn(
                     "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                    SESSION_STATUS_CLASS[session.status] ?? "bg-surface-lavender text-ink/60"
+                    SESSION_STATUS_CLASS[session.paymentPending ? "missed" : session.status] ??
+                      "bg-surface-lavender text-ink/60"
                   )}
                 >
-                  {SESSION_STATUS_LABEL[session.status] ?? session.status}
+                  {session.paymentPending
+                    ? "Payment pending"
+                    : (SESSION_STATUS_LABEL[session.status] ?? session.status)}
                 </span>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 {showLink && (
-                  <a
-                    href={session.meetLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}
-                  >
-                    <ExternalLink aria-hidden="true" className="size-4" />
-                    Join Meet
-                  </a>
+                  <JoinSessionAction
+                    sessionId={session.id}
+                    disabled={!canJoin}
+                    unavailableLabel={
+                      now < new Date(session.scheduledAt).getTime()
+                        ? "Join at start time"
+                        : "Joining closed"
+                    }
+                  />
                 )}
                 {isTutor && canCancel && (
                   <CancelSessionAction session={session} onSuccess={onSessionCancelled} />
@@ -125,6 +137,14 @@ function SessionList({
           );
         })}
       </ul>
+      <p className="mt-3 text-sm text-ink/70">
+        Press Join Meet during the booked time to record your attendance check-in.
+      </p>
+      {sessions.some((session) => session.status === "missed") && (
+        <p className="mt-3 text-sm text-ink/70">
+          Missed sessions are not charged. Ask the tutor to book a new session.
+        </p>
+      )}
     </div>
   );
 }

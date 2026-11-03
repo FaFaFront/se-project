@@ -1,7 +1,7 @@
 import type { NextFunction, Response } from "express";
 import { z } from "zod";
 import type { AuthRequest } from "../common/middleware/auth.middleware.js";
-import { UnauthorizedError } from "../common/errors/app-error.js";
+import { BadRequestError, UnauthorizedError } from "../common/errors/app-error.js";
 import { successResponse } from "../common/utils/response.js";
 import { sessionService } from "../service/session.service.js";
 
@@ -24,6 +24,41 @@ const createSessionSchema = z
   .strict();
 
 export const sessionController = {
+  async getSession(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) throw new UnauthorizedError();
+      const { sessionId } = sessionParamsSchema.parse(req.params);
+      const session = await sessionService.getSession(sessionId, req.user.id);
+      res
+        .set("Cache-Control", "no-store")
+        .status(200)
+        .json(successResponse(session, "Session retrieved successfully"));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async recordAttendance(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) throw new UnauthorizedError();
+      const { sessionId } = sessionParamsSchema.parse(req.params);
+      if (
+        (Number(req.headers["content-length"] ?? 0) > 0 || req.headers["transfer-encoding"]) &&
+        !req.is("application/json")
+      )
+        throw new BadRequestError("Send an empty JSON object");
+      z.object({})
+        .strict()
+        .parse(req.body ?? {});
+      const session = await sessionService.recordAttendance(sessionId, req.user.id);
+      res
+        .set("Cache-Control", "no-store")
+        .status(200)
+        .json(successResponse(session, "Join check-in recorded successfully"));
+    } catch (error) {
+      next(error);
+    }
+  },
   async createSession(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       if (!req.user) throw new UnauthorizedError();

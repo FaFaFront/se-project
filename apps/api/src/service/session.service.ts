@@ -1,3 +1,5 @@
+import { transactionRepository } from "../repository/transaction.repository.js";
+import { conversationService, type SerializedMessage } from "./conversation.service.js";
 import { ClassroomStatus, MeetSessionStatus, Prisma } from "@prisma/client";
 import {
   BadRequestError,
@@ -7,31 +9,25 @@ import {
 } from "../common/errors/app-error.js";
 import { randomUUID } from "node:crypto";
 import { classroomRepository } from "../repository/classroom.repository.js";
-import { sessionRepository, type SessionRow } from "../repository/session.repository.js";
+import { sessionRepository } from "../repository/session.repository.js";
+import { serializeSession } from "../common/utils/session.js";
 
-export type SessionItem = {
-  id: string;
-  classroomId: string;
-  scheduledAt: string;
-  durationHours: number;
-  status: string;
-  meetLink: string;
-  meetSpaceName: string | null;
-};
-
-function serializeSession(session: SessionRow): SessionItem {
-  return {
-    id: session.id,
-    classroomId: session.classroomId,
-    scheduledAt: session.scheduledAt.toISOString(),
-    durationHours: Number(session.durationHours),
-    status: session.status,
-    meetLink: session.meetLink,
-    meetSpaceName: session.meetSpaceName,
-  };
-}
+export type SessionItem = ReturnType<typeof serializeSession>;
 
 export const sessionService = {
+  async getSession(sessionId: string, userId: string): Promise<SessionItem> {
+    const session = await sessionRepository.findById(sessionId);
+    if (
+      !session ||
+      (session.classroom.tutorId !== userId && session.classroom.studentId !== userId)
+    )
+      throw new NotFoundError("Session not found");
+    return serializeSession(session);
+  },
+
+  async recordAttendance(sessionId: string, userId: string): Promise<SessionItem> {
+    return serializeSession(await sessionRepository.recordAttendance(sessionId, userId));
+  },
   async createSession(
     classroomId: string,
     tutorId: string,
@@ -83,7 +79,6 @@ export const sessionService = {
   },
 
   async cancelSession(sessionId: string, tutorId: string): Promise<SessionItem> {
-    await sessionRepository.resolveStatuses();
     const session = await sessionRepository.findById(sessionId);
     if (!session) throw new NotFoundError("Session not found");
 
@@ -98,7 +93,48 @@ export const sessionService = {
       throw new BadRequestError("Only scheduled or ongoing sessions can be cancelled");
     }
 
-    const updated = await sessionRepository.cancel(sessionId);
+    const updated = await sessionRepository.cancel(sessionId, tutorId);
     return serializeSession(updated);
   },
 };
+
+export async function runSessionSettlementTick(
+  broadcast: (message: SerializedMessage) => void,
+  now = new Date()
+): Promise<void> {
+  try {
+    await sessionRepository.advanceScheduled(now);
+    for (const { id } of await sessionRepository.findDueForSettlement(now)) {
+      try {
+        const outcome = await transactionRepository.settleSession(id, now);
+        console.info("Session settlement", { sessionId: id, outcome: outcome.kind });
+      } catch (error) {
+        console.error("Session settlement failed; will retry", { sessionId: id, error });
+      }
+    }
+  } catch (error) {
+    console.error("Unable to find due sessions; will retry", error);
+  }
+
+  // Independent pass: a failed payment must not block committed payment notices.
+  for (const { id } of await sessionRepository.findPendingSettlementNotices()) {
+    try {
+      const message = await conversationService.sendSettlementNotice(id);
+      if (message) {
+        try {
+          broadcast(message);
+        } catch (error) {
+          console.error(
+            "Settlement notice broadcast failed after persistence; available in chat history",
+            { sessionId: id, error }
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Settlement notice failed; will retry persistence on next tick", {
+        sessionId: id,
+        error,
+      });
+    }
+  }
+}

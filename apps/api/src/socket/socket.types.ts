@@ -1,5 +1,6 @@
 import type { Role } from "@prisma/client";
 import type { Server, Socket } from "socket.io";
+import type { SerializedMessage } from "../service/conversation.service.js";
 
 export const SOCKET_EVENTS = {
   conversationJoin: "conversation:join",
@@ -38,19 +39,7 @@ export type ConversationRoomErrorCode =
 export type ConversationRoomAck =
   SocketAckSuccess<{ conversationId: string }> | SocketAckFailure<ConversationRoomErrorCode>;
 
-export type ChatMessage = {
-  id: string;
-  conversationId: string;
-  senderId: string;
-  text: string;
-  createdAt: string;
-  sender: {
-    id: string;
-    name: string | null;
-    role: Role;
-    profileUrl: string | null;
-  };
-};
+export type ChatMessage = SerializedMessage;
 
 export type MessageSendPayload = { conversationId: string; text: string };
 export type MessageNewPayload = { message: ChatMessage };
