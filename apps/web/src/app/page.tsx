@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { BookOpen, MessageCircle, Search, Wallet } from "lucide-react";
+
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -110,11 +112,56 @@ function HowItWorksSection() {
   );
 }
 
+const FEATURES = [
+  {
+    Icon: Search,
+    title: "Browse Tutors",
+    description: "Filter by subject, price, and availability to find your perfect match.",
+  },
+  {
+    Icon: BookOpen,
+    title: "Classroom Sessions",
+    description: "Book and manage your learning sessions in one place.",
+  },
+  {
+    Icon: MessageCircle,
+    title: "Real-time Messaging",
+    description: "Chat directly with tutors before and after sessions.",
+  },
+  {
+    Icon: Wallet,
+    title: "Simple Payments",
+    description: "Top up your wallet and pay for sessions seamlessly.",
+  },
+];
+
+function FeatureHighlightsSection() {
+  return (
+    <section className="bg-canvas px-4 py-16 lg:px-16">
+      <div className="mx-auto max-w-6xl">
+        <h2 className="font-outfit text-display-md text-brand-plum-deepest mb-10 text-center">
+          Everything you need to learn
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {FEATURES.map(({ Icon, title, description }) => (
+            <div key={title} className="flex flex-col gap-3 rounded-2xl bg-white p-6 shadow-sm">
+              <Icon className="size-6 text-primary" aria-hidden="true" />
+              <h3 className="text-heading-md text-ink-black">{title}</h3>
+              <p className="text-body-sm text-ink/70">{description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   return (
     <main>
       <HeroSection />
       <HowItWorksSection />
+      <FeatureHighlightsSection />
     </main>
   );
 }
