@@ -156,12 +156,35 @@ function FeatureHighlightsSection() {
   );
 }
 
+function TutorCtaSection() {
+  return (
+    <section className="bg-brand-plum-deepest px-4 py-12 text-center lg:px-16">
+      <div className="mx-auto flex max-w-2xl flex-col items-center gap-4">
+        <h2 className="font-outfit text-display-md text-white">Are you a tutor?</h2>
+        <p className="text-body-md text-white/80">
+          Join tutorists and connect with students looking for your expertise.
+        </p>
+        <Link
+          href="/register"
+          className={cn(
+            buttonVariants({ variant: "outline" }),
+            "mt-2 border-white text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
+          )}
+        >
+          Join as a tutor
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   return (
     <main>
       <HeroSection />
       <HowItWorksSection />
       <FeatureHighlightsSection />
+      <TutorCtaSection />
     </main>
   );
 }
