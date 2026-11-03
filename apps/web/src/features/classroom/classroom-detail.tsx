@@ -54,8 +54,8 @@ const SESSION_STATUS_LABEL: Record<string, string> = {
 
 const SESSION_STATUS_CLASS: Record<string, string> = {
   scheduled: "bg-blue-50 text-blue-700",
-  ongoing: "bg-success/20 text-success",
-  completed: "bg-surface-lavender text-ink/60",
+  ongoing: "bg-green-50 text-green-700",
+  completed: "bg-green-50 text-green-700",
   cancelled: "bg-red-50 text-red-600",
   missed: "bg-amber-50 text-amber-800",
 };
@@ -108,7 +108,8 @@ function SessionList({
                 <span
                   className={cn(
                     "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                    SESSION_STATUS_CLASS[session.status] ?? "bg-surface-lavender text-ink/60"
+                    SESSION_STATUS_CLASS[session.paymentPending ? "missed" : session.status] ??
+                      "bg-surface-lavender text-ink/60"
                   )}
                 >
                   {session.paymentPending
