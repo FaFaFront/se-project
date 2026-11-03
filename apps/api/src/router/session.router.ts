@@ -22,8 +22,8 @@ export const sessionRouter = Router();
  *       404: { description: Session missing or not assigned to the caller }
  * /sessions/{sessionId}/attendance:
  *   post:
- *     summary: Record the authenticated participant's first Jitsi join
- *     description: Accepts an empty JSON object only, during the scheduled interval. Browser reports are trusted.
+ *     summary: Record the authenticated participant's first Join Meet button click
+ *     description: Accepts an empty JSON object only, during the scheduled interval. This is a button check-in and does not verify conference entry.
  *     tags: [Sessions]
  *     security: [{ bearerAuth: [] }]
  *     parameters:

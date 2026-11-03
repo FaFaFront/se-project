@@ -1,8 +1,43 @@
 import { NotFoundError } from "../common/errors/app-error.js";
-import { conversationRepository } from "../repository/conversation.repository.js";
-import { serializeMessage } from "../common/utils/message-presenter.js";
+import { conversationRepository, type MessageRow } from "../repository/conversation.repository.js";
+import type { Prisma } from "@prisma/client";
+
+export function serializeMessage(message: MessageRow) {
+  const base = {
+    id: message.id,
+    conversationId: message.conversationId,
+    text: message.text,
+    createdAt: message.createdAt.toISOString(),
+  };
+  if (message.type === "system")
+    return { ...base, type: "system" as const, senderId: null, sender: null };
+  if (!message.sender || !message.senderId) throw new Error("Text message is missing its sender");
+  return { ...base, type: "text" as const, senderId: message.senderId, sender: message.sender };
+}
+
+export type SerializedMessage = ReturnType<typeof serializeMessage>;
 
 export const conversationService = {
+  async sendSystemMessage(
+    tutorId: string,
+    studentId: string,
+    text: string,
+    options: { eventKey?: string; tx?: Prisma.TransactionClient } = {}
+  ) {
+    return serializeMessage(
+      await conversationRepository.createSystemMessage(
+        tutorId,
+        studentId,
+        text,
+        options.eventKey,
+        options.tx
+      )
+    );
+  },
+  async sendSettlementNotice(sessionId: string) {
+    const message = await conversationRepository.createSettlementNotice(sessionId);
+    return message ? serializeMessage(message) : null;
+  },
   async listForUser(userId: string) {
     const rows = await conversationRepository.findAllForUser(userId);
 

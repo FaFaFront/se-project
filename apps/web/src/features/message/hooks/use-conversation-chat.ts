@@ -7,7 +7,18 @@ import { SOCKET_EVENTS, type SocketConnectionErrorData } from "@/types/chat-sock
 import type { ChatMessage, ChatParticipant, MessageHistory } from "@/types/conversation";
 import { mergeMessages } from "../utils/merge-messages";
 import { useAuth } from "@/contexts/auth-context";
-import { createSystemMessageRefresh } from "../utils/refresh-system-messages";
+
+export function createSystemMessageRefresh(refresh: () => Promise<void>) {
+  const seen = new Set<string>();
+  return async (messages: ChatMessage[], source: "live" | "history" = "live") => {
+    const unseen = messages.filter((message) => message.type === "system" && !seen.has(message.id));
+    // AuthProvider resolves even on a transient API failure. Always revalidate after
+    // history recovery, including notices whose earlier live refresh may have failed.
+    if (source !== "history" && unseen.length === 0) return;
+    for (const message of unseen) seen.add(message.id);
+    await refresh();
+  };
+}
 
 type ChatState = {
   participant: ChatParticipant | null;

@@ -8,7 +8,6 @@ import {
   CalendarDays,
   CircleAlert,
   Clock3,
-  ExternalLink,
   Pencil,
   Video,
 } from "lucide-react";
@@ -23,6 +22,7 @@ import { CancelSessionAction } from "./cancel-session-action";
 import { CreateSessionForm } from "./create-session-form";
 import { useClassroomDetail, type ClassroomErrorKind } from "./use-classroom-detail";
 import { sessionActions } from "./session-state";
+import { JoinSessionAction } from "./join-session-action";
 
 function formatCreatedDate(isoDate: string): string {
   const date = new Date(isoDate);
@@ -117,26 +117,17 @@ function SessionList({
                 </span>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                {showLink &&
-                  (canJoin ? (
-                    <Link
-                      href={`/classroom/${encodeURIComponent(session.classroomId)}/sessions/${encodeURIComponent(session.id)}/meet`}
-                      className={cn(buttonVariants({ variant: "outline" }), "gap-1.5")}
-                    >
-                      <ExternalLink aria-hidden="true" className="size-4" />
-                      Join Meet
-                    </Link>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled
-                      className={cn(buttonVariants({ variant: "outline" }), "opacity-60")}
-                    >
-                      {now < new Date(session.scheduledAt).getTime()
+                {showLink && (
+                  <JoinSessionAction
+                    sessionId={session.id}
+                    disabled={!canJoin}
+                    unavailableLabel={
+                      now < new Date(session.scheduledAt).getTime()
                         ? "Join at start time"
-                        : "Joining closed"}
-                    </button>
-                  ))}
+                        : "Joining closed"
+                    }
+                  />
+                )}
                 {isTutor && canCancel && (
                   <CancelSessionAction session={session} onSuccess={onSessionCancelled} />
                 )}
@@ -145,6 +136,9 @@ function SessionList({
           );
         })}
       </ul>
+      <p className="mt-3 text-sm text-ink/70">
+        Press Join Meet during the booked time to record your attendance check-in.
+      </p>
       {sessions.some((session) => session.status === "missed") && (
         <p className="mt-3 text-sm text-ink/70">
           Missed sessions are not charged. Ask the tutor to book a new session.

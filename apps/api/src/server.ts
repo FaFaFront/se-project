@@ -4,15 +4,15 @@ import { env } from "./config/env.js";
 import { createSocketServer } from "./socket/socket.server.js";
 import { SOCKET_EVENTS } from "./socket/socket.types.js";
 import { conversationRoomName } from "./socket/utils/conversation-room.js";
-import { runSessionSettlementTick } from "./service/settlement.service.js";
-import { startSettlementScheduler } from "./jobs/settlement-scheduler.js";
+import { runSessionSettlementTick } from "./service/session.service.js";
+import { startSessionScheduler } from "./common/utils/session-scheduler.js";
 import { prisma } from "./config/prisma.js";
 
 const httpServer = createServer(app);
 const io = await createSocketServer(httpServer);
 
 if (process.env.VERCEL !== "1") {
-  const scheduler = startSettlementScheduler(() =>
+  const scheduler = startSessionScheduler(() =>
     runSessionSettlementTick((message) => {
       io.to(conversationRoomName(message.conversationId)).emit(SOCKET_EVENTS.messageNew, {
         message,

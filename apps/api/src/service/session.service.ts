@@ -1,3 +1,5 @@
+import { transactionRepository } from "../repository/transaction.repository.js";
+import { conversationService, type SerializedMessage } from "./conversation.service.js";
 import { ClassroomStatus, MeetSessionStatus, Prisma } from "@prisma/client";
 import {
   BadRequestError,
@@ -8,7 +10,7 @@ import {
 import { randomUUID } from "node:crypto";
 import { classroomRepository } from "../repository/classroom.repository.js";
 import { sessionRepository } from "../repository/session.repository.js";
-import { serializeSession } from "../common/utils/session-presenter.js";
+import { serializeSession } from "../common/utils/session.js";
 
 export type SessionItem = ReturnType<typeof serializeSession>;
 
@@ -95,3 +97,44 @@ export const sessionService = {
     return serializeSession(updated);
   },
 };
+
+export async function runSessionSettlementTick(
+  broadcast: (message: SerializedMessage) => void,
+  now = new Date()
+): Promise<void> {
+  try {
+    await sessionRepository.advanceScheduled(now);
+    for (const { id } of await sessionRepository.findDueForSettlement(now)) {
+      try {
+        const outcome = await transactionRepository.settleSession(id, now);
+        console.info("Session settlement", { sessionId: id, outcome: outcome.kind });
+      } catch (error) {
+        console.error("Session settlement failed; will retry", { sessionId: id, error });
+      }
+    }
+  } catch (error) {
+    console.error("Unable to find due sessions; will retry", error);
+  }
+
+  // Independent pass: a failed payment must not block committed payment notices.
+  for (const { id } of await sessionRepository.findPendingSettlementNotices()) {
+    try {
+      const message = await conversationService.sendSettlementNotice(id);
+      if (message) {
+        try {
+          broadcast(message);
+        } catch (error) {
+          console.error(
+            "Settlement notice broadcast failed after persistence; available in chat history",
+            { sessionId: id, error }
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Settlement notice failed; will retry persistence on next tick", {
+        sessionId: id,
+        error,
+      });
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { lockSession } from "./session.repository.js";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 
@@ -55,6 +56,42 @@ export type ConversationParticipantsRow = Prisma.ConversationGetPayload<{
 }>;
 
 export const conversationRepository = {
+  async createSettlementNotice(id: string) {
+    return prisma.$transaction(async (tx) => {
+      await lockSession(tx, id);
+      const session = await tx.meetSession.findUnique({
+        where: { id },
+        include: { classroom: true },
+      });
+      if (
+        !session ||
+        !session.attendanceTrackingEnabled ||
+        session.settlementNotifiedAt ||
+        !["completed", "missed"].includes(session.status) ||
+        !session.endedAt ||
+        session.amountCharged === null
+      )
+        return null;
+      const date = new Intl.DateTimeFormat("en-GB", {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: "Asia/Bangkok",
+      }).format(session.scheduledAt);
+      const text =
+        session.status === "completed"
+          ? `Session on ${date} (Bangkok) completed. THB ${session.amountCharged.toFixed(2)} was deducted from the student's wallet and credited to the tutor's wallet.`
+          : `Session on ${date} (Bangkok) was missed because one or both participants did not press Join Meet during the booked time. Nobody was charged. Please book a new session.`;
+      const message = await conversationRepository.createSystemMessage(
+        session.classroom.tutorId,
+        session.classroom.studentId,
+        text,
+        `session:${id}:settlement`,
+        tx
+      );
+      await tx.meetSession.update({ where: { id }, data: { settlementNotifiedAt: new Date() } });
+      return message;
+    });
+  },
   async findAllForUser(userId: string) {
     return prisma.conversation.findMany({
       where: { OR: [{ participantAId: userId }, { participantBId: userId }] },

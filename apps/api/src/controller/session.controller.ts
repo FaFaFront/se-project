@@ -54,7 +54,7 @@ export const sessionController = {
       res
         .set("Cache-Control", "no-store")
         .status(200)
-        .json(successResponse(session, "Attendance recorded successfully"));
+        .json(successResponse(session, "Join check-in recorded successfully"));
     } catch (error) {
       next(error);
     }

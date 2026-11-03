@@ -1,5 +1,5 @@
 /** One scheduler per long-lived API process; database guards also protect multiple instances. */
-export function startSettlementScheduler(
+export function startSessionScheduler(
   run: () => Promise<void>,
   onError: (error: unknown) => void = (error) =>
     console.error("Session settlement tick failed", error)

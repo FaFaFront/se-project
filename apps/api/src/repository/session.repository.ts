@@ -1,7 +1,7 @@
 import { MeetSessionStatus, Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 import { BadRequestError, ForbiddenError, NotFoundError } from "../common/errors/app-error.js";
-import { attendanceOpen, settlementDue } from "../common/utils/session-policy.js";
+import { attendanceOpen, settlementDue } from "../common/utils/session.js";
 
 export const sessionSelect = {
   id: true,
@@ -26,6 +26,29 @@ export async function lockSession(tx: Prisma.TransactionClient, id: string): Pro
 }
 
 export const sessionRepository = {
+  findDueForSettlement(now: Date) {
+    return prisma.$queryRaw<{ id: string }[]>`
+      SELECT "id" FROM "meet_sessions"
+      WHERE "attendanceTrackingEnabled" = true AND "status" = 'ongoing'
+        AND "scheduledAt" + ("durationHours" * INTERVAL '1 hour') + INTERVAL '15 minutes' <= ${now}
+      ORDER BY "scheduledAt", "id"
+    `;
+  },
+
+  findPendingSettlementNotices() {
+    return prisma.meetSession.findMany({
+      where: {
+        attendanceTrackingEnabled: true,
+        status: { in: ["completed", "missed"] },
+        settlementNotifiedAt: null,
+        amountCharged: { not: null },
+        endedAt: { not: null },
+      },
+      select: { id: true },
+      orderBy: [{ scheduledAt: "asc" }, { id: "asc" }],
+    });
+  },
+
   async create(data: {
     classroomId: string;
     scheduledAt: Date;
@@ -54,6 +77,7 @@ export const sessionRepository = {
     });
   },
 
+  /** Saves the participant's first Join Meet click, not conference presence. */
   async recordAttendance(id: string, userId: string, now?: Date): Promise<SessionRow> {
     return prisma.$transaction(async (tx) => {
       await lockSession(tx, id);
@@ -70,7 +94,7 @@ export const sessionRepository = {
         throw new BadRequestError("Attendance cannot be recorded for this session");
       const observedNow = now ?? new Date();
       const field = session.classroom.tutorId === userId ? "tutorJoinedAt" : "studentJoinedAt";
-      if (!session[field] && !attendanceOpen(session, observedNow))
+      if (!attendanceOpen(session, observedNow))
         throw new BadRequestError("Attendance is accepted only during the scheduled session");
       if (session[field])
         return tx.meetSession.findUniqueOrThrow({ where: { id }, select: sessionSelect });

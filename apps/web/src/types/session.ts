@@ -11,6 +11,7 @@ export type ClassroomSession = {
   meetSpaceName: string | null;
   startedAt: string | null;
   endedAt: string | null;
+  /** First successful Join Meet button check-ins; these do not verify conference entry. */
   tutorJoinedAt: string | null;
   studentJoinedAt: string | null;
   amountCharged: string | null;

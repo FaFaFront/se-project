@@ -12,7 +12,7 @@ import {
 } from "../repository/classroom.repository.js";
 import { conversationRepository } from "../repository/conversation.repository.js";
 import { reviewRepository, type ReviewRow } from "../repository/review.repository.js";
-import { serializeSession } from "../common/utils/session-presenter.js";
+import { serializeSession } from "../common/utils/session.js";
 import { tutorRepository } from "../repository/tutor.repository.js";
 
 export type ClassroomListItem = {
