@@ -17,6 +17,7 @@
     "web:build-storybook": "yarn workspace web build-storybook",
     "api:dev": "yarn workspace api dev",
     "api:build": "yarn workspace api build",
+    "test": "yarn workspace api test && yarn workspace web test",
     "db:create": "yarn workspace api db.create",
     "db:start": "yarn workspace api db.start",
     "db:stop": "yarn workspace api db.stop",

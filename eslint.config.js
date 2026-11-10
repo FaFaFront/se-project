@@ -19,6 +19,7 @@ export default defineConfig([
       "**/out/**",
       "**/build/**",
       "**/storybook-static/**",
+      "**/coverage/**",
       "**/next-env.d.ts",
     ],
   },
