@@ -33,6 +33,7 @@ export function ClassroomCard({ classroom }: { classroom: ClassroomListItem }) {
                 "text-body-emphasis truncate",
                 classroom.participant.name ? "text-ink-black" : "text-placeholder"
               )}
+              title={participantName}
             >
               {participantName}
             </h2>

@@ -5,6 +5,7 @@ generated
 out
 build
 storybook-static
+coverage
 *.min.js
 package-lock.json
 docs

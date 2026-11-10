@@ -326,7 +326,9 @@ export function ProfileDetails({
                 >
                   {(isEditing ? name : profile.name) || "Your profile"}
                 </h1>
-                <p className="text-ink/60 truncate text-sm">{profile.email}</p>
+                <p className="text-ink/60 truncate text-sm" title={profile.email}>
+                  {profile.email}
+                </p>
                 {isEditing && photoError && (
                   <p role="alert" className="text-error mt-1 text-xs">
                     {photoError}

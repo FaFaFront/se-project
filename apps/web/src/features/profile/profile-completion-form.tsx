@@ -206,7 +206,7 @@ export function ProfileCompletionForm() {
               </span>
               <span className="space-y-1">
                 <span className="block font-semibold">Account created</span>
-                <span className="block text-xs text-white/70">Step 1 ? Completed</span>
+                <span className="block text-xs text-white/70">Step 1 Completed</span>
               </span>
             </li>
             <li

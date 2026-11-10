@@ -38,7 +38,14 @@ export function MessageBubble({ message, isOwnMessage }: MessageBubbleProps) {
         }`}
       >
         <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <p className="text-sm font-semibold">{isOwnMessage ? "You" : senderName}</p>
+          {/* A long name truncates with "…" (full name on hover) instead of
+              overflowing the bubble; the chat header also shows the full name. */}
+          <p
+            className="min-w-0 max-w-full truncate text-sm font-semibold"
+            title={isOwnMessage ? undefined : senderName}
+          >
+            {isOwnMessage ? "You" : senderName}
+          </p>
           <time
             dateTime={message.createdAt}
             title={time.accessible}

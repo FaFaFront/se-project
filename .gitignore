@@ -10,6 +10,7 @@ node_modules/
 .next/
 dist/
 storybook-static/
+coverage/
 *.tsbuildinfo
 
 # Prisma

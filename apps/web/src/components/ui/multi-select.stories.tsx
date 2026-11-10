@@ -59,19 +59,31 @@ export const SubjectOptions: Story = {
     options: [
       { label: "Mathematics", value: "6f050b29-f070-49ae-b2ab-91d96a469f88" },
       { label: "Physics", value: "9477ccf6-21e6-433d-b042-96dfba1056ac" },
+      ...Array.from({ length: 20 }, (_, index) => `Subject ${index + 1}`),
     ],
     onValueChange: fn(),
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: /Subjects you teach/ }));
+    const trigger = canvas.getByRole("button", { name: /Subjects you teach/ });
+    await userEvent.click(trigger);
 
-    const body = within(canvasElement.ownerDocument.body);
+    const previewBody = canvasElement.ownerDocument.body;
+    const body = within(previewBody);
+    const menu = await body.findByRole("menu");
+    await expect(getComputedStyle(previewBody).overflowY).not.toBe("hidden");
+    await expect(getComputedStyle(menu).overflowY).toBe("auto");
+    await expect(menu.scrollHeight).toBeGreaterThan(menu.clientHeight);
     await userEvent.click(await body.findByRole("menuitemcheckbox", { name: "Mathematics" }));
 
     await expect(args.onValueChange).toHaveBeenLastCalledWith([
       "6f050b29-f070-49ae-b2ab-91d96a469f88",
     ]);
+    await userEvent.keyboard("{End}");
+    await expect(body.getByRole("menuitemcheckbox", { name: "Subject 20" })).toHaveFocus();
+    await expect(menu.scrollTop).toBeGreaterThan(0);
+    await userEvent.keyboard("{Escape}");
+    await expect(trigger).toHaveFocus();
   },
 };
 
