@@ -56,7 +56,12 @@ function haveSameSubjectIds(left: string[], right: string[]) {
 }
 
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+  return new Intl.NumberFormat("th-TH", {
+    style: "currency",
+    currency: "THB",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
 }
 
 export function formatJoinedDate(isoDate: string): string {
@@ -146,9 +151,13 @@ export function ProfileDetails({
     gradeLevel: fields.gradeLevel.trim() ? "" : "Please select your grade level.",
     goals: fields.goals.trim() ? "" : "Please enter your learning goals.",
     hourlyRate:
-      fields.hourlyRate.trim() && Number.isFinite(rate) && rate > 0
-        ? ""
-        : "Enter an hourly rate greater than 0.",
+      !fields.hourlyRate.trim() || !Number.isFinite(rate) || rate < 1
+        ? "Hourly rate must be at least ฿1"
+        : !Number.isInteger(rate)
+          ? "Hourly rate must be an integer"
+          : rate > 999999
+            ? "Hourly rate must be at most ฿999,999"
+            : "",
   };
   const valid =
     Boolean(name.trim()) &&
@@ -390,10 +399,12 @@ export function ProfileDetails({
               )
             ) : isEditing ? (
               <Input
-                label="Hourly rate ($)"
+                label="Hourly rate (฿)"
                 type="number"
-                inputMode="decimal"
-                step="any"
+                inputMode="numeric"
+                step="1"
+                min="1"
+                max="999999"
                 required
                 value={fields.hourlyRate}
                 onChange={(event) => edit("hourlyRate", event.target.value)}
