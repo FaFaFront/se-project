@@ -141,9 +141,9 @@ export function TopUpForm() {
           setDraft(null);
           setAmount(null);
           setSuccess(
-            `Confirmed $${Number(result.amount)} in demo credit. Your top-up was recorded once.`
+            `Confirmed ฿${Number(result.amount)} in demo credit. Your top-up was recorded once.`
           );
-          showToast(`Top-up of $${Number(result.amount)} confirmed.`);
+          showToast(`Top-up of ฿${Number(result.amount)} confirmed.`);
           void refresh();
           router.refresh();
         }
@@ -181,7 +181,7 @@ export function TopUpForm() {
       <div className="my-8 rounded-2xl bg-primary/10 p-5" aria-live="polite">
         <p className="text-sm text-ink/70">Current balance</p>
         <p className="mt-1 text-3xl font-bold text-brand-plum-deepest">
-          ${profile.walletBalance.toFixed(2)}
+          ฿{profile.walletBalance.toFixed(2)}
         </p>
       </div>
       <form noValidate onSubmit={handleSubmit} className="space-y-6">
@@ -208,7 +208,7 @@ export function TopUpForm() {
                   }}
                   className="accent-primary"
                 />
-                <span className="text-lg font-semibold">${preset}</span>
+                <span className="text-lg font-semibold">฿{preset}</span>
               </label>
             ))}
           </div>
@@ -225,7 +225,7 @@ export function TopUpForm() {
         )}
         <Button type="submit" isLoading={pending} disabled={blocked} className="w-full">
           {draft ? "Retry same top-up" : "Confirm mock top-up"}
-          {amount !== null ? ` · $${amount}` : ""}
+          {amount !== null ? ` · ฿${amount}` : ""}
         </Button>
       </form>
     </section>

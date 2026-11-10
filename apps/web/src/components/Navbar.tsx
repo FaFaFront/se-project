@@ -44,7 +44,7 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
   const isTutor = profile?.role === "tutor";
   const displayBalance =
     userMoney ?? (isStudent || isTutor ? profile.walletBalance.toFixed(2) : undefined);
-  const currencySymbol = isTutor ? "฿" : "$";
+  const currencySymbol = "฿";
 
   useEffect(() => {
     if (!isSidebarOpen) return;
