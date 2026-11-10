@@ -2,7 +2,7 @@ import { Router } from "express";
 import { authRouter } from "./router/auth.router.js";
 import { classroomRouter } from "./router/classroom.router.js";
 import { conversationRouter } from "./router/conversation.router.js";
-import { sessionRouter } from "./router/session.router.js";
+import { classroomSessionRouter, sessionRouter } from "./router/session.router.js";
 import { subjectRouter } from "./router/subject.router.js";
 import { tutorRouter } from "./router/tutor.router.js";
 import { uploadRouter } from "./router/upload.router.js";
@@ -12,6 +12,7 @@ import { transactionRouter } from "./router/transaction.router.js";
 export const apiRoutes = Router();
 
 apiRoutes.use("/auth", authRouter);
+apiRoutes.use("/classrooms/:classroomId/sessions", classroomSessionRouter);
 apiRoutes.use("/classrooms", classroomRouter);
 apiRoutes.use("/conversations", conversationRouter);
 apiRoutes.use("/sessions", sessionRouter);

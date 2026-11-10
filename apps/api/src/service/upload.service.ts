@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { Storage } from "@google-cloud/storage";
 import { env } from "../config/env.js";
 
@@ -106,3 +107,19 @@ export async function getSignedUploadUrl(
 
   return url;
 }
+
+export const uploadService = {
+  /**
+   * Builds an object key scoped under the user (optionally inside `folder`) and returns a
+   * signed PUT URL for it plus the public URL to persist after the upload succeeds.
+   */
+  async createPresignedUpload(
+    userId: string,
+    input: { contentType: string; contentLength: number; folder?: string }
+  ) {
+    const prefix = input.folder ? `users/${userId}/${input.folder}` : `users/${userId}`;
+    const key = `${prefix}/${randomUUID()}.${getExtension(input.contentType)}`;
+    const url = await getSignedUploadUrl(key, input.contentType, 900, input.contentLength);
+    return { key, url, publicUrl: getPublicUrl(key) };
+  },
+};

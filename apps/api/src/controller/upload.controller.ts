@@ -1,16 +1,13 @@
 import type { NextFunction, Response } from "express";
 import { z } from "zod";
-import { randomUUID } from "crypto";
 import { successResponse } from "../common/utils/response.js";
 import type { AuthRequest } from "../common/middleware/auth.middleware.js";
 import { UnauthorizedError } from "../common/errors/app-error.js";
 import {
   ALLOWED_IMAGE_TYPES,
   MAX_IMAGE_UPLOAD_BYTES,
-  getExtension,
-  getPublicUrl,
-  getSignedUploadUrl,
-} from "../service/gcs.service.js";
+  uploadService,
+} from "../service/upload.service.js";
 
 const ContentTypeSchema = z
   .string()
@@ -55,18 +52,11 @@ export const uploadController = {
         throw new UnauthorizedError("User not found in request");
       }
 
-      const { contentType, contentLength, folder } = GetUploadUrlSchema.parse(req.body);
+      const input = GetUploadUrlSchema.parse(req.body);
+      // The key is always scoped under the authenticated user, never a client-supplied ID.
+      const upload = await uploadService.createPresignedUpload(user.id, input);
 
-      // Ensure the key is always scoped under the authenticated user
-      const prefix = folder ? `users/${user.id}/${folder}` : `users/${user.id}`;
-      const key = `${prefix}/${randomUUID()}.${getExtension(contentType)}`;
-
-      const url = await getSignedUploadUrl(key, contentType, 900, contentLength);
-      const publicUrl = getPublicUrl(key);
-
-      res
-        .status(200)
-        .json(successResponse({ key, url, publicUrl }, "Upload URL generated successfully"));
+      res.status(200).json(successResponse(upload, "Upload URL generated successfully"));
     } catch (error) {
       next(error);
     }

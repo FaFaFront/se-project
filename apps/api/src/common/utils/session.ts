@@ -1,4 +1,4 @@
-import type { SessionRow } from "../../repository/session.repository.js";
+import type { SessionRow } from "../db/session.js";
 
 type ScheduledSession = { scheduledAt: Date; durationMinutes: number };
 const SESSION_DURATION_PRESETS = [5, 30, 60, 90, 120, 150, 180, 210, 240];
