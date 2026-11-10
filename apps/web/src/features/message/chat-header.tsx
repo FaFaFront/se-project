@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NAME_HEADING } from "@/lib/utils";
 import { CreateClassroomModal } from "@/features/classroom/create-classroom-modal";
 import type { ChatParticipant } from "@/types/conversation";
 import type { UserRole } from "@/types/auth";
@@ -58,7 +59,11 @@ export function ChatHeader({
           {initials(participant.name, participant.role)}
         </div>
         <div className="min-w-0">
-          <h1 id="chat-heading" className="truncate text-lg font-semibold text-ink">
+          <h1
+            id="chat-heading"
+            className={`${NAME_HEADING} text-lg font-semibold text-ink`}
+            title={name}
+          >
             {name}
           </h1>
           <p className="text-sm text-ink/70">{roleLabel(participant.role)}</p>

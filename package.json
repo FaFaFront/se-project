@@ -37,14 +37,20 @@
     "eslint-plugin-prettier": "^5.5.6",
     "husky": "^9.1.7",
     "lint-staged": "^15.2.10",
-    "next": "^15.5.0",
+    "next": "^16.3.8",
     "prettier": "^3.4.2",
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.15.0"
   },
   "resolutions": {
     "@types/express": "^4.17.21",
-    "@types/express-serve-static-core": "^4.19.0"
+    "@types/express-serve-static-core": "^4.19.0",
+    "qs": "6.16.2",
+    "swagger-jsdoc/glob": "^14.0.4",
+    "@apidevtools/swagger-parser/@apidevtools/json-schema-ref-parser": "^15.5.2"
+  },
+  "overrides": {
+    "qs": "6.16.2"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
@@ -55,9 +61,5 @@
       "prettier --write"
     ]
   },
-  "packageManager": "yarn@4.17.0",
-  "dependencies": {
-    "@google-apps/meet": "^0.11.0",
-    "@google-cloud/local-auth": "^2.1.0"
-  }
+  "packageManager": "yarn@4.17.0"
 }

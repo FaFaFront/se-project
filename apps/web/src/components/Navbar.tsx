@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { NAME_HEADING } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 
 const NAV_LINKS = [
@@ -43,7 +44,7 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
   const isTutor = profile?.role === "tutor";
   const displayBalance =
     userMoney ?? (isStudent || isTutor ? profile.walletBalance.toFixed(2) : undefined);
-  const currencySymbol = isTutor ? "฿" : "$";
+  const currencySymbol = "฿";
 
   useEffect(() => {
     if (!isSidebarOpen) return;
@@ -143,7 +144,7 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
             {(isStudent || isTutor) && (
               <Button
                 variant="outline"
-                className="h-8 px-3 text-xs"
+                className="h-8 shrink-0 px-3 text-xs whitespace-nowrap"
                 onClick={() => router.push(isTutor ? "/balance/withdraw" : "/balance/top-up")}
               >
                 {isTutor ? "Withdraw balance" : "Top up balance"}
@@ -170,8 +171,13 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
                 ) : (
                   <div className="h-8 w-8 rounded-full bg-primary"></div>
                 )}
-                <div className="flex flex-col items-start gap-[1px] text-left">
-                  <p className="text-ink-black text-sm leading-tight font-semibold">
+                <div className="flex min-w-0 flex-col items-start gap-[1px] text-left">
+                  {/* Cap the width so a long name ends in "…" instead of stretching
+                      the navbar; the full name shows on hover. */}
+                  <p
+                    className="text-ink-black max-w-40 truncate text-sm leading-tight font-semibold"
+                    title={displayName ?? undefined}
+                  >
                     {displayName}
                   </p>
                   {displayBalance !== undefined && (
@@ -303,9 +309,12 @@ export function Navbar({ isLoggedIn, userName, userMoney, profileUrl }: NavbarPr
                   <div className="h-9 w-9 rounded-full bg-primary"></div>
                 )}
 
-                <div className="flex flex-col">
+                <div className="flex min-w-0 flex-col">
                   {displayName && (
-                    <span className="font-inter text-ink-black text-xs font-semibold">
+                    <span
+                      className={`${NAME_HEADING} font-inter text-ink-black text-xs font-semibold`}
+                      title={displayName}
+                    >
                       {displayName}
                     </span>
                   )}

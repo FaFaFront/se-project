@@ -6,6 +6,6 @@ export function sessionActions(session: ClassroomSession, now: number) {
   const active = session.status === "scheduled" || session.status === "ongoing";
   return {
     canJoin: active && session.attendanceTrackingEnabled && now >= start && now < end,
-    canCancel: active && !session.paymentPending && now < end + 15 * 60_000,
+    canCancel: active && !session.paymentPending && now < end + 60_000,
   };
 }

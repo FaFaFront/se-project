@@ -37,11 +37,12 @@ function formatSessionDateTime(isoDate: string): string {
 }
 
 function formatDuration(hours: number): string {
-  const h = Math.floor(hours);
-  const m = (hours - h) * 60;
-  if (h === 0) return "30 min";
+  const durationMinutes = Math.round(hours * 60);
+  const h = Math.floor(durationMinutes / 60);
+  const m = durationMinutes % 60;
+  if (h === 0) return `${m} min`;
   if (m === 0) return `${h}h`;
-  return `${h}h 30min`;
+  return `${h}h ${m}min`;
 }
 
 const SESSION_STATUS_LABEL: Record<string, string> = {

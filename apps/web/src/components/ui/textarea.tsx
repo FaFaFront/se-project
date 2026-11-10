@@ -6,6 +6,8 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
   error?: boolean;
   errorMessage?: string;
   wrapperClassName?: string;
+  /** Show a `current / maxLength` counter under the field. Needs `maxLength`. */
+  showCount?: boolean;
 }
 
 const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
@@ -16,8 +18,11 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       errorMessage,
       className,
       wrapperClassName,
+      showCount,
       id,
       disabled,
+      maxLength,
+      value,
       "aria-invalid": ariaInvalid,
       "aria-describedby": ariaDescribedBy,
       ...props
@@ -26,8 +31,16 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ) => {
     const generatedId = useId();
     const errorId = useId();
+    const countId = useId();
     const textareaId = id ?? generatedId;
-    const describedByIds = [error && errorMessage ? errorId : undefined, ariaDescribedBy]
+    const counting = Boolean(showCount && maxLength !== undefined);
+    const length = String(value ?? "").length;
+    const atLimit = counting && length >= (maxLength ?? 0);
+    const describedByIds = [
+      error && errorMessage ? errorId : undefined,
+      counting ? countId : undefined,
+      ariaDescribedBy,
+    ]
       .filter(Boolean)
       .join(" ");
     const mergedAriaInvalid = error || ariaInvalid;
@@ -46,6 +59,8 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={textareaId}
           disabled={disabled}
+          maxLength={maxLength}
+          value={value}
           aria-invalid={mergedAriaInvalid}
           aria-describedby={describedByIds || undefined}
           className={cn(
@@ -57,14 +72,32 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           )}
           {...props}
         />
-        {error && errorMessage && (
-          <span
-            id={errorId}
-            role="alert"
-            className="text-error text-xs leading-[20px] md:text-sm md:leading-[23px]"
-          >
-            {errorMessage}
-          </span>
+        {((error && errorMessage) || counting) && (
+          <div className="flex items-start justify-between gap-2">
+            {error && errorMessage ? (
+              <span
+                id={errorId}
+                role="alert"
+                className="text-error text-xs leading-[20px] md:text-sm md:leading-[23px]"
+              >
+                {errorMessage}
+              </span>
+            ) : (
+              <span />
+            )}
+            {counting && (
+              <span
+                id={countId}
+                className={cn(
+                  "shrink-0 text-xs leading-[20px] tabular-nums",
+                  atLimit ? "text-error font-semibold" : "text-placeholder"
+                )}
+              >
+                {length} / {maxLength}
+                {atLimit && " — character limit reached"}
+              </span>
+            )}
+          </div>
         )}
       </div>
     );

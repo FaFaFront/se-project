@@ -219,7 +219,7 @@ describe("classroomService.getClassroomDetail", () => {
             id: ID.session,
             classroomId: ID.classroom,
             scheduledAt: created,
-            durationHours: new Prisma.Decimal("1.5"),
+            durationMinutes: 90,
             status: "scheduled",
             meetLink: "https://meet",
             meetSpaceName: null,

@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, jest, test } from "@jest/globals";
-import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 import { UnauthorizedError } from "../src/common/errors/app-error.js";
 import { sessionController } from "../src/controller/session.controller.js";
@@ -18,7 +17,7 @@ function sessionRow(overrides: Record<string, unknown> = {}) {
     id: ID.session,
     classroomId: ID.classroom,
     scheduledAt: new Date(NOW.getTime() - HOUR / 2),
-    durationHours: new Prisma.Decimal(1),
+    durationMinutes: 60,
     status: "scheduled",
     meetLink: "https://meet.jit.si/se-x",
     meetSpaceName: null,
@@ -95,19 +94,27 @@ describe("sessionService.createSession", () => {
     );
     const data = create.mock.calls[0][0];
     expect(data.meetLink).toMatch(/^https:\/\/meet\.jit\.si\/se-[0-9a-f-]{36}$/);
-    expect(String(data.durationHours)).toBe("1.5");
+    expect(data.durationMinutes).toBe(90);
+  });
+
+  test("SE-12 a 5-minute session starting 2 minutes ahead is allowed", async () => {
+    jest.spyOn(classroomRepository, "findById").mockResolvedValue(activeClassroom as never);
+    jest.spyOn(sessionRepository, "hasOverlap").mockResolvedValue(false);
+    const create = mockCreate();
+
+    await sessionService.createSession(ID.classroom, ID.tutor, {
+      scheduledAt: new Date(Date.now() + 2 * 60_000).toISOString(),
+      durationHours: 5 / 60,
+    });
+
+    expect(create.mock.calls[0][0].durationMinutes).toBe(5);
   });
 
   test.each([
     ["another tutor's classroom", { ...activeClassroom, tutorId: ID.other }, inTwoHours(), 1, 404],
     ["a completed classroom", { ...activeClassroom, status: "completed" }, inTwoHours(), 1, 400],
-    [
-      "a start in 10 minutes",
-      activeClassroom,
-      new Date(Date.now() + 10 * 60_000).toISOString(),
-      1,
-      400,
-    ],
+    ["a start in 30 seconds", activeClassroom, new Date(Date.now() + 30_000).toISOString(), 1, 400],
+    ["a 10 minute duration", activeClassroom, inTwoHours(), 10 / 60, 400],
     ["a 0.25 hour duration", activeClassroom, inTwoHours(), 0.25, 400],
     ["a 1.25 hour duration", activeClassroom, inTwoHours(), 1.25, 400],
     ["a 4.5 hour duration", activeClassroom, inTwoHours(), 4.5, 400],
@@ -316,9 +323,9 @@ describe("sessionRepository", () => {
     });
   });
 
-  test("SR-06 cancel is refused once the session end + 15 min grace has passed", async () => {
+  test("SR-06 cancel is refused once the session end + 1 min grace has passed", async () => {
     const { update } = fakeLockedSession(sessionRow({ status: "ongoing" }));
-    const afterGrace = new Date(NOW.getTime() + HOUR / 2 + 15 * 60_000);
+    const afterGrace = new Date(NOW.getTime() + HOUR / 2 + 60_000);
 
     await expect(sessionRepository.cancel(ID.session, ID.tutor, afterGrace)).rejects.toMatchObject({
       statusCode: 400,
@@ -338,7 +345,7 @@ describe("sessionRepository", () => {
       sessionRepository.create({
         classroomId: ID.classroom,
         scheduledAt: NOW,
-        durationHours: new Prisma.Decimal(1),
+        durationMinutes: 60,
         meetLink: "x",
         meetSpaceName: null,
       })
@@ -356,7 +363,7 @@ describe("sessionRepository", () => {
     await sessionRepository.create({
       classroomId: ID.classroom,
       scheduledAt: NOW,
-      durationHours: new Prisma.Decimal(1),
+      durationMinutes: 60,
       meetLink: "x",
       meetSpaceName: null,
     });
@@ -366,7 +373,7 @@ describe("sessionRepository", () => {
 
   test.each([
     ["ends exactly at the new start", 9, 1, false],
-    ["ends one minute into the new start", 9.0167, 1, true],
+    ["ends one minute into the new start", 9 + 1 / 60, 1, true],
     ["starts and ends inside", 10.25, 0.5, true],
   ])(
     "SR-09 hasOverlap: existing session that %s",
@@ -377,7 +384,7 @@ describe("sessionRepository", () => {
           findMany: jest.fn(async () => [
             {
               scheduledAt: new Date(day + startHour * HOUR),
-              durationHours: new Prisma.Decimal(duration),
+              durationMinutes: duration * 60,
             },
           ]),
         },

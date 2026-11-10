@@ -2,6 +2,10 @@ import { afterAll, beforeAll, beforeEach, describe, expect, jest, test } from "@
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import jwt from "jsonwebtoken";
+
+// The API docs generator now pulls in an ESM-only dependency Jest can't load; these tests don't need the docs.
+jest.mock("../src/config/swagger.js", () => ({ swaggerSpec: {} }));
+
 import app from "../src/app.js";
 import { env } from "../src/config/env.js";
 import { authRepository } from "../src/repository/auth.repository.js";

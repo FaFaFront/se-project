@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { AuthRequest } from "../common/middleware/auth.middleware.js";
 import { BadRequestError, UnauthorizedError } from "../common/errors/app-error.js";
 import { successResponse } from "../common/utils/response.js";
+import { getSessionDurationMinutes, SESSION_DURATION_ERROR } from "../common/utils/session.js";
 import { sessionService } from "../service/session.service.js";
 
 const classroomSessionParamsSchema = z.object({
@@ -18,8 +19,7 @@ const createSessionSchema = z
     scheduledAt: z.string().datetime("scheduledAt must be a valid ISO 8601 datetime"),
     durationHours: z
       .number({ message: "durationHours must be a number" })
-      .min(0.5, "Duration must be at least 0.5 hours")
-      .max(4, "Duration must be at most 4 hours"),
+      .refine((hours) => getSessionDurationMinutes(hours) !== undefined, SESSION_DURATION_ERROR),
   })
   .strict();
 

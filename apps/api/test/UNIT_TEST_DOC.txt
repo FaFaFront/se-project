@@ -1,8 +1,8 @@
 UNIT TEST DOCUMENT - WHOLE PROJECT (API + WEB)
 _________________________________________________________
 
-Result      : 654 tests, 654 passed, 0 failed
-              API  582 tests (18 files)    yarn workspace api test
+Result      : 660 tests, 660 passed, 0 failed
+              API  588 tests (18 files)    yarn workspace api test
               Web   72 tests ( 3 files)    yarn workspace web test
               Both: yarn test (from the repository root)
 
@@ -19,8 +19,8 @@ All tests are unit tests. The database (Prisma), Redis, Google Cloud Storage
 and the browser's localStorage/fetch are fakes, so nothing has to be running.
 The route tests (RT) start the real Express app on a random local port.
 
-A case with several inputs runs once per input, so the 336 test IDs below
-produce 647 test runs. The 7 Redis tests in redis-publisher/redis-subscriber
+A case with several inputs runs once per input, so the 337 test IDs below
+produce 653 test runs. The 7 Redis tests in redis-publisher/redis-subscriber
 are older and have no IDs. Search a test ID in the test files to see its code.
 
 API (apps/api/test)                               IDs   runs
@@ -35,7 +35,7 @@ API (apps/api/test)                               IDs   runs
   review-repository.test.ts RR review queries                     3      3
   tutor-review.test.ts     TS  tutor page and tutor list          8      8
   tutor-repository.test.ts TP  tutor queries                      7      7
-  session.test.ts          SE  session service + settlement job  11     22
+  session.test.ts          SE  session service + settlement job  12     24
                            SR  session repository (locking)      10     16
                            SC  session controller                 6     11
   conversation.test.ts     CV  chat service                      12     12
@@ -50,7 +50,7 @@ API (apps/api/test)                               IDs   runs
   routes.test.ts           RT  route guards on every endpoint     9    114
   repository-queries.test.ts RQ other repository queries         14     17
   config.test.ts           CF  env and Redis startup             10     15
-  utils.test.ts            UT  shared helpers                    25     44
+  utils.test.ts            UT  shared helpers                    25     48
   redis-*.test.ts          --  Redis publish/subscribe health     -      7
 
 Web (apps/web/test)
@@ -63,7 +63,7 @@ Web (apps/web/test)
                            WT  top-up recovery                    7     13
                            WD  withdrawal recovery                4      8
 _________________________________________________________
-total                                              336    654 (incl. 7 Redis)
+total                                              337    660 (incl. 7 Redis)
 
 
 2. TEST CASES
@@ -244,10 +244,10 @@ UP-12  A malformed service-account key fails with a clear message
 --- SE: Session service and settlement job (session.test.ts) ---
 SE-01  (2) Both participants can read the session: tutor; student
 SE-02  (2) Outsider and missing session both get 404
-SE-03  Booking creates a Jitsi meeting link and an exact Decimal duration
+SE-03  Booking creates a Jitsi meeting link; 1.5 h is stored as 90 minutes
 SE-04  (6) Booking refused: another tutor's classroom (404); completed
-           classroom; start in 10 minutes (min. 30); 0.25 h; 1.25 h; 4.5 h
-           (allowed 0.5-4 h in half-hour steps)
+           classroom; start in 30 seconds (min. 1 minute); 10 min; 0.25 h;
+           1.25 h; 4.5 h (allowed: 5 min, or 30 min-4 h in half-hour steps)
 SE-05  Booking that overlaps another session -> 409
 SE-06  (2) Tutor can cancel a session that is scheduled; ongoing
 SE-07  (4) Cancel refused: missing session (404); the student (403);
@@ -256,6 +256,7 @@ SE-08  Job moves started sessions on, settles each due one, then sends notices
 SE-09  One failed payment does not stop the others or the notices
 SE-10  If finding due sessions fails, notices are still sent
 SE-11  Notice and broadcast failures are logged, not thrown; nothing empty is sent
+SE-12  A 5-minute session starting 2 minutes ahead is allowed
 
 --- SR: Session repository (session.test.ts) ---
 SR-01  Join check-in saves the tutor's first join and the start time
@@ -264,7 +265,7 @@ SR-03  Pressing Join again changes nothing
 SR-04  (5) Join refused: outsider (404); cancelled session; no attendance
            tracking; before the start; exactly at the end
 SR-05  Cancel only updates the row if its status has not changed meanwhile
-SR-06  Cancel refused after session end + 15 minutes (payment may be pending)
+SR-06  Cancel refused after session end + 1 minute (payment may be pending)
 SR-07  Booking into a classroom that is no longer active -> 400
 SR-08  New sessions have attendance tracking turned on
 SR-09  (3) Overlap check: existing session ending exactly at the new start
@@ -425,15 +426,15 @@ CF-09  Chat is "ready" only when both Redis connections are up
 CF-10  A failed publish marks chat unavailable and logs only once
 
 --- UT: Shared helpers (utils.test.ts) ---
-UT-01  (7) Each error type has the right status, message and name
-UT-02  ExternalServiceError accepts a custom status
+UT-01  (5) Each error type has the right status, message and name
+UT-02  (7) Only preset durations are allowed: 5 min, 30 min-4 h in half-hour steps
 UT-03  Success reply wraps the data; message defaults to "OK"
 UT-04  Error reply carries only the message
 UT-05  Transaction IDs: stable, valid UUID v5
 UT-06  Transaction IDs ignore the letter case of the request ID
 UT-07  Transaction IDs differ per type and per user
 UT-08  Session end = start + duration
-UT-09  Payment is due only after the 15 minute grace period
+UT-09  Payment is due only after the 1 minute grace period
 UT-10  Join is open from the start until just before the end
 UT-11  Session dates and money formatted as text
 UT-12  "Payment pending" needs both to have joined and the grace period over
@@ -457,8 +458,8 @@ UT-25  Settlement job does nothing after it is stopped
 --- WS / WM / WW / WR: Web logic (apps/web/test/logic.test.ts) ---
 WS-01  (6) Join / Cancel buttons over time (1 hour session):
            before start: no join, can cancel; at start: both; 1 ms before end:
-           both; at end: no join, can cancel; 14 min after end: no join, can
-           cancel; 15 min after end: neither
+           both; at end: no join, can cancel; 59 s after end: no join, can
+           cancel; 1 min after end: neither
 WS-02  (3) Completed, cancelled or missed session: neither button
 WS-03  No attendance tracking: no Join; payment pending: no Cancel
 WM-01  Messages sorted by time, then by ID

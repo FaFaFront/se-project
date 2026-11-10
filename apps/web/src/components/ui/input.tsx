@@ -6,6 +6,8 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: boolean;
   errorMessage?: string;
   wrapperClassName?: string;
+  /** Show a `current / maxLength` counter under the field. Needs `maxLength`. */
+  showCount?: boolean;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -16,8 +18,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       errorMessage,
       className,
       wrapperClassName,
+      showCount,
       id,
       disabled,
+      maxLength,
+      value,
       "aria-invalid": ariaInvalid,
       "aria-describedby": ariaDescribedBy,
       ...props
@@ -27,7 +32,15 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     const generatedId = useId();
     const inputId = id ?? generatedId;
     const errorId = useId();
-    const describedByIds = [error && errorMessage ? errorId : undefined, ariaDescribedBy]
+    const countId = useId();
+    const counting = Boolean(showCount && maxLength !== undefined);
+    const length = String(value ?? "").length;
+    const atLimit = counting && length >= (maxLength ?? 0);
+    const describedByIds = [
+      error && errorMessage ? errorId : undefined,
+      counting ? countId : undefined,
+      ariaDescribedBy,
+    ]
       .filter(Boolean)
       .join(" ");
 
@@ -45,6 +58,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           disabled={disabled}
+          maxLength={maxLength}
+          value={value}
           aria-invalid={error || ariaInvalid || undefined}
           aria-describedby={describedByIds || undefined}
           className={cn(
@@ -56,14 +71,32 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
           {...props}
         />
-        {error && errorMessage && (
-          <span
-            id={errorId}
-            role="alert"
-            className="font-inter text-error text-xs leading-[23px] sm:text-sm"
-          >
-            {errorMessage}
-          </span>
+        {((error && errorMessage) || counting) && (
+          <div className="flex items-start justify-between gap-2">
+            {error && errorMessage ? (
+              <span
+                id={errorId}
+                role="alert"
+                className="font-inter text-error text-xs leading-[23px] sm:text-sm"
+              >
+                {errorMessage}
+              </span>
+            ) : (
+              <span />
+            )}
+            {counting && (
+              <span
+                id={countId}
+                className={cn(
+                  "font-inter shrink-0 text-xs leading-[23px] tabular-nums",
+                  atLimit ? "text-error font-semibold" : "text-placeholder"
+                )}
+              >
+                {length} / {maxLength}
+                {atLimit && " — character limit reached"}
+              </span>
+            )}
+          </div>
         )}
       </div>
     );

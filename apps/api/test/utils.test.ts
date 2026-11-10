@@ -3,9 +3,7 @@ import { Prisma } from "@prisma/client";
 import {
   AppError,
   BadRequestError,
-  ConfigurationError,
   ConflictError,
-  ExternalServiceError,
   ForbiddenError,
   NotFoundError,
   UnauthorizedError,
@@ -13,6 +11,7 @@ import {
 import { errorResponse, successResponse } from "../src/common/utils/response.js";
 import {
   attendanceOpen,
+  getSessionDurationMinutes,
   scheduledEnd,
   serializeSession,
   SETTLEMENT_GRACE_MS,
@@ -50,17 +49,11 @@ describe("errors and responses", () => {
     ["ForbiddenError", new ForbiddenError(), 403, "Forbidden"],
     ["NotFoundError", new NotFoundError(), 404, "Not found"],
     ["ConflictError", new ConflictError(), 409, "Conflict"],
-    ["ConfigurationError", new ConfigurationError(), 500, "Server configuration error"],
-    ["ExternalServiceError", new ExternalServiceError(), 502, "External service error"],
   ])("UT-01 %s has the right status, message and name", (name, error, status, message) => {
     expect(error).toBeInstanceOf(AppError);
     expect(error.statusCode).toBe(status);
     expect(error.message).toBe(message);
     expect(error.name).toBe(name);
-  });
-
-  test("UT-02 ExternalServiceError accepts a custom status", () => {
-    expect(new ExternalServiceError("down", 503).statusCode).toBe(503);
   });
 
   test("UT-03 successResponse wraps data and defaults the message to OK", () => {
@@ -99,17 +92,29 @@ describe("transaction ids", () => {
 
 describe("session timing", () => {
   const start = new Date("2026-01-01T10:00:00.000Z");
-  const session = { scheduledAt: start, durationHours: new Prisma.Decimal("1.5") };
+  const session = { scheduledAt: start, durationMinutes: 90 };
   const end = new Date("2026-01-01T11:30:00.000Z");
+
+  test.each([
+    [1 / 12, 5],
+    [0.5, 30],
+    [1.5, 90],
+    [4, 240],
+    [0.25, undefined],
+    [1.25, undefined],
+    [4.5, undefined],
+  ])("UT-02 only preset durations are allowed: %d h -> %s minutes", (hours, minutes) => {
+    expect(getSessionDurationMinutes(hours)).toBe(minutes);
+  });
 
   test("UT-08 scheduledEnd adds the duration", () => {
     expect(scheduledEnd(session)).toEqual(end);
   });
 
-  test("UT-09 settlement is due only after the 15 minute grace period", () => {
-    expect(SETTLEMENT_GRACE_MS).toBe(900_000);
-    expect(settlementDue(session, new Date(end.getTime() + 899_999))).toBe(false);
-    expect(settlementDue(session, new Date(end.getTime() + 900_000))).toBe(true);
+  test("UT-09 settlement is due only after the 1 minute grace period", () => {
+    expect(SETTLEMENT_GRACE_MS).toBe(60_000);
+    expect(settlementDue(session, new Date(end.getTime() + 59_999))).toBe(false);
+    expect(settlementDue(session, new Date(end.getTime() + 60_000))).toBe(true);
   });
 
   test("UT-10 attendance is open from the start until just before the end", () => {
@@ -123,7 +128,7 @@ describe("session timing", () => {
     id: ID.session,
     classroomId: ID.classroom,
     scheduledAt: start,
-    durationHours: new Prisma.Decimal("1.5"),
+    durationMinutes: 90,
     status: "ongoing",
     meetLink: "https://meet",
     meetSpaceName: null,

@@ -10,7 +10,11 @@ const studentProfileFields = {
   name: z.string().trim().min(1, "Name is required").max(100, "Name is too long").optional(),
   profileUrl: z.string().trim().url("Please enter a valid profile image URL").nullable().optional(),
   gradeLevel: z.string().trim().min(1, "Grade level is required"),
-  goals: z.string().trim().min(1, "Goals are required"),
+  goals: z
+    .string()
+    .trim()
+    .min(1, "Goals are required")
+    .max(1000, "Goals must be at most 1000 characters"),
 } as const;
 
 const tutorProfileFields = {
@@ -18,8 +22,9 @@ const tutorProfileFields = {
   profileUrl: z.string().trim().url("Please enter a valid profile image URL").nullable().optional(),
   hourlyRate: z
     .number()
-    .finite("Hourly rate must be finite")
-    .positive("Hourly rate must be positive"),
+    .int("Hourly rate must be a whole number")
+    .min(1, "Hourly rate must be at least 1")
+    .max(999999, "Hourly rate must be at most 999,999"),
 } as const;
 
 const studentProfileSchema = z.object(studentProfileFields).strict();

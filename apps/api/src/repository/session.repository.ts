@@ -1,13 +1,18 @@
 import { MeetSessionStatus, Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 import { BadRequestError, ForbiddenError, NotFoundError } from "../common/errors/app-error.js";
-import { attendanceOpen, settlementDue } from "../common/utils/session.js";
+import {
+  attendanceOpen,
+  scheduledEnd,
+  SETTLEMENT_GRACE_MS,
+  settlementDue,
+} from "../common/utils/session.js";
 
 export const sessionSelect = {
   id: true,
   classroomId: true,
   scheduledAt: true,
-  durationHours: true,
+  durationMinutes: true,
   status: true,
   meetLink: true,
   meetSpaceName: true,
@@ -27,10 +32,11 @@ export async function lockSession(tx: Prisma.TransactionClient, id: string): Pro
 
 export const sessionRepository = {
   findDueForSettlement(now: Date) {
+    const latestEnd = new Date(now.getTime() - SETTLEMENT_GRACE_MS);
     return prisma.$queryRaw<{ id: string }[]>`
       SELECT "id" FROM "meet_sessions"
       WHERE "attendanceTrackingEnabled" = true AND "status" = 'ongoing'
-        AND "scheduledAt" + ("durationHours" * INTERVAL '1 hour') + INTERVAL '15 minutes' <= ${now}
+        AND "scheduledAt" + ("durationMinutes" * INTERVAL '1 minute') <= ${latestEnd}
       ORDER BY "scheduledAt", "id"
     `;
   },
@@ -52,7 +58,7 @@ export const sessionRepository = {
   async create(data: {
     classroomId: string;
     scheduledAt: Date;
-    durationHours: Prisma.Decimal;
+    durationMinutes: number;
     meetLink: string;
     meetSpaceName: string | null;
   }): Promise<SessionRow> {
@@ -142,11 +148,9 @@ export const sessionRepository = {
         classroom: { OR: [{ tutorId }, { studentId }] },
         scheduledAt: { lt: endAt },
       },
-      select: { scheduledAt: true, durationHours: true },
+      select: { scheduledAt: true, durationMinutes: true },
     });
-    return sessions.some(
-      (s) => s.scheduledAt.getTime() + Number(s.durationHours) * 3_600_000 > startAt.getTime()
-    );
+    return sessions.some((session) => scheduledEnd(session) > startAt);
   },
 
   async advanceScheduled(now: Date): Promise<void> {

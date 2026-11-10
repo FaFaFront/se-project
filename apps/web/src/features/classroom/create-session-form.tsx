@@ -8,16 +8,16 @@ import { Select } from "@/components/ui/select";
 import { ApiError, apiClient } from "@/lib/api-client";
 import type { ClassroomSession, CreateSessionRequest } from "@/types/session";
 
-const DURATION_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4].map((h) => {
-  const hours = Math.floor(h);
-  const mins = (h - hours) * 60;
+const DURATION_OPTIONS = [5, 30, 60, 90, 120, 150, 180, 210, 240].map((durationMinutes) => {
+  const hours = Math.floor(durationMinutes / 60);
+  const mins = durationMinutes % 60;
   const label =
     hours === 0
-      ? "30 minutes"
+      ? `${mins} minutes`
       : mins === 0
         ? `${hours} hour${hours > 1 ? "s" : ""}`
-        : `${hours} hour${hours > 1 ? "s" : ""} 30 minutes`;
-  return { label, value: String(h) };
+        : `${hours} hour${hours > 1 ? "s" : ""} ${mins} minutes`;
+  return { label, value: String(durationMinutes) };
 });
 
 type FieldErrors = { date?: string; time?: string; duration?: string };
@@ -30,8 +30,8 @@ function validate(date: string, time: string, duration: string): FieldErrors {
 
   if (!errors.date && !errors.time) {
     const scheduledAt = new Date(`${date}T${time}`);
-    if (scheduledAt < new Date(Date.now() + 30 * 60 * 1000)) {
-      errors.time = "Session must be at least 30 minutes in the future.";
+    if (scheduledAt.getTime() < Date.now() + 60_000) {
+      errors.time = "Session must be at least 1 minute in the future.";
     }
   }
 
@@ -69,7 +69,7 @@ export function CreateSessionForm({
       const scheduledAt = new Date(`${date}T${time}`).toISOString();
       const payload: CreateSessionRequest = {
         scheduledAt,
-        durationHours: Number(duration),
+        durationHours: Number(duration) / 60,
       };
       await apiClient.post<ClassroomSession>(
         `/classrooms/${encodeURIComponent(classroomId)}/sessions`,

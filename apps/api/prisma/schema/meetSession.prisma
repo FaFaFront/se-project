@@ -10,7 +10,7 @@ model MeetSession {
   id                        String            @id @default(uuid())
   classroomId               String
   scheduledAt               DateTime
-  durationHours             Decimal           @db.Decimal(4, 2)
+  durationMinutes           Int
   status                    MeetSessionStatus @default(scheduled)
   meetLink                  String
   meetSpaceName             String?

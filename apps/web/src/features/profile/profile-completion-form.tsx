@@ -80,7 +80,18 @@ export function ProfileCompletionForm() {
   const goalsError = showErrors && !goals.trim();
   const hourlyRateNumber = Number(hourlyRate);
   const hourlyRateError =
-    showErrors && (!hourlyRate || !Number.isFinite(hourlyRateNumber) || hourlyRateNumber <= 0);
+    showErrors &&
+    (!hourlyRate ||
+      !Number.isFinite(hourlyRateNumber) ||
+      !Number.isInteger(hourlyRateNumber) ||
+      hourlyRateNumber < 1 ||
+      hourlyRateNumber > 999999);
+  const hourlyRateMessage =
+    hourlyRate && Number.isFinite(hourlyRateNumber) && !Number.isInteger(hourlyRateNumber)
+      ? "Hourly rate must be an integer"
+      : hourlyRate && Number.isFinite(hourlyRateNumber) && hourlyRateNumber > 999999
+        ? "Hourly rate must be at most ฿999,999"
+        : "Hourly rate must be at least ฿1";
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -91,7 +102,13 @@ export function ProfileCompletionForm() {
       Boolean(trimmedName) &&
       (isStudent
         ? Boolean(gradeLevel && goals.trim())
-        : Boolean(hourlyRate && Number.isFinite(hourlyRateNumber) && hourlyRateNumber > 0));
+        : Boolean(
+            hourlyRate &&
+            Number.isFinite(hourlyRateNumber) &&
+            Number.isInteger(hourlyRateNumber) &&
+            hourlyRateNumber >= 1 &&
+            hourlyRateNumber <= 999999
+          ));
 
     if (!isValid) return;
 
@@ -324,6 +341,8 @@ export function ProfileCompletionForm() {
                 name="goals"
                 label="Learning goals"
                 placeholder="For example, I want to improve my algebra skills and prepare for my final exam."
+                maxLength={1000}
+                showCount
                 value={goals}
                 onChange={(event) => setGoals(event.target.value)}
                 error={goalsError}
@@ -337,15 +356,15 @@ export function ProfileCompletionForm() {
               <Input
                 name="hourlyRate"
                 type="number"
-                min="0.01"
-                step="0.01"
-                inputMode="decimal"
+                min="1"
+                max="999999"
+                step="1"
                 label="Hourly rate"
-                placeholder="25.00"
+                placeholder="25"
                 value={hourlyRate}
                 onChange={(event) => setHourlyRate(event.target.value)}
                 error={hourlyRateError}
-                errorMessage="Enter an hourly rate greater than 0."
+                errorMessage={hourlyRateMessage}
                 wrapperClassName="gap-2"
                 className="h-12 rounded-xl pl-9 focus:ring-4 focus:ring-primary/10"
               />
@@ -353,7 +372,7 @@ export function ProfileCompletionForm() {
                 aria-hidden="true"
                 className="pointer-events-none absolute left-4 top-11 text-sm text-ink/60"
               >
-                $
+                ฿
               </span>
               <p className="mt-1 text-xs leading-5 text-ink/55">
                 This is the amount students will see for a one-hour lesson.

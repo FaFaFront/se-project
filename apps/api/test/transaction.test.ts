@@ -622,7 +622,8 @@ describe("transactionRepository.settleSession", () => {
     attendanceTrackingEnabled: true,
     status: "ongoing",
     scheduledAt: new Date("2026-01-01T10:00:00.000Z"),
-    durationHours: new Prisma.Decimal("1.5"),
+    // 90 minutes: 100.33 x 90 / 60 = 150.495, rounded half up to 150.50.
+    durationMinutes: 90,
     tutorJoinedAt: now,
     studentJoinedAt: now,
     classroom: {

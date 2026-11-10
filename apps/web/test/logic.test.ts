@@ -35,8 +35,8 @@ describe("sessionActions", () => {
     ["at the start", START, true, true],
     ["one ms before the end", START + 60 * MIN - 1, true, true],
     ["at the end", START + 60 * MIN, false, true],
-    ["inside the 15 min grace", START + 74 * MIN, false, true],
-    ["after the grace", START + 75 * MIN, false, false],
+    ["inside the 1 min grace", START + 60 * MIN + 59_999, false, true],
+    ["after the grace", START + 61 * MIN, false, false],
   ])("WS-01 %s (t=%i): canJoin=%s, canCancel=%s", (_label, now, canJoin, canCancel) => {
     expect(sessionActions(session(), now)).toEqual({ canJoin, canCancel });
   });
