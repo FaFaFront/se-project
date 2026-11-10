@@ -203,7 +203,10 @@ export function TutorDetailPanel({ tutorId }: { tutorId: string }) {
                       size={36}
                     />
                     <div className="min-w-0">
-                      <h3 className="text-body-emphasis text-ink-black truncate">
+                      <h3
+                        className="text-body-emphasis text-ink-black truncate"
+                        title={review.student.name?.trim() || undefined}
+                      >
                         {review.student.name?.trim() || "Student"}
                       </h3>
                       <p className="text-placeholder text-xs">

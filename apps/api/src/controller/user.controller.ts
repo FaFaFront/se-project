@@ -9,7 +9,11 @@ import { BadRequestError, UnauthorizedError } from "../common/errors/app-error.j
 const studentProfileFields = {
   name: z.string().trim().min(1, "Name is required").max(100, "Name is too long").optional(),
   profileUrl: z.string().trim().url("Please enter a valid profile image URL").nullable().optional(),
-  gradeLevel: z.string().trim().min(1, "Grade level is required"),
+  gradeLevel: z
+    .string()
+    .trim()
+    .min(1, "Grade level is required")
+    .max(50, "Grade level is too long"),
   goals: z
     .string()
     .trim()

@@ -52,7 +52,6 @@ function ReviewDialog({
   const mountedRef = useRef(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const headingId = useId();
-  const counterId = useId();
   const commentLength = comment.trim().length;
 
   useEffect(() => {
@@ -187,17 +186,9 @@ function ReviewDialog({
             }}
             error={Boolean(commentError)}
             errorMessage={commentError ?? undefined}
-            aria-describedby={counterId}
+            maxLength={REVIEW_COMMENT_MAX_LENGTH}
+            showCount
           />
-          <p
-            id={counterId}
-            className={cn(
-              "mt-1 text-right text-xs",
-              commentLength > REVIEW_COMMENT_MAX_LENGTH ? "text-error" : "text-ink/60"
-            )}
-          >
-            {commentLength}/{REVIEW_COMMENT_MAX_LENGTH}
-          </p>
         </div>
 
         {error && (
@@ -280,7 +271,9 @@ export function ClassroomReview({ classroom }: { classroom: ClassroomDetail }) {
     <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-hairline p-5">
       <div className="min-w-0">
         <p className="font-semibold text-ink">This classroom is complete</p>
-        <p className="mt-1 text-sm text-ink/70">Share how learning with {tutorName} went.</p>
+        <p className="mt-1 text-sm text-ink/70 [overflow-wrap:anywhere]">
+          Share how learning with {tutorName} went.
+        </p>
       </div>
       <Button
         ref={triggerRef}
