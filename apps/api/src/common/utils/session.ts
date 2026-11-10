@@ -4,7 +4,7 @@ type ScheduledSession = { scheduledAt: Date; durationMinutes: number };
 const SESSION_DURATION_PRESETS = [5, 30, 60, 90, 120, 150, 180, 210, 240];
 export const SESSION_DURATION_ERROR =
   "Duration must be 5 minutes or between 30 minutes and 4 hours in 30-minute steps";
-export const SETTLEMENT_GRACE_MS = 15 * 60 * 1000;
+export const SETTLEMENT_GRACE_MS = 60_000;
 
 export function getSessionDurationMinutes(durationHours: number): number | undefined {
   return SESSION_DURATION_PRESETS.find((minutes) => minutes / 60 === durationHours);
