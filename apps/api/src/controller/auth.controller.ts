@@ -9,6 +9,7 @@ const registerSchema = z.object({
     .string()
     .trim()
     .email("Please enter a valid email address")
+    .max(254, "Email address is too long")
     .transform((email) => email.toLowerCase()),
   password: z.string().min(8, "Password must be at least 8 characters"),
   role: z.nativeEnum(Role, { message: 'Role must be either "student" or "tutor"' }),

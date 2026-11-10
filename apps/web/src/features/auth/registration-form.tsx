@@ -120,6 +120,7 @@ export function RegistrationForm({
         type="email"
         inputMode="email"
         autoComplete="email"
+        maxLength={254}
         placeholder="Enter your Gmail"
         value={email}
         onChange={(event) => setEmail(event.target.value)}

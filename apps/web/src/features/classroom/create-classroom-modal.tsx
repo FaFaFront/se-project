@@ -142,7 +142,7 @@ export function CreateClassroomModal({
           <fieldset disabled={pending} className="space-y-4">
             <div className="flex flex-col gap-1">
               <span className="text-sm font-semibold text-ink-black md:text-base">Student</span>
-              <p className="rounded-lg border border-hairline bg-surface-disabled px-3 py-2 text-sm text-ink md:text-base">
+              <p className="rounded-lg border border-hairline bg-surface-disabled px-3 py-2 text-sm text-ink [overflow-wrap:anywhere] md:text-base">
                 {studentName}
               </p>
             </div>
