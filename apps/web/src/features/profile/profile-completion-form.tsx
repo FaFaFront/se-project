@@ -341,6 +341,8 @@ export function ProfileCompletionForm() {
                 name="goals"
                 label="Learning goals"
                 placeholder="For example, I want to improve my algebra skills and prepare for my final exam."
+                maxLength={1000}
+                showCount
                 value={goals}
                 onChange={(event) => setGoals(event.target.value)}
                 error={goalsError}

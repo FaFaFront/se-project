@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { MessageCircle, Star, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { NAME_HEADING } from "@/lib/utils";
 import { ProfileAvatar } from "@/features/profile/profile-avatar";
 import { formatCurrency } from "@/features/profile/profile-details";
 import { formatReviewDate, ReviewStars } from "@/features/reviews/review-stars";
@@ -115,7 +116,12 @@ export function TutorDetailPanel({ tutorId }: { tutorId: string }) {
           <div className="gap-base flex min-w-0 items-start">
             <ProfileAvatar src={tutor.profileUrl} name={tutor.name} size={96} />
             <div className="min-w-0">
-              <h1 className="text-heading-md text-ink-black truncate">{tutor.name ?? "Tutor"}</h1>
+              <h1
+                className={`${NAME_HEADING} text-heading-md text-ink-black`}
+                title={tutor.name ?? undefined}
+              >
+                {tutor.name ?? "Tutor"}
+              </h1>
               <p className="text-primary mt-2 text-sm font-semibold">
                 {tutor.hourlyRate === null
                   ? "Rate not set"
@@ -148,7 +154,7 @@ export function TutorDetailPanel({ tutorId }: { tutorId: string }) {
 
         <div className="border-hairline mt-8 border-t pt-8">
           <h2 className="text-body-emphasis text-ink-black">About</h2>
-          <p className="text-ink mt-3 leading-7">
+          <p className="text-ink mt-3 leading-7 whitespace-pre-line [overflow-wrap:anywhere]">
             {tutor.bio || "This tutor has not added a bio yet."}
           </p>
         </div>

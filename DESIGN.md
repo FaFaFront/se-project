@@ -310,10 +310,15 @@ form-control radius" versus the button's pill.
 **`input`** (`input.tsx`) — labeled text field. Hairline border at rest,
 primary border on hover/focus, error-red border + inline error message when
 `error` is true, `surface-disabled` fill/border/text when disabled.
+Pass `showCount` together with `maxLength` to render a `current / max`
+counter under the field (right-aligned, beside any error message); it turns
+`{colors.error}` and adds "character limit reached" once the limit is hit, so
+the user sees why further typing is ignored.
 
 **`textarea`** (`textarea.tsx`) — same color/state contract as `input`, at
 `{rounded.md}` with a 96px minimum height and vertical-only resize
-(disabled when the field is disabled).
+(disabled when the field is disabled). Supports the same `showCount` +
+`maxLength` counter as `input`.
 
 **`select`** (`select.tsx`) — a custom combobox (not a native `<select>`),
 built from a `role="combobox"` trigger button and a `role="listbox"` popup,
