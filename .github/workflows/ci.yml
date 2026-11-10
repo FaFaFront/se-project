@@ -38,3 +38,6 @@ jobs:
 
       - name: API type check
         run: yarn workspace api check
+
+      - name: Unit tests
+        run: yarn test
