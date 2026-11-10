@@ -14,9 +14,16 @@ yarn web:dev   # Next.js — http://localhost:3000
 yarn lint / yarn lint:fix
 yarn format / yarn format:check
 yarn workspace api check   # tsc --noEmit for apps/api (src and test)
+
+yarn test:e2e:db                        # isolated Postgres on port 55432 (Docker)
+yarn exec playwright install chromium   # once per machine/Playwright update
+yarn test:e2e                           # root Playwright E2E suite; starts API + web
+yarn test:e2e:check                      # type-check Playwright configuration and tests
 ```
 
-Copy `apps/api/.env.example` → `apps/api/.env` and `apps/web/.env.example` → `apps/web/.env` before running. Unit tests run with Jest: `yarn test` runs both `yarn workspace api test` (`apps/api/test`) and `yarn workspace web test` (`apps/web/test`, pure logic only, no component rendering).
+Copy `apps/api/.env.example` → `apps/api/.env` and `apps/web/.env.example` → `apps/web/.env` before running the development apps. The root Playwright suite uses its own local database and server settings; see `tests/e2e/README.md`.
+
+Unit tests run with Jest: `yarn test` runs both `yarn workspace api test` (`apps/api/test`) and `yarn workspace web test` (`apps/web/test`, pure logic only, no component rendering).
 
 ## Structure
 

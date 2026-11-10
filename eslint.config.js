@@ -21,7 +21,22 @@ export default defineConfig([
       "**/storybook-static/**",
       "**/coverage/**",
       "**/next-env.d.ts",
+      "**/playwright-report/**",
+      "**/test-results/**",
+      "**/blob-report/**",
     ],
+  },
+
+  // Root E2E suite: TypeScript + Prettier, without Next.js application rules.
+  ...tseslint.configs.recommended.map((c) => ({
+    ...c,
+    files: ["playwright.config.ts", "tests/e2e/**/*.ts"],
+  })),
+  { files: ["playwright.config.ts", "tests/e2e/**/*.ts"], ...prettierConfig },
+  {
+    files: ["playwright.config.ts", "tests/e2e/**/*.ts"],
+    plugins: { prettier: prettierPlugin },
+    rules: { "prettier/prettier": "error" },
   },
 
   // API: TypeScript + Prettier
