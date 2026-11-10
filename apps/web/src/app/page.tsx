@@ -21,7 +21,7 @@ function HeroSection() {
               href="/tutors"
               className={cn(
                 buttonVariants(),
-                "bg-white text-primary hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
+                "bg-white text-primary hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               )}
             >
               Find a tutor
@@ -30,7 +30,7 @@ function HeroSection() {
               href="/register"
               className={cn(
                 buttonVariants({ variant: "outline" }),
-                "border-white text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
+                "border-white text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               )}
             >
               Sign up free
@@ -116,7 +116,7 @@ const FEATURES = [
   {
     Icon: Search,
     title: "Browse Tutors",
-    description: "Filter by subject, price, and availability to find your perfect match.",
+    description: "Filter by subject and price to find your perfect match.",
   },
   {
     Icon: BookOpen,
@@ -165,10 +165,10 @@ function TutorCtaSection() {
           Join tutorists and connect with students looking for your expertise.
         </p>
         <Link
-          href="/register"
+          href="/register?role=tutor"
           className={cn(
             buttonVariants({ variant: "outline" }),
-            "mt-2 border-white text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
+            "mt-2 border-white text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           )}
         >
           Join as a tutor
