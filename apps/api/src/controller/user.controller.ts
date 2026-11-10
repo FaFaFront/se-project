@@ -10,7 +10,11 @@ const studentProfileFields = {
   name: z.string().trim().min(1, "Name is required").max(100, "Name is too long").optional(),
   profileUrl: z.string().trim().url("Please enter a valid profile image URL").nullable().optional(),
   gradeLevel: z.string().trim().min(1, "Grade level is required"),
-  goals: z.string().trim().min(1, "Goals are required"),
+  goals: z
+    .string()
+    .trim()
+    .min(1, "Goals are required")
+    .max(1000, "Goals must be at most 1000 characters"),
 } as const;
 
 const tutorProfileFields = {

@@ -16,7 +16,7 @@ import { GRADE_LEVELS } from "@/features/profile/profile-completion-form";
 import { ApiError, apiClient } from "@/lib/api-client";
 import { clearSession, getToken, saveSession } from "@/lib/auth-storage";
 import { ALLOWED_IMAGE_TYPES, MAX_IMAGE_SIZE_BYTES, uploadImageToGCS } from "@/lib/upload";
-import { cn } from "@/lib/utils";
+import { cn, NAME_HEADING } from "@/lib/utils";
 import type { Subject } from "@/types/subject";
 import type { ProfileUpdateResponse, UserProfile } from "@/types/user";
 
@@ -40,6 +40,9 @@ const CARD = "rounded-[10px] border border-hairline bg-canvas shadow-sm";
 // field looks the same whether it's a read-only box or a real input.
 const FIELD_LABEL =
   "text-ink-black text-sm leading-[23px] font-semibold md:text-base md:leading-[26px]";
+// User-written free text: keep their line breaks, and break a single very long
+// "word" (no spaces) instead of letting it overflow the card.
+const LONG_TEXT = "whitespace-pre-line [overflow-wrap:anywhere]";
 
 type Fields = { gradeLevel: string; goals: string; hourlyRate: string };
 
@@ -72,7 +75,7 @@ function ReadOnlyField({ label, value }: { label: string; value?: string | null 
       <span className={FIELD_LABEL}>{label}</span>
       {/* Matches the real disabled-input style (disabled:text-placeholder) so it
           reads as "disabled", not just "box with a color". */}
-      <div className="bg-surface-disabled text-placeholder rounded-lg px-3.5 py-2.5 text-sm">
+      <div className="bg-surface-disabled text-placeholder rounded-lg px-3.5 py-2.5 text-sm [overflow-wrap:anywhere]">
         {value || EMPTY}
       </div>
     </div>
@@ -144,7 +147,11 @@ export function ProfileDetails({
   // Match the controller schema: trimmed required strings, or a finite positive number.
   const errors = {
     gradeLevel: fields.gradeLevel.trim() ? "" : "Please select your grade level.",
-    goals: fields.goals.trim() ? "" : "Please enter your learning goals.",
+    goals: !fields.goals.trim()
+      ? "Please enter your learning goals."
+      : fields.goals.trim().length > 1000
+        ? "Learning goals must be at most 1000 characters."
+        : "",
     hourlyRate:
       fields.hourlyRate.trim() && Number.isFinite(rate) && rate > 0
         ? ""
@@ -269,7 +276,12 @@ export function ProfileDetails({
         <div className="from-brand-plum-deepest to-primary h-32 bg-gradient-to-br sm:h-36" />
         <div className="px-6 pb-6 sm:px-8">
           <div className="gap-base -mt-6 flex flex-col items-start justify-between sm:flex-row sm:items-end">
-            <div className="gap-base flex items-end">
+            {/* min-w-0 + flex-1 let this group shrink, so a long name truncates
+                instead of pushing the Cancel/Save buttons out of the card.
+                items-start + pt-8 on the text keep it below the banner: with
+                items-end, a name wrapped onto several lines (touch devices)
+                grew upward over the gradient. */}
+            <div className="gap-base flex w-full min-w-0 items-start sm:w-auto sm:flex-1">
               <div className="relative shrink-0">
                 <ProfileAvatar
                   src={photoPreview || profile.profileUrl}
@@ -298,8 +310,11 @@ export function ProfileDetails({
                   </>
                 )}
               </div>
-              <div className="min-w-0 pb-1">
-                <h1 className="text-heading-md text-ink-black max-w-full truncate">
+              <div className="min-w-0 flex-1 pt-8">
+                <h1
+                  className={`${NAME_HEADING} text-heading-md text-ink-black max-w-full`}
+                  title={(isEditing ? name : profile.name) || undefined}
+                >
                   {(isEditing ? name : profile.name) || "Your profile"}
                 </h1>
                 <p className="text-ink/60 truncate text-sm">{profile.email}</p>
@@ -349,6 +364,7 @@ export function ProfileDetails({
               <Input
                 label="Full name"
                 maxLength={100}
+                showCount
                 value={name}
                 required
                 error={!name.trim()}
@@ -422,6 +438,7 @@ export function ProfileDetails({
                   label="About"
                   placeholder="Tell us a little about yourself."
                   maxLength={1000}
+                  showCount
                   value={about}
                   onChange={(event) => {
                     setAbout(event.target.value);
@@ -432,7 +449,13 @@ export function ProfileDetails({
               ) : (
                 <div className="gap-xs flex flex-col">
                   <span className={FIELD_LABEL}>About</span>
-                  <p className={cn("text-sm", profile.bio ? "text-ink" : "text-placeholder")}>
+                  <p
+                    className={cn(
+                      LONG_TEXT,
+                      "text-sm",
+                      profile.bio ? "text-ink" : "text-placeholder"
+                    )}
+                  >
                     {profile.bio || EMPTY}
                   </p>
                 </div>
@@ -443,6 +466,8 @@ export function ProfileDetails({
                   <Textarea
                     label="Learning goals"
                     required
+                    maxLength={1000}
+                    showCount
                     value={fields.goals}
                     onChange={(event) => edit("goals", event.target.value)}
                     onBlur={() => touch("goals")}
@@ -454,7 +479,13 @@ export function ProfileDetails({
                 ) : (
                   <div className="gap-xs flex flex-col">
                     <span className={FIELD_LABEL}>Learning goals</span>
-                    <p className={cn("text-sm", profile.goals ? "text-ink" : "text-placeholder")}>
+                    <p
+                      className={cn(
+                        LONG_TEXT,
+                        "text-sm",
+                        profile.goals ? "text-ink" : "text-placeholder"
+                      )}
+                    >
                       {profile.goals || EMPTY}
                     </p>
                   </div>

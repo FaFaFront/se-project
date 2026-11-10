@@ -16,7 +16,10 @@ export function TutorCard({ tutor }: { tutor: TutorListItem }) {
         <div className="gap-base flex items-center">
           <ProfileAvatar src={tutor.profileUrl} name={tutor.name} size={56} />
           <div className="min-w-0 flex-1">
-            <h2 className="text-body-emphasis text-ink-black truncate group-hover:text-primary">
+            <h2
+              className="text-body-emphasis text-ink-black truncate group-hover:text-primary"
+              title={tutor.name ?? undefined}
+            >
               {tutor.name ?? "Tutor"}
             </h2>
             <p className="text-primary text-sm font-semibold">
@@ -27,7 +30,9 @@ export function TutorCard({ tutor }: { tutor: TutorListItem }) {
           </div>
         </div>
 
-        {tutor.bio && <p className="text-ink line-clamp-2 text-sm">{tutor.bio}</p>}
+        {tutor.bio && (
+          <p className="text-ink line-clamp-2 text-sm [overflow-wrap:anywhere]">{tutor.bio}</p>
+        )}
 
         {tutor.subjects.length > 0 && (
           <ul aria-label="Subjects" className="gap-sm flex flex-wrap">

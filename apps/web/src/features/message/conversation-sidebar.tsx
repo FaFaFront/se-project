@@ -135,7 +135,9 @@ export function ConversationSidebar({ className }: ConversationSidebarProps) {
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-2">
-                        <p className="text-ink-black truncate text-sm font-semibold">{name}</p>
+                        <p className="text-ink-black truncate text-sm font-semibold" title={name}>
+                          {name}
+                        </p>
                         {conversation.lastMessage && (
                           <span
                             suppressHydrationWarning
