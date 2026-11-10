@@ -1,0 +1,521 @@
+UNIT TEST DOCUMENT - WHOLE PROJECT (API + WEB)
+_________________________________________________________
+
+Result      : 660 tests, 660 passed, 0 failed
+              API  588 tests (18 files)    yarn workspace api test
+              Web   72 tests ( 3 files)    yarn workspace web test
+              Both: yarn test (from the repository root)
+
+API coverage: 94.6% of lines, 88.1% of branches, 91.5% of functions
+              (all of apps/api/src except server.ts, which only starts the process)
+
+Type check  : yarn workspace api check also type checks the test files
+              (apps/api/test/tsconfig.json), so a broken test fails the check.
+
+
+1. WHAT IS COVERED
+_________________________________________________________
+All tests are unit tests. The database (Prisma), Redis, Google Cloud Storage
+and the browser's localStorage/fetch are fakes, so nothing has to be running.
+The route tests (RT) start the real Express app on a random local port.
+
+A case with several inputs runs once per input, so the 337 test IDs below
+produce 653 test runs. The 7 Redis tests in redis-publisher/redis-subscriber
+are older and have no IDs. Search a test ID in the test files to see its code.
+
+API (apps/api/test)                               IDs   runs
+  auth.test.ts             AU  login, register, tokens,
+                               auth middleware, error handler   31     38
+  user.test.ts             US  profile service                   16     22
+                           UC  profile controller                 9     24
+  classroom.test.ts        CL  classroom service + deactivation  18     25
+                           CT  classroom controller              10     22
+  classroom-review.test.ts CS  review service                     7      7
+                           CC  review controller                  8     18
+  review-repository.test.ts RR review queries                     3      3
+  tutor-review.test.ts     TS  tutor page and tutor list          8      8
+  tutor-repository.test.ts TP  tutor queries                      7      7
+  session.test.ts          SE  session service + settlement job  12     24
+                           SR  session repository (locking)      10     16
+                           SC  session controller                 6     11
+  conversation.test.ts     CV  chat service                      12     12
+                           CR  chat repository                    5      9
+                           VC  chat controller                    4      6
+  transaction.test.ts      TX  wallet service + controller       29     54
+                           TR  wallet repository (money moves)   17     25
+  catalog-upload.test.ts   TC  tutor search controller            4      9
+                           SU  subjects                           3      3
+                           UP  image upload (GCS)                12     21
+  socket.test.ts           SK  live chat (Socket.IO)             13     23
+  routes.test.ts           RT  route guards on every endpoint     9    114
+  repository-queries.test.ts RQ other repository queries         14     17
+  config.test.ts           CF  env and Redis startup             10     15
+  utils.test.ts            UT  shared helpers                    25     48
+  redis-*.test.ts          --  Redis publish/subscribe health     -      7
+
+Web (apps/web/test)
+  logic.test.ts            WS  session Join/Cancel buttons        3     10
+                           WM  chat message merging               3      3
+                           WW  withdrawal amount parsing          4     17
+                           WR  withdrawal retry rule              1      6
+  network.test.ts          WN  API client and image upload        8     10
+  storage.test.ts          WA  saved login                        5      5
+                           WT  top-up recovery                    7     13
+                           WD  withdrawal recovery                4      8
+_________________________________________________________
+total                                              337    660 (incl. 7 Redis)
+
+
+2. TEST CASES
+_________________________________________________________
+All cases below: Result = PASS
+"(n)" after an ID = the case runs n times, once per input listed under it.
+Status codes: 400 bad input, 401 not logged in, 403 not allowed,
+404 not found (also used to hide records the user may not see), 409 conflict.
+
+--- AU: Authentication (auth.test.ts) ---
+AU-01  Register stores a hashed password and returns a token for the new user
+AU-02  Register never returns the password hash
+AU-03  Register with an email that already exists          -> 409
+AU-04  Two registrations at the same time (DB error P2002) -> 409
+AU-05  Register: other database errors are rethrown unchanged
+AU-06  Login with the right password returns a token, no password hash
+AU-07  Token expires in 7 days
+AU-08  Unknown email and wrong password give the same 401 (no account probing)
+AU-09  Logout succeeds with nothing to do
+AU-10  POST register -> 201, email trimmed and lowercased
+AU-11  (3) POST register rejected: bad email; 7 character password; unknown role
+AU-12  POST login -> 200, email lowercased
+AU-13  POST login without a password is rejected
+AU-14  POST login passes failures to the error handler
+AU-15  POST logout -> 200 with no data
+AU-16  A valid token gives back the user id and role
+AU-17  (5) Token rejected with 401: signed with another secret; expired;
+           non-UUID subject; unknown role; garbage
+AU-18  Auth middleware sets req.user from a valid "Bearer" token
+AU-19  (2) Missing token: no header; header that is not "Bearer"
+AU-20  Auth middleware rejects an invalid token
+AU-21  requireRole lets an allowed role through
+AU-22  requireRole blocks another role with 403 naming who is allowed
+AU-23  requireRole without a user -> 401
+AU-24  requireActiveAccount lets an active account through
+AU-25  requireActiveAccount blocks an inactive account -> 403
+AU-26  requireActiveAccount: account deleted -> 401
+AU-27  requireActiveAccount: request with no user -> 401
+AU-28  Error handler uses an AppError's status and message
+AU-29  Error handler: validation errors -> 400, messages joined
+AU-30  Error handler: malformed JSON body -> 400
+AU-31  Error handler hides unknown errors behind a generic 500
+
+--- US: Profile service (user.test.ts) ---
+US-01  Student completes profile: grade level and goals saved, marked complete
+US-02  Tutor completes profile: hourly rate stored as an exact Decimal
+US-03  (4) Complete profile rejected with 400: student without goals;
+           student without grade; tutor without rate; unknown role
+US-04  Read profile: money becomes numbers, subjects listed, no password hash
+US-05  Read profile: missing hourly rate stays null, not 0
+US-06  Read profile of an unknown user -> 404
+US-07  Student edit sends only the fields that were given
+US-08  Tutor edit checks subjects exist and replaces them, rate as Decimal
+US-09  Tutor edit with unknown subject IDs -> 400 listing every unknown ID; nothing saved
+US-10  (3) Edit refused: user no longer exists (401); token role differs from
+           the account (401); first profile not completed yet (409)
+US-11  User deleted during the edit (DB error P2025) -> 401; other errors rethrown
+US-12  Tutor with no active classrooms can deactivate the account
+US-13  Tutor with an active classroom cannot deactivate -> 409; nothing saved
+US-14  Reactivating skips the active-classroom check
+US-15  (2) Status change refused: a student (403); a missing user (401)
+US-16  User deleted during the status change (P2025) -> 401
+
+--- UC: Profile controller (user.test.ts) ---
+UC-01  Complete profile validates by role, trims input -> 200
+UC-02  (6) Complete profile rejected: student sends hourlyRate; student misses
+           goals; tutor sends rate 0; tutor sends rate as text; bad profile URL;
+           name over 100 characters
+UC-03  Complete profile with an unknown role -> 400
+UC-04  (4) No logged-in user -> 401: complete profile; read profile; edit
+           profile; change status
+UC-05  Read profile is never cached (Cache-Control: no-store)
+UC-06  Edit profile requires name, profileUrl and bio, and trims them
+UC-07  (5) Edit profile rejected: missing bio; duplicate subject IDs; subject ID
+           not a UUID; student sends subjectIds; bio over 1000 characters
+UC-08  (2) Status change message: INACTIVE "Account is now inactive. Your data
+           has been kept."; ACTIVE "Account is now active."
+UC-09  (3) Status body rejected: "inactive" (lowercase); extra field; empty body
+
+--- CL: Classroom service (classroom.test.ts) ---
+CL-01  Tutor's classroom list shows the student as the other person
+CL-02  Student's classroom list shows the tutor as the other person
+CL-03  Create classroom with a given price, for the conversation's student
+CL-04  Create classroom without a price uses the tutor's default hourly rate
+CL-05  Finds the student whichever side of the conversation they are on
+CL-06  (5) Create refused: conversation is not the tutor's (404); other person
+           is a tutor (400); subject not assigned to the tutor (400); no price and
+           no default rate (400); no price and a default rate of 0 (400)
+CL-07  Tutor's classroom page: student shown, sessions and review formatted
+CL-08  Student's classroom page: tutor shown
+CL-09  (2) Same 404 for a missing classroom and for an outsider
+CL-10  Edit classroom: subject and price saved, fresh page returned
+CL-11  (3) Edit refused: another tutor's classroom (404); completed
+           classroom (409); subject not assigned (400)
+CL-12  Classroom deactivated during the edit -> 409 "reload and try again"
+CL-13  Tutor deactivates their classroom -> status completed
+CL-14  Deactivate: a student gets 403, another tutor gets 404
+CL-15  Deactivation cancels scheduled sessions and completes the classroom
+CL-16  Deactivating an already completed classroom changes nothing
+CL-17  An ongoing or payment-pending session blocks deactivation -> 400
+CL-18  Deactivating another tutor's classroom -> 404
+
+--- CT: Classroom controller (classroom.test.ts) ---
+CT-01  (5) No logged-in user -> 401: list; create; view; edit; deactivate
+CT-02  (3) List filters cleaned up: "all"/blank values mean no filter;
+           search " math " -> "math"; status and subject passed through
+CT-03  List: any role other than tutor is treated as student
+CT-04  (3) List rejected: unknown status; subject not a UUID; search over 100 characters
+CT-05  Create classroom -> 201
+CT-06  (4) Price rejected: 3 decimal places; zero; too large; text
+CT-07  Edit rejects extra fields such as status or tutorId
+CT-08  View: bad classroom ID rejected; valid view is never cached
+CT-09  (2) Deactivate accepts no body and an empty JSON object
+CT-10  Deactivate rejects a non-JSON body and a non-empty JSON body
+
+--- CS / CC / RR: Reviews (classroom-review.test.ts, review-repository.test.ts) ---
+CS-01  Review saved against the classroom's tutor; date returned as ISO text
+CS-02  Review without a comment stores null
+CS-03  Classroom does not exist -> 404 "Classroom not found"; nothing saved
+CS-04  Another student's classroom -> same 404 (does not reveal it exists)
+CS-05  Classroom not finished -> 403 "Only completed classrooms can be reviewed"
+CS-06  Classroom already reviewed (DB error P2002) -> 409
+CS-07  Other database failure is rethrown, not reported as "already reviewed"
+CC-01  POST review -> 201; student ID comes from the token
+CC-02  (2) Lowest and highest rating accepted: 1; 5
+CC-03  (7) Review rejected: rating 0; rating 6; rating 3.5; rating "5" as text;
+           no rating; comment not text; comment over 1000 characters
+CC-04  A tutorId slipped into the body is rejected
+CC-05  (4) Comment clean-up: spaces trimmed; blank -> none; null -> none;
+           1000 characters plus surrounding spaces accepted
+CC-06  Classroom ID that is not a UUID is rejected
+CC-07  No logged-in user -> 401
+CC-08  Service errors go to the error handler
+RR-01  Tutor's reviews: only that tutor, newest first, ties broken by id
+RR-02  Reviewer privacy: only the student's name and photo are loaded
+RR-03  Create review saves the given data and returns the row
+
+--- TS / TP / TC: Tutors (tutor-review, tutor-repository, catalog-upload) ---
+TS-01  Unknown tutor -> 404; reviews not loaded
+TS-02  Tutor page: rating rounded to 1 decimal (4.84 -> 4.8), price as number
+TS-03  Tutor with no reviews shows rating null (not 0), 0 reviews
+TS-04  Default ranking uses the unrounded rating; unrated tutors last
+TS-05  Ascending rating keeps unrated tutors last
+TS-06  Equal rating sorted by name
+TS-07  Sort by price: cheapest first, no price last
+TS-08  Sort by popularity: most students first
+TP-01  Tutor list shows only active tutors with a completed profile
+TP-02  Search, subject and price range filters are combined
+TP-03  A minimum price of 0 is still applied
+TP-04  A single tutor page hides inactive or incomplete tutors
+TP-05  Rating averages and counts read from the database grouping
+TP-06  Student counts from Postgres (bigint) become normal numbers
+TP-07  An empty tutor list skips the rating and popularity queries
+TC-01  Tutor search: prices read as numbers, empty filters dropped
+TC-02  (6) Tutor search rejected: min above max; negative price; text price;
+           unknown sort; unknown order; subject not a UUID
+TC-03  Equal minimum and maximum price is allowed
+TC-04  Tutor page: bad ID rejected, valid ID returns the tutor
+
+--- SU / UP: Subjects and image upload (catalog-upload.test.ts) ---
+SU-01  Subjects listed sorted by name
+SU-02  Database failure goes to the error handler
+SU-03  Looking up an empty list of subject IDs skips the database
+UP-01  (5) File extension: jpeg -> jpg; png; webp; gif; anything else -> jpg
+UP-02  Public URL uses the custom base URL without a double slash
+UP-03  Public URL falls back to the bucket URL; no bucket -> error
+UP-04  Upload link: v4 signed write URL, 15 minutes, locks type and size
+UP-05  Upload link without a size sends no size header
+UP-06  Upload link without a bucket fails
+UP-07  File is always stored under the logged-in user's own folder
+UP-08  Without a folder the file goes directly under the user
+UP-09  (6) Upload rejected: PDF; over 10 MiB; size 0; "../admin" folder
+           (path traversal); "/" in folder; extra field
+UP-10  No logged-in user -> 401
+UP-11  Storage client is built once from the inline service-account key
+UP-12  A malformed service-account key fails with a clear message
+
+--- SE: Session service and settlement job (session.test.ts) ---
+SE-01  (2) Both participants can read the session: tutor; student
+SE-02  (2) Outsider and missing session both get 404
+SE-03  Booking creates a Jitsi meeting link; 1.5 h is stored as 90 minutes
+SE-04  (6) Booking refused: another tutor's classroom (404); completed
+           classroom; start in 30 seconds (min. 1 minute); 10 min; 0.25 h;
+           1.25 h; 4.5 h (allowed: 5 min, or 30 min-4 h in half-hour steps)
+SE-05  Booking that overlaps another session -> 409
+SE-06  (2) Tutor can cancel a session that is scheduled; ongoing
+SE-07  (4) Cancel refused: missing session (404); the student (403);
+           completed session (400); already cancelled (400)
+SE-08  Job moves started sessions on, settles each due one, then sends notices
+SE-09  One failed payment does not stop the others or the notices
+SE-10  If finding due sessions fails, notices are still sent
+SE-11  Notice and broadcast failures are logged, not thrown; nothing empty is sent
+SE-12  A 5-minute session starting 2 minutes ahead is allowed
+
+--- SR: Session repository (session.test.ts) ---
+SR-01  Join check-in saves the tutor's first join and the start time
+SR-02  Second participant's join keeps the original start time
+SR-03  Pressing Join again changes nothing
+SR-04  (5) Join refused: outsider (404); cancelled session; no attendance
+           tracking; before the start; exactly at the end
+SR-05  Cancel only updates the row if its status has not changed meanwhile
+SR-06  Cancel refused after session end + 1 minute (payment may be pending)
+SR-07  Booking into a classroom that is no longer active -> 400
+SR-08  New sessions have attendance tracking turned on
+SR-09  (3) Overlap check: existing session ending exactly at the new start
+           (no overlap); ending one minute into it (overlap); inside it (overlap)
+SR-10  Overlap check ignores cancelled and missed sessions and the session itself
+
+--- SC: Session controller (session.test.ts) ---
+SC-01  (4) No logged-in user -> 401: view; join; book; cancel
+SC-02  Booking with valid input -> 201
+SC-03  (3) Booking rejected: date not ISO 8601; 5 hours; extra field
+SC-04  Join rejects a non-JSON body and a non-empty JSON body
+SC-05  Join and view are never cached
+SC-06  Cancel rejects a bad session ID
+
+--- CV / CR / VC: Chat (conversation.test.ts) ---
+CV-01  Text message keeps its sender, date as ISO text
+CV-02  System message has no sender
+CV-03  Text message without a sender is reported as a data error
+CV-04  Inbox: the other person shown, newest message first, empty chats last
+CV-05  Inbox works when the user is the second participant
+CV-06  Message history: other person and formatted messages
+CV-07  Someone else's chat -> 404 (history and membership check)
+CV-08  Sending checks membership before saving
+CV-09  Participant's message is saved and formatted
+CV-10  Starting a chat with yourself (400) or an unknown user (404) is refused
+CV-11  Starting a chat returns only the chat ID
+CV-12  Settlement notice with nothing to send returns null
+CR-01  Completed-session notice: amount in THB, Bangkok time, marked as sent
+CR-02  Missed-session notice says nobody was charged
+CR-03  (5) No notice for: missing session; already notified; not settled;
+           no charge recorded; no end time
+CR-04  A system message with a known event key is not created twice
+CR-05  A chat pair is stored in sorted order and reused if it already exists
+VC-01  (3) No logged-in user -> 401: inbox; start chat; history
+VC-02  Start chat: other user ID must be a UUID
+VC-03  History: bad ID rejected; valid history is never cached
+VC-04  Inbox: service errors go to the error handler
+
+--- TX / TR: Wallet, top-up, withdrawal, session payment (transaction.test.ts) ---
+TX-01  History: money with 2 decimals, internal notes hidden
+TX-02  Missing transaction -> 404
+TX-03  Withdrawal detail shows the receipt without the internal fingerprint
+TX-04  Top-up detail shows the balance after
+TX-05  Other transaction types are returned plainly
+TX-06  Top-up options: the 4 preset amounts for a student
+TX-07  (2) Top-up options refused: tutor; deleted user
+TX-08  (4) Top-up result -> status: missing user 401; forbidden 403;
+           balance over limit 400; conflict 409
+TX-09  Successful top-up returns the receipt and a "replayed" flag
+TX-10  Wrong confirmation password -> 403 before any money moves
+TX-11  (2) Withdrawal refused: student; deleted user
+TX-12  Account number is masked; the full number is never stored
+TX-13  Fingerprint is the same for a retry, different when details change
+TX-14  (5) Withdrawal result -> status: missing user 401; forbidden 403;
+           password changed 403; conflict 409; insufficient balance 400
+TX-15  Retry lookup uses the ID derived from the request ID
+TX-16  Unknown request in the retry lookup -> 404
+TX-17  History defaults to page 1, 20 per page, never cached
+TX-18  (4) History rejected: page 0; limit 101; unknown type; unknown field
+TX-19  History needs a logged-in user
+TX-20  Top-up options refused for a tutor
+TX-21  (2) New top-up -> 201; replayed top-up -> 200
+TX-22  (4) Top-up amount not a preset rejected: 99; 100.5; 1001; -100
+TX-23  Top-up by a tutor refused before input is checked
+TX-24  Top-up request ID is lowercased
+TX-25  Withdrawal cleans the account number and the name
+TX-26  (10) Withdrawal rejected: zero; 3 decimals; too large; no password;
+           unknown bank; 5 digit account; 21 digit account; letters in account;
+           blank name; bad request ID
+TX-27  Withdrawal by a student refused
+TX-28  Retry lookup and transaction view reject bad IDs
+TX-29  Transaction view returns the service result
+TR-01  Top-up credits the wallet and records the balance after
+TR-02  Top-up retry returns the first result without charging again
+TR-03  Same request ID with another amount -> conflict
+TR-04  (3) Top-up refused: missing user; tutor; balance over the limit
+TR-05  Withdrawal debits only when the balance covers it, records the receipt
+TR-06  Insufficient balance: reported, nothing recorded
+TR-07  Withdrawal retry with the same details is not debited again
+TR-08  Withdrawal retry with different details -> conflict
+TR-09  (3) Withdrawal refused: missing user; student; password changed
+TR-10  Session payment: student charged, tutor paid, session completed
+TR-11  Charge rounded half up to 2 decimals (100.33 x 1.5 = 150.50)
+TR-12  (2) Session missed, nobody charged, if the tutor / the student did not join
+TR-13  Student cannot afford it: session left unpaid
+TR-14  Balance exactly enough: charged
+TR-15  (4) Settlement skipped: missing session; tracking off; already
+           completed; not due yet
+TR-16  Balance changed during settlement: fails so everything rolls back
+TR-17  Tutor's wallet would overflow: fails
+
+--- SK: Live chat (socket.test.ts) ---
+SK-01  Valid token for an active account connects; user attached to the socket
+SK-02  (4) Connection refused: no token; blank token; token not text;
+           forged token
+SK-03  (2) Connection refused: deleted account; inactive account
+SK-04  Database failure -> INTERNAL_ERROR, with no internal details
+SK-05  Joining a chat leaves the previous chat room, keeps other rooms
+SK-06  (4) Join fails, no room joined: bad ID; extra field; someone else's
+           chat; database failure (each with its own error code)
+SK-07  Leaving removes the room; a missing reply callback is not an error
+SK-08  Message saved, sent to the room, and confirmed to the sender
+SK-09  (3) Message rejected, not saved: empty; 2001 characters; bad chat ID
+SK-10  Sending without joining the chat room is refused
+SK-11  Redis down: message not saved, sender told to retry
+SK-12  Sending to the room fails after saving: sender still gets success
+SK-13  (2) Save failure -> code: not found -> CONVERSATION_NOT_FOUND;
+           other -> INTERNAL_ERROR
+
+--- RT: Route guards (routes.test.ts, real Express app over HTTP) ---
+Covers all 24 protected endpoints and the 6 public ones.
+RT-01  (24) Every protected endpoint without a token -> 401
+RT-02  (24) Every protected endpoint with a forged token -> 401
+RT-03  (16) Inactive account -> 403 on: classrooms (list, create, view, edit,
+           deactivate, book session, review), sessions (view, join, cancel),
+           conversations (inbox, start, history), upload, users/profile
+           (POST, PUT)
+RT-04  (8) Still works for an inactive account: GET /users/me,
+           PATCH /users/me/status, and all 6 /transactions endpoints
+           (an inactive tutor can reactivate and withdraw their balance)
+RT-05  (10) Wrong role -> 403 on: create/edit/deactivate classroom, book
+           session, cancel session (tutor only); review (student only);
+           top-up options and top-up (student only); withdrawal and its
+           retry lookup (tutor only)
+RT-06  (24) The allowed user gets past every guard (no 401/403, no 500)
+RT-07  (6) No token needed: register, login, logout, subjects, tutor list,
+           tutor page
+RT-08  Malformed JSON -> 400 with the standard { success, message } reply
+RT-09  Unknown route -> 404
+
+--- RQ: Other repository queries (repository-queries.test.ts) ---
+RQ-01  Profile edit without subjectIds keeps the tutor's subjects
+RQ-02  Profile edit with an empty subjectIds list removes every subject
+RQ-03  Profile edit with subjectIds replaces the subjects
+RQ-04  Profile queries never load the password hash
+RQ-05  Password check loads only role and hash
+RQ-06  Email lookup ignores letter case
+RQ-07  New account stores the hash, never a plain password
+RQ-08  (2) Classroom lists combine filters and search the other person's name:
+           tutor's list; student's list
+RQ-09  Classroom list with no filter matches only the owner
+RQ-10  Edit, complete and active count touch only the tutor's active classrooms
+RQ-11  (3) Chat lookups only match chats the user is in
+RQ-12  Inbox loads only the latest message of each chat
+RQ-13  A chat message is always stored as type "text"
+RQ-14  Subject lookup asks only for the given IDs
+
+--- CF: Configuration (config.test.ts) ---
+CF-01  (2) Startup stops when a required value is missing: DATABASE_URL; JWT_SECRET
+CF-02  Optional values use their defaults (PORT 4000, CORS origin, NODE_ENV)
+CF-03  No REDIS_URL in development: in-memory chat adapter
+CF-04  (2) No REDIS_URL stops startup: in production; on Vercel
+CF-05  (3) Not a Redis URL: "not a url"; http://...; "redis://" with no host
+CF-06  (2) Production refuses Redis without TLS or without a password
+CF-07  Production accepts rediss:// with a password
+CF-08  Publisher fails fast; subscriber queues and resends; retry delay capped at 5 s
+CF-09  Chat is "ready" only when both Redis connections are up
+CF-10  A failed publish marks chat unavailable and logs only once
+
+--- UT: Shared helpers (utils.test.ts) ---
+UT-01  (5) Each error type has the right status, message and name
+UT-02  (7) Only preset durations are allowed: 5 min, 30 min-4 h in half-hour steps
+UT-03  Success reply wraps the data; message defaults to "OK"
+UT-04  Error reply carries only the message
+UT-05  Transaction IDs: stable, valid UUID v5
+UT-06  Transaction IDs ignore the letter case of the request ID
+UT-07  Transaction IDs differ per type and per user
+UT-08  Session end = start + duration
+UT-09  Payment is due only after the 1 minute grace period
+UT-10  Join is open from the start until just before the end
+UT-11  Session dates and money formatted as text
+UT-12  "Payment pending" needs both to have joined and the grace period over
+UT-13  Top-up note reads back what was written
+UT-14  Top-up note refuses a bad balance
+UT-15  (7) Top-up note read as nothing for: wrong type; linked to a session;
+           zero amount; no note; note not JSON; extra field; ID from another request
+UT-16  Withdrawal note reads back what was written
+UT-17  (3) Withdrawal note refuses: unmasked account number; unsupported
+           bank; name with double spaces
+UT-18  (6) Withdrawal note read as nothing for: wrong type; linked to a
+           session; negative amount; no note; note not JSON; ID from another request
+UT-19  Chat room names round-trip through the prefix check
+UT-20  Socket connection errors carry their code
+UT-21  Socket failure replies have the failure shape
+UT-22  Settlement job runs at start and then every minute
+UT-23  Settlement job never overlaps a run that is still going
+UT-24  Settlement job reports a failed run and keeps working
+UT-25  Settlement job does nothing after it is stopped
+
+--- WS / WM / WW / WR: Web logic (apps/web/test/logic.test.ts) ---
+WS-01  (6) Join / Cancel buttons over time (1 hour session):
+           before start: no join, can cancel; at start: both; 1 ms before end:
+           both; at end: no join, can cancel; 59 s after end: no join, can
+           cancel; 1 min after end: neither
+WS-02  (3) Completed, cancelled or missed session: neither button
+WS-03  No attendance tracking: no Join; payment pending: no Cancel
+WM-01  Messages sorted by time, then by ID
+WM-02  Same message twice (socket echo of history): kept once, newest copy
+WM-03  Merging does not change the current list
+WW-01  (6) Amount -> satang: "100"; "100.5"; "100.05"; " 0.01 "; "0.1";
+           "9999999999.99"
+WW-02  (9) Amount rejected: ""; "abc"; "-5"; "1.234"; "1e3"; "1,000";
+           11 digits; "100."; ".5"
+WW-03  No floating point error ("0.29" -> 29, "1.15" -> 115)
+WW-04  Baht formatted with 2 decimals (฿1,234.56)
+WR-01  (6) Only a first attempt answered 400/401/403 is a final rejection;
+           409, 500 or any retry is not
+
+--- WN: Web network (apps/web/test/network.test.ts) ---
+WN-01  API client returns the data from a success reply
+WN-02  Failure reply throws ApiError with the API's message and status
+WN-03  Login token sent only when signed in
+WN-04  (3) POST, PUT, PATCH send JSON with the right method
+WN-05  Upload: gets a signed URL, PUTs the file without cookies, returns the public URL
+WN-06  Wrong file type or file over 10 MB rejected before any request
+WN-07  Failed storage upload reports its status
+WN-08  Network error during upload explained as a CORS problem
+
+--- WA / WT / WD: Web storage (apps/web/test/storage.test.ts) ---
+WA-01  Login token and user saved and read back
+WA-02  Logout clears both; updating the user keeps the token
+WA-03  Corrupt saved user reads as nothing
+WA-04  During server rendering (no window) every call is a safe no-op
+WA-05  Storage that throws (private browsing) never crashes the page
+WT-01  Nothing saved reads as nothing
+WT-02  Top-up recovery saves only its own fields
+WT-03  Same top-up may be saved again; a different one is blocked
+WT-04  Clearing removes only the matching request
+WT-05  Recovery is per user
+WT-06  (7) Tampered saved data blocks instead of being ignored: not JSON;
+           wrong version; extra field; request ID not UUID v4; zero amount;
+           fractional amount; null
+WT-07  Storage unavailable: blocks
+WD-01  Withdrawal recovery never saves the account number or password
+WD-02  A different pending withdrawal is never overwritten
+WD-03  Clearing removes only the matching request
+WD-04  (5) Tampered saved data blocks: unknown bank; 3 decimals; negative
+           amount; bad date; missing field
+
+
+3. NOT COVERED
+_________________________________________________________
+- The real database: actual SQL, row locks, unique constraints and
+  transactions run against fakes here. These need integration tests
+  with a running Postgres.
+- A real Redis server and real Google Cloud Storage.
+- server.ts and socket.server.ts (process start-up and Socket.IO wiring)
+  and swagger.ts.
+- common/google/meet.client.ts and getGoogleMeetConfig in config/env.ts:
+  nothing imports them any more (sessions use Jitsi links), so they are
+  dead code rather than a testing gap.
+- Web React components and pages: apps/web has no component test library
+  installed. Only plain logic (apps/web/src/lib and feature helpers) is tested.

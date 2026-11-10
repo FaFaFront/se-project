@@ -13,10 +13,10 @@ yarn web:dev   # Next.js — http://localhost:3000
 
 yarn lint / yarn lint:fix
 yarn format / yarn format:check
-yarn workspace api check   # tsc --noEmit for apps/api
+yarn workspace api check   # tsc --noEmit for apps/api (src and test)
 ```
 
-Copy `apps/api/.env.example` → `apps/api/.env` and `apps/web/.env.example` → `apps/web/.env` before running. There is no test suite configured in this repo.
+Copy `apps/api/.env.example` → `apps/api/.env` and `apps/web/.env.example` → `apps/web/.env` before running. Unit tests run with Jest: `yarn test` runs both `yarn workspace api test` (`apps/api/test`) and `yarn workspace web test` (`apps/web/test`, pure logic only, no component rendering).
 
 ## Structure
 

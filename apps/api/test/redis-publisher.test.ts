@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { test } from "node:test";
+import { expect, test } from "@jest/globals";
 import type { Redis } from "ioredis";
 import { observeRedisPublishFailures } from "../src/config/redis-publisher.js";
 
@@ -17,7 +16,7 @@ test("observes a rejected publish even when the adapter ignores its promise", as
   void publisher.publish("conversation", "message");
   await new Promise<void>((resolve) => setImmediate(resolve));
 
-  assert.equal(failures, 1);
+  expect(failures).toBe(1);
 });
 
 test("preserves publish results for callers that await them", async () => {
@@ -32,9 +31,9 @@ test("preserves publish results for callers that await them", async () => {
     failures += 1;
   });
 
-  assert.equal(await publisher.publish("available", "message"), 2);
-  await assert.rejects(publisher.publish("unavailable", "message"), failure);
-  assert.equal(failures, 1);
+  expect(await publisher.publish("available", "message")).toBe(2);
+  await expect(publisher.publish("unavailable", "message")).rejects.toBe(failure);
+  expect(failures).toBe(1);
 });
 
 test("reconnects once after a publish failure and permits recovery on ready", async () => {
@@ -44,7 +43,7 @@ test("reconnects once after a publish failure and permits recovery on ready", as
     status: "ready",
     publish: () => (shouldFail ? Promise.reject(new Error("publish failed")) : Promise.resolve(1)),
     disconnect(reconnect: boolean) {
-      assert.equal(reconnect, true);
+      expect(reconnect).toBe(true);
       reconnects += 1;
       publisher.status = "reconnecting";
     },
@@ -57,17 +56,17 @@ test("reconnects once after a publish failure and permits recovery on ready", as
   void publisher.publish("conversation", "first");
   void publisher.publish("conversation", "second");
   await new Promise<void>((resolve) => setImmediate(resolve));
-  assert.equal(failures, 2);
-  assert.equal(reconnects, 1);
+  expect(failures).toBe(2);
+  expect(reconnects).toBe(1);
 
   publisher.status = "ready";
   publisher.emit("ready");
   shouldFail = false;
-  assert.equal(await publisher.publish("conversation", "third"), 1);
-  assert.equal(reconnects, 1);
+  expect(await publisher.publish("conversation", "third")).toBe(1);
+  expect(reconnects).toBe(1);
 
   shouldFail = true;
   void publisher.publish("conversation", "fourth");
   await new Promise<void>((resolve) => setImmediate(resolve));
-  assert.equal(reconnects, 2);
+  expect(reconnects).toBe(2);
 });
