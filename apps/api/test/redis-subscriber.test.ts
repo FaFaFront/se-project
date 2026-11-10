@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { test } from "node:test";
+import { expect, test } from "@jest/globals";
 import type { Redis } from "ioredis";
 import { observeRedisSubscriptions } from "../src/config/redis-subscriber.js";
 
@@ -33,8 +32,8 @@ for (const failingCommand of ["psubscribe", "subscribe"] as const) {
 
     startAdapterSubscriptions(subscriber);
 
-    await assert.rejects(subscriptions.waitForInitialSubscriptions(100), failure);
-    assert.equal(subscriptions.isReady(), false);
+    await expect(subscriptions.waitForInitialSubscriptions(100)).rejects.toBe(failure);
+    expect(subscriptions.isReady()).toBe(false);
   });
 }
 
@@ -48,8 +47,8 @@ test("bounds startup when Redis never acknowledges subscriptions", async () => {
 
   startAdapterSubscriptions(subscriber);
 
-  await assert.rejects(subscriptions.waitForInitialSubscriptions(20), /timed out|timeout/i);
-  assert.equal(subscriptions.isReady(), false);
+  await expect(subscriptions.waitForInitialSubscriptions(20)).rejects.toThrow(/timed out|timeout/i);
+  expect(subscriptions.isReady()).toBe(false);
 });
 
 test("marks subscriptions healthy again only after reconnect subscriptions succeed", async () => {
@@ -71,18 +70,18 @@ test("marks subscriptions healthy again only after reconnect subscriptions succe
   startAdapterSubscriptions(subscriber);
   subscriber.emit("ready");
   await subscriptions.waitForInitialSubscriptions(100);
-  assert.equal(subscriptions.isReady(), true);
+  expect(subscriptions.isReady()).toBe(true);
 
   subscriber.emit("close");
-  assert.equal(subscriptions.isReady(), false);
+  expect(subscriptions.isReady()).toBe(false);
 
   reconnecting = true;
   startAdapterSubscriptions(subscriber);
   subscriber.emit("ready");
-  assert.equal(subscriptions.isReady(), false);
+  expect(subscriptions.isReady()).toBe(false);
 
   resolvePattern(1);
   resolveChannels(2);
   await new Promise<void>((resolve) => setImmediate(resolve));
-  assert.equal(subscriptions.isReady(), true);
+  expect(subscriptions.isReady()).toBe(true);
 });
