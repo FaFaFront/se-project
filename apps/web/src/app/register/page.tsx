@@ -16,8 +16,9 @@ export default async function RegistrationPage({
   searchParams: Promise<{ role?: string }>;
 }) {
   const { role } = await searchParams;
-  const defaultRole: RegistrationRole =
-    VALID_ROLES.includes(role as RegistrationRole) ? (role as RegistrationRole) : "student";
+  const defaultRole: RegistrationRole = VALID_ROLES.includes(role as RegistrationRole)
+    ? (role as RegistrationRole)
+    : "student";
 
   return (
     <main className="flex min-h-[70vh] items-center justify-center px-base py-3xl">
