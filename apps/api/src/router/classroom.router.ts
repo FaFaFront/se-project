@@ -380,14 +380,13 @@ classroomRouter.patch(
  *         scheduledAt:
  *           type: string
  *           format: date-time
- *           description: ISO 8601 UTC datetime; must be at least 30 minutes in the future.
+ *           description: ISO 8601 UTC datetime at least 1 minute in the future.
  *           example: "2026-11-01T09:00:00.000Z"
  *         durationHours:
  *           type: number
- *           minimum: 0.5
- *           maximum: 4
- *           multipleOf: 0.5
- *           example: 1.5
+ *           description: Duration in hours. Use 0.08333333333333333 for 5 minutes.
+ *           enum: [0.08333333333333333, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]
+ *           example: 0.08333333333333333
  *     Session:
  *       type: object
  *       additionalProperties: false
@@ -416,8 +415,9 @@ classroomRouter.patch(
  *     summary: Schedule a session in a classroom
  *     description: >
  *       Creates a Jitsi Meet session for the classroom. The tutor must own the classroom
- *       and it must be active. `scheduledAt` must be at least 30 minutes in the future.
- *       `durationHours` must be 0.5–4 in 0.5-hour steps. The new session must not overlap
+ *       and it must be active. `scheduledAt` must be at least 1 minute in the future.
+ *       Choose 5 minutes or a half-hour increment from 30 minutes through 4 hours.
+ *       The new session must not overlap
  *       any non-cancelled session for the same tutor or student.
  *     tags: [Sessions]
  *     security:
