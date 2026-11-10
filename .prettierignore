@@ -6,6 +6,9 @@ out
 build
 storybook-static
 coverage
+playwright-report
+test-results
+blob-report
 *.min.js
 package-lock.json
 docs

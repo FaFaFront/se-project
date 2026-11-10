@@ -1,0 +1,16 @@
+name: se-project-e2e
+
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:55432:5432"
+    environment:
+      POSTGRES_USER: e2e
+      POSTGRES_PASSWORD: e2e
+      POSTGRES_DB: se_project_e2e
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U e2e -d se_project_e2e"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
