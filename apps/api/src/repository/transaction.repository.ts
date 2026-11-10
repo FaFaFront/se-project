@@ -57,7 +57,8 @@ export const transactionRepository = {
 
         const { studentId, tutorId, pricePerHour } = session.classroom;
         const amount = pricePerHour
-          .mul(session.durationHours)
+          .mul(session.durationMinutes)
+          .div(60)
           .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
         if (amount.lte(0) || amount.gt("9999999999.99"))
           throw new Error("Session charge exceeds the supported positive amount");

@@ -1,6 +1,6 @@
 import { transactionRepository } from "../repository/transaction.repository.js";
 import { conversationService, type SerializedMessage } from "./conversation.service.js";
-import { ClassroomStatus, MeetSessionStatus, Prisma } from "@prisma/client";
+import { ClassroomStatus, MeetSessionStatus } from "@prisma/client";
 import {
   BadRequestError,
   ConflictError,
@@ -10,7 +10,12 @@ import {
 import { randomUUID } from "node:crypto";
 import { classroomRepository } from "../repository/classroom.repository.js";
 import { sessionRepository } from "../repository/session.repository.js";
-import { serializeSession } from "../common/utils/session.js";
+import {
+  getSessionDurationMinutes,
+  scheduledEnd,
+  serializeSession,
+  SESSION_DURATION_ERROR,
+} from "../common/utils/session.js";
 
 export type SessionItem = ReturnType<typeof serializeSession>;
 
@@ -42,16 +47,16 @@ export const sessionService = {
     }
 
     const scheduledAt = new Date(input.scheduledAt);
-    if (scheduledAt < new Date(Date.now() + 30 * 60 * 1000)) {
-      throw new BadRequestError("Session must be scheduled at least 30 minutes in the future");
+    if (scheduledAt.getTime() < Date.now() + 60_000) {
+      throw new BadRequestError("Session must be scheduled at least 1 minute in the future");
     }
 
-    const { durationHours } = input;
-    if (durationHours < 0.5 || durationHours > 4 || !Number.isInteger(durationHours * 2)) {
-      throw new BadRequestError("Duration must be between 0.5 and 4 hours in 0.5-hour steps");
+    const durationMinutes = getSessionDurationMinutes(input.durationHours);
+    if (durationMinutes === undefined) {
+      throw new BadRequestError(SESSION_DURATION_ERROR);
     }
 
-    const endAt = new Date(scheduledAt.getTime() + durationHours * 3600 * 1000);
+    const endAt = scheduledEnd({ scheduledAt, durationMinutes });
     const overlaps = await sessionRepository.hasOverlap(
       classroom.tutorId,
       classroom.studentId,
@@ -70,7 +75,7 @@ export const sessionService = {
     const session = await sessionRepository.create({
       classroomId,
       scheduledAt,
-      durationHours: new Prisma.Decimal(durationHours),
+      durationMinutes,
       meetLink: meetingUri,
       meetSpaceName: spaceName,
     });
