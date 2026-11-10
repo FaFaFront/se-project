@@ -7,7 +7,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 export interface ProfileAvatarProps {
-  /** Absolute http(s) URL. Anything else renders the placeholder instead. */
+  /** Absolute http(s) photo URL or a blob URL for a local file preview. */
   src?: string | null;
   /** Used for the alt text so the image isn't announced as just "avatar". */
   name?: string | null;
@@ -16,15 +16,14 @@ export interface ProfileAvatarProps {
   className?: string;
 }
 
-/** Photos come from arbitrary URLs the user types, so they can't be optimized
- * through Next's image proxy — and a URL that 404s must not leave a broken
- * image icon in the middle of the page. */
+/** Render remote photos and local file previews without Next's image proxy,
+ * falling back to a placeholder if an image fails to load. */
 export function ProfileAvatar({ src, name, size = 96, className }: ProfileAvatarProps) {
   const [hasFailed, setHasFailed] = useState(false);
 
   useEffect(() => setHasFailed(false), [src]);
 
-  const isRenderable = Boolean(src && /^https?:\/\//i.test(src) && !hasFailed);
+  const isRenderable = Boolean(src && /^(https?:\/\/|blob:)/i.test(src) && !hasFailed);
 
   return (
     <span
