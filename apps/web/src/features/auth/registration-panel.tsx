@@ -2,12 +2,16 @@
 
 import { useRouter } from "next/navigation";
 
-import { RegistrationForm, type RegistrationFormValues } from "@/features/auth/registration-form";
+import {
+  RegistrationForm,
+  type RegistrationFormValues,
+  type RegistrationRole,
+} from "@/features/auth/registration-form";
 import { apiClient } from "@/lib/api-client";
 import { saveSession } from "@/lib/auth-storage";
 import type { RegistrationResponse } from "@/types/auth";
 
-export function RegistrationPanel() {
+export function RegistrationPanel({ defaultRole }: { defaultRole?: RegistrationRole }) {
   const router = useRouter();
 
   async function handleRegistration({ email, password, role }: RegistrationFormValues) {
@@ -22,5 +26,5 @@ export function RegistrationPanel() {
     router.refresh();
   }
 
-  return <RegistrationForm onSubmit={handleRegistration} />;
+  return <RegistrationForm defaultRole={defaultRole} onSubmit={handleRegistration} />;
 }
