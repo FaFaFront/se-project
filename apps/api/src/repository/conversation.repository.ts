@@ -1,4 +1,4 @@
-import { lockSession } from "./session.repository.js";
+import { lockSession } from "../common/db/session.js";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 

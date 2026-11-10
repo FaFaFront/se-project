@@ -1,12 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
-
-export const reviewSelect = {
-  id: true,
-  rating: true,
-  comment: true,
-  createdAt: true,
-} as const satisfies Prisma.ReviewSelect;
+import { reviewSelect, type ReviewRow } from "../common/db/review.js";
 
 const tutorReviewSelect = {
   ...reviewSelect,
@@ -14,7 +8,6 @@ const tutorReviewSelect = {
   student: { select: { name: true, profileUrl: true } },
 } as const satisfies Prisma.ReviewSelect;
 
-export type ReviewRow = Prisma.ReviewGetPayload<{ select: typeof reviewSelect }>;
 export type TutorReviewRow = Prisma.ReviewGetPayload<{ select: typeof tutorReviewSelect }>;
 
 export const reviewRepository = {

@@ -5,7 +5,8 @@ import { NotFoundError, UnauthorizedError } from "../src/common/errors/app-error
 import { conversationController } from "../src/controller/conversation.controller.js";
 import { conversationRepository } from "../src/repository/conversation.repository.js";
 import { userRepository } from "../src/repository/user.repository.js";
-import { conversationService, serializeMessage } from "../src/service/conversation.service.js";
+import { serializeMessage } from "../src/common/utils/message.js";
+import { conversationService } from "../src/service/conversation.service.js";
 import { callController, fakeTransaction, ID, restorePrisma } from "./helpers.js";
 
 const sender = { id: ID.user, name: "Amy", role: "student", profileUrl: null };
@@ -176,12 +177,6 @@ describe("conversationService", () => {
     expect(await conversationService.getOrCreateConversation(ID.user, ID.other)).toEqual({
       id: ID.conversation,
     });
-  });
-
-  test("CV-12 sendSettlementNotice returns null when there is nothing to send", async () => {
-    jest.spyOn(conversationRepository, "createSettlementNotice").mockResolvedValue(null);
-
-    expect(await conversationService.sendSettlementNotice(ID.session)).toBeNull();
   });
 });
 

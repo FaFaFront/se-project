@@ -5,7 +5,8 @@ import { sessionController } from "../src/controller/session.controller.js";
 import { classroomRepository } from "../src/repository/classroom.repository.js";
 import { sessionRepository } from "../src/repository/session.repository.js";
 import { transactionRepository } from "../src/repository/transaction.repository.js";
-import { conversationService } from "../src/service/conversation.service.js";
+import { serializeMessage } from "../src/common/utils/message.js";
+import { conversationRepository } from "../src/repository/conversation.repository.js";
 import { runSessionSettlementTick, sessionService } from "../src/service/session.service.js";
 import { callController, fakePrisma, fakeTransaction, ID, restorePrisma } from "./helpers.js";
 
@@ -175,7 +176,16 @@ describe("sessionService.cancelSession", () => {
 });
 
 describe("runSessionSettlementTick", () => {
-  const message = { id: "m1" } as never;
+  const noticeRow = {
+    id: "m1",
+    conversationId: ID.conversation,
+    text: "Payment settled",
+    createdAt: NOW,
+    type: "system",
+    senderId: null,
+    sender: null,
+  } as never;
+  const message = serializeMessage(noticeRow);
 
   beforeEach(() => {
     jest.spyOn(console, "info").mockImplementation(() => {});
@@ -191,7 +201,7 @@ describe("runSessionSettlementTick", () => {
       .spyOn(transactionRepository, "settleSession")
       .mockResolvedValue({ kind: "completed" } as never);
     jest.spyOn(sessionRepository, "findPendingSettlementNotices").mockResolvedValue([{ id: "s1" }]);
-    jest.spyOn(conversationService, "sendSettlementNotice").mockResolvedValue(message);
+    jest.spyOn(conversationRepository, "createSettlementNotice").mockResolvedValue(noticeRow);
     const broadcast = jest.fn();
 
     await runSessionSettlementTick(broadcast, NOW);
@@ -214,7 +224,9 @@ describe("runSessionSettlementTick", () => {
       .mockRejectedValueOnce(new Error("deadlock"))
       .mockResolvedValueOnce({ kind: "completed" } as never);
     jest.spyOn(sessionRepository, "findPendingSettlementNotices").mockResolvedValue([{ id: "s9" }]);
-    const notice = jest.spyOn(conversationService, "sendSettlementNotice").mockResolvedValue(null);
+    const notice = jest
+      .spyOn(conversationRepository, "createSettlementNotice")
+      .mockResolvedValue(null);
 
     await runSessionSettlementTick(jest.fn(), NOW);
 
@@ -225,7 +237,7 @@ describe("runSessionSettlementTick", () => {
   test("SE-10 a failing due-session query still sends notices", async () => {
     jest.spyOn(sessionRepository, "advanceScheduled").mockRejectedValue(new Error("db down"));
     jest.spyOn(sessionRepository, "findPendingSettlementNotices").mockResolvedValue([{ id: "s1" }]);
-    jest.spyOn(conversationService, "sendSettlementNotice").mockResolvedValue(message);
+    jest.spyOn(conversationRepository, "createSettlementNotice").mockResolvedValue(noticeRow);
     const broadcast = jest.fn();
 
     await runSessionSettlementTick(broadcast, NOW);
@@ -240,10 +252,10 @@ describe("runSessionSettlementTick", () => {
       .spyOn(sessionRepository, "findPendingSettlementNotices")
       .mockResolvedValue([{ id: "a" }, { id: "b" }, { id: "c" }]);
     jest
-      .spyOn(conversationService, "sendSettlementNotice")
+      .spyOn(conversationRepository, "createSettlementNotice")
       .mockRejectedValueOnce(new Error("write failed"))
       .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(message);
+      .mockResolvedValueOnce(noticeRow);
     const broadcast = jest.fn(() => {
       throw new Error("socket down");
     });

@@ -1,5 +1,6 @@
-import { MeetSessionStatus, Prisma } from "@prisma/client";
+import { MeetSessionStatus } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
+import { lockSession, sessionSelect, type SessionRow } from "../common/db/session.js";
 import { BadRequestError, ForbiddenError, NotFoundError } from "../common/errors/app-error.js";
 import {
   attendanceOpen,
@@ -7,28 +8,6 @@ import {
   SETTLEMENT_GRACE_MS,
   settlementDue,
 } from "../common/utils/session.js";
-
-export const sessionSelect = {
-  id: true,
-  classroomId: true,
-  scheduledAt: true,
-  durationMinutes: true,
-  status: true,
-  meetLink: true,
-  meetSpaceName: true,
-  startedAt: true,
-  endedAt: true,
-  amountCharged: true,
-  tutorJoinedAt: true,
-  studentJoinedAt: true,
-  attendanceTrackingEnabled: true,
-} as const satisfies Prisma.MeetSessionSelect;
-
-export type SessionRow = Prisma.MeetSessionGetPayload<{ select: typeof sessionSelect }>;
-
-export async function lockSession(tx: Prisma.TransactionClient, id: string): Promise<void> {
-  await tx.$queryRaw`SELECT "id" FROM "meet_sessions" WHERE "id" = ${id} FOR UPDATE`;
-}
 
 export const sessionRepository = {
   findDueForSettlement(now: Date) {

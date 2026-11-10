@@ -1,6 +1,6 @@
 import type { Role } from "@prisma/client";
 import type { Server, Socket } from "socket.io";
-import type { SerializedMessage } from "../service/conversation.service.js";
+import type { SerializedMessage } from "../common/utils/message.js";
 
 export const SOCKET_EVENTS = {
   conversationJoin: "conversation:join",

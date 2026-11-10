@@ -1,5 +1,6 @@
 import { transactionRepository } from "../repository/transaction.repository.js";
-import { conversationService, type SerializedMessage } from "./conversation.service.js";
+import { conversationRepository } from "../repository/conversation.repository.js";
+import { serializeMessage, type SerializedMessage } from "../common/utils/message.js";
 import { ClassroomStatus, MeetSessionStatus } from "@prisma/client";
 import {
   BadRequestError,
@@ -124,10 +125,10 @@ export async function runSessionSettlementTick(
   // Independent pass: a failed payment must not block committed payment notices.
   for (const { id } of await sessionRepository.findPendingSettlementNotices()) {
     try {
-      const message = await conversationService.sendSettlementNotice(id);
-      if (message) {
+      const row = await conversationRepository.createSettlementNotice(id);
+      if (row) {
         try {
-          broadcast(message);
+          broadcast(serializeMessage(row));
         } catch (error) {
           console.error(
             "Settlement notice broadcast failed after persistence; available in chat history",

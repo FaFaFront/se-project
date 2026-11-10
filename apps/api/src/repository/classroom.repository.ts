@@ -1,7 +1,7 @@
 import { ClassroomStatus, Prisma } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
-import { reviewSelect } from "./review.repository.js";
-import { sessionSelect } from "./session.repository.js";
+import { reviewSelect } from "../common/db/review.js";
+import { sessionSelect } from "../common/db/session.js";
 import { BadRequestError, NotFoundError } from "../common/errors/app-error.js";
 
 // Only what a viewer needs to recognise the other participant — never email or contact details.
