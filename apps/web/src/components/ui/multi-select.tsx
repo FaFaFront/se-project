@@ -77,7 +77,12 @@ const MultiSelect = ({
           {label}
         </span>
       )}
-      <DropdownMenuPrimitive.Root defaultOpen={defaultOpen} open={open} onOpenChange={onOpenChange}>
+      <DropdownMenuPrimitive.Root
+        modal={false}
+        defaultOpen={defaultOpen}
+        open={open}
+        onOpenChange={onOpenChange}
+      >
         <DropdownMenuPrimitive.Trigger asChild disabled={disabled}>
           {/* eslint-disable-next-line jsx-a11y/role-supports-aria-props -- error state still needs to be exposed on the trigger; upgrading to a full combobox role/aria-controls/aria-expanded contract is out of scope here */}
           <button
@@ -107,7 +112,7 @@ const MultiSelect = ({
           <DropdownMenuPrimitive.Content
             align="start"
             sideOffset={4}
-            className="flex flex-col gap-1 border-hairline data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 w-[var(--radix-dropdown-menu-trigger-width,12.5rem)] rounded-lg border bg-white p-1.5 shadow-black"
+            className="flex flex-col gap-1 border-hairline data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-[min(16rem,var(--radix-dropdown-menu-content-available-height))] w-[var(--radix-dropdown-menu-trigger-width,12.5rem)] overflow-y-auto rounded-lg border bg-white p-1.5 shadow-black"
           >
             {normalizedOptions.map((option) => {
               const checked = selected.includes(option.value);
