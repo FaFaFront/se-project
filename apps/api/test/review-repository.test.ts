@@ -1,6 +1,7 @@
 import { afterEach, expect, jest, test } from "@jest/globals";
 import { prisma } from "../src/config/prisma.js";
-import { reviewRepository, reviewSelect } from "../src/repository/review.repository.js";
+import { reviewSelect } from "../src/common/db/review.js";
+import { reviewRepository } from "../src/repository/review.repository.js";
 
 const realDelegate = prisma.review;
 

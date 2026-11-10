@@ -15,7 +15,7 @@ import { subjectController } from "../src/controller/subject.controller.js";
 import { tutorController } from "../src/controller/tutor.controller.js";
 import { uploadController } from "../src/controller/upload.controller.js";
 import { subjectRepository } from "../src/repository/subject.repository.js";
-import { getExtension, getPublicUrl, getSignedUploadUrl } from "../src/service/gcs.service.js";
+import { getExtension, getPublicUrl, getSignedUploadUrl } from "../src/service/upload.service.js";
 import { tutorService } from "../src/service/tutor.service.js";
 import { callController, fakePrisma, ID, restorePrisma } from "./helpers.js";
 
@@ -251,7 +251,7 @@ describe("uploadController.getUploadUrl", () => {
       const isolatedEnv = (await import("../src/config/env.js")).env;
       Object.assign(isolatedEnv, { GCS_BUCKET: "test-bucket" });
       Object.assign(isolatedEnv, { GCS_SERVICE_ACCOUNT_KEY: '{"client_email":"a@b"}' });
-      const gcs = await import("../src/service/gcs.service.js");
+      const gcs = await import("../src/service/upload.service.js");
 
       await gcs.getSignedUploadUrl("k", "image/png");
       await gcs.getSignedUploadUrl("k", "image/png");
@@ -266,7 +266,7 @@ describe("uploadController.getUploadUrl", () => {
       const isolatedEnv = (await import("../src/config/env.js")).env;
       Object.assign(isolatedEnv, { GCS_BUCKET: "test-bucket" });
       Object.assign(isolatedEnv, { GCS_SERVICE_ACCOUNT_KEY: "{not json" });
-      const gcs = await import("../src/service/gcs.service.js");
+      const gcs = await import("../src/service/upload.service.js");
 
       await expect(gcs.getSignedUploadUrl("k", "image/png")).rejects.toThrow(
         "Failed to parse GOOGLE_STORAGE_SERVICE_ACCOUNT_KEY"
