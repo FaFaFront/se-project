@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/.next
+**/coverage
+**/*.tsbuildinfo
+.git
+.husky
+.yarn/install-state.gz
+**/.env
+**/.env.*
+!**/.env.example
+documents
+*.md
