@@ -16,7 +16,7 @@ export type TutorReview = Review & {
   student: { name: string | null; profileUrl: string | null };
 };
 
-/** Body of `POST /classrooms/:classroomId/review`. */
+/** Body of `POST /classrooms/:classroomId/reviews`. */
 export type CreateReviewRequest = {
   rating: number;
   comment?: string;

@@ -29,7 +29,7 @@ export function ProfilePanel() {
     setStatusMessage(null);
 
     try {
-      await apiClient.patch<UserProfile>("/users/me/status", { status: nextStatus });
+      await apiClient.patch<UserProfile>("/users/me/account-status", { status: nextStatus });
       await refresh();
       setStatusMessage(
         nextStatus === "INACTIVE"

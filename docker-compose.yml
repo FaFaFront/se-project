@@ -1,0 +1,59 @@
+# All-in-one stack (PostgreSQL + API + web) built from the root Dockerfile.
+#
+#   docker compose up --build        # first run, then just `docker compose up -d`
+#   docker compose down              # stop (keeps data)
+#   docker compose down -v           # stop and DELETE the database volume
+#
+#   Web  -> http://localhost:3000        API docs -> http://localhost:4000/api-docs
+#
+# Values below can be overridden from the shell or a root `.env` file (see `${VAR:-default}`).
+name: se-project
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Inlined into the browser bundle at build time: change them if the app is not
+        # reached via localhost, then rebuild (`docker compose up --build`).
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api}
+        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-http://localhost:4000}
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+    image: se-project:latest
+    container_name: se-project-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "4000:4000"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app}
+      POSTGRES_DB: ${POSTGRES_DB:-se_project}
+      # Empty JWT_SECRET => a random one is generated once and kept on the data volume.
+      JWT_SECRET: ${JWT_SECRET:-}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      SEED_ON_EMPTY: ${SEED_ON_EMPTY:-true}
+      # "production" requires a rediss:// REDIS_URL with auth; leave as development otherwise.
+      API_NODE_ENV: ${API_NODE_ENV:-development}
+      REDIS_URL: ${REDIS_URL:-}
+      # Set DATABASE_URL to use an external database instead (it is never seeded).
+      DATABASE_URL: ${DATABASE_URL:-}
+      # Optional: image uploads (Google Cloud Storage)
+      GOOGLE_CLOUD_PROJECT_ID: ${GOOGLE_CLOUD_PROJECT_ID:-}
+      GOOGLE_STORAGE_BUCKET: ${GOOGLE_STORAGE_BUCKET:-}
+      GOOGLE_STORAGE_SERVICE_ACCOUNT_KEY: ${GOOGLE_STORAGE_SERVICE_ACCOUNT_KEY:-}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/api-docs/ >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+volumes:
+  pgdata:
+    name: se-project-app-pgdata

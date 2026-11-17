@@ -313,8 +313,8 @@ classroomRouter.patch(
 
 /**
  * @swagger
- * /classrooms/{classroomId}/deactivate:
- *   patch:
+ * /classrooms/{classroomId}/deactivation:
+ *   post:
  *     summary: Deactivate a classroom
  *     description: Only the assigned tutor with an active account may deactivate a classroom. Changes active to completed without deleting related data. Repeated requests for a completed classroom return success.
  *     tags: [Classrooms]
@@ -359,8 +359,8 @@ classroomRouter.patch(
  *       409: { description: Classroom changed concurrently and could not be completed; retry the request }
  *       500: { description: Unexpected server error }
  */
-classroomRouter.patch(
-  "/:classroomId/deactivate",
+classroomRouter.post(
+  "/:classroomId/deactivation",
   authMiddleware,
   requireActiveAccount,
   requireRole("tutor"),
@@ -369,7 +369,7 @@ classroomRouter.patch(
 
 /**
  * @swagger
- * /classrooms/{classroomId}/review:
+ * /classrooms/{classroomId}/reviews:
  *   post:
  *     summary: Review the tutor of a completed classroom
  *     description: Only the classroom's student may review it, once, after the classroom is completed. Reviews cannot be edited or deleted.
@@ -405,7 +405,7 @@ classroomRouter.patch(
  *       409: { description: The classroom has already been reviewed }
  */
 classroomRouter.post(
-  "/:classroomId/review",
+  "/:classroomId/reviews",
   authMiddleware,
   requireActiveAccount,
   requireRole("student"),

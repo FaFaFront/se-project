@@ -94,7 +94,7 @@ export function WithdrawalForm() {
             setBank(saved.bankCode);
             try {
               const recovered = await apiClient.get<Withdrawal>(
-                `/transactions/withdrawals/by-request/${saved.requestId}`
+                `/transactions/withdrawals/${saved.requestId}`
               );
               if (!current()) return;
               setReceipt(recovered);

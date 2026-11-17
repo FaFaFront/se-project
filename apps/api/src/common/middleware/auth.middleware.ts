@@ -47,7 +47,7 @@ export const requireRole = (...roles: string[]) => {
 /**
  * Blocks inactive accounts from protected features. Applied after
  * `authMiddleware`. Intentionally omitted from GET /users/me and
- * PATCH /users/me/status so a paused account can still read and restore status.
+ * PATCH /users/me/account-status so a paused account can still read and restore status.
  */
 export const requireActiveAccount = async (
   req: AuthRequest,

@@ -133,7 +133,7 @@ export function ProfileCompletionForm() {
             ...(uploadedProfileUrl ? { profileUrl: uploadedProfileUrl } : {}),
           };
 
-      const updatedUser = await apiClient.post<PublicUser>("/users/profile", profileData);
+      const updatedUser = await apiClient.post<PublicUser>("/users/me/profile", profileData);
 
       const currentUser = getUser();
       if (currentUser) {

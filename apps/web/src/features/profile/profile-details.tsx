@@ -244,7 +244,7 @@ export function ProfileDetails({
       let uploadedUrl = profile.profileUrl;
       if (photoFile) uploadedUrl = await uploadImageToGCS(photoFile, "avatars");
 
-      const updated = await apiClient.put<ProfileUpdateResponse>("/users/profile", {
+      const updated = await apiClient.patch<ProfileUpdateResponse>("/users/me/profile", {
         name: name.trim(),
         profileUrl: uploadedUrl,
         bio: about.trim() || null,

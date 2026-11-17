@@ -152,7 +152,7 @@ router.use((req, res, next) => {
 
 /**
  * @swagger
- * /users/profile:
+ * /users/me/profile:
  *   post:
  *     summary: Complete user profile
  *     tags: [User]
@@ -171,7 +171,7 @@ router.use((req, res, next) => {
  *       400: { description: Validation error }
  *       401: { description: Unauthorized }
  */
-router.post("/profile", authMiddleware, requireActiveAccount, userController.submitProfile);
+router.post("/me/profile", authMiddleware, requireActiveAccount, userController.submitProfile);
 
 /**
  * @swagger
@@ -200,9 +200,9 @@ router.get("/me", authMiddleware, userController.getProfile);
 
 /**
  * @swagger
- * /users/profile:
- *   put:
- *     summary: Replace the authenticated user's editable profile
+ * /users/me/profile:
+ *   patch:
+ *     summary: Update the authenticated user's editable profile
  *     description: Updates the common profile fields and any supplied role-specific fields. Omitted role-specific fields retain their current values. Email, password, and role cannot be changed through this endpoint.
  *     tags: [User]
  *     security:
@@ -236,11 +236,11 @@ router.get("/me", authMiddleware, userController.getProfile);
  *       409: { description: Initial profile completion is required }
  *       500: { description: Internal server error }
  */
-router.put("/profile", authMiddleware, requireActiveAccount, userController.updateProfile);
+router.patch("/me/profile", authMiddleware, requireActiveAccount, userController.updateProfile);
 
 /**
  * @swagger
- * /users/me/status:
+ * /users/me/account-status:
  *   patch:
  *     summary: Set the authenticated user's account status
  *     description: >
@@ -280,6 +280,6 @@ router.put("/profile", authMiddleware, requireActiveAccount, userController.upda
  *       403: { description: Students cannot change their account status }
  *       409: { description: Tutor has at least one active classroom }
  */
-router.patch("/me/status", authMiddleware, userController.updateAccountStatus);
+router.patch("/me/account-status", authMiddleware, userController.updateAccountStatus);
 
 export const userRouter = router;

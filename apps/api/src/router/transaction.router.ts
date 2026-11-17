@@ -123,7 +123,7 @@ transactionRouter.use(authMiddleware);
  *               $ref: '#/components/schemas/WithdrawalError'
  *       500:
  *         $ref: '#/components/responses/WithdrawalErrorResponse'
- * /transactions/{id}:
+ * /transactions/{transactionId}:
  *   get:
  *     summary: Retrieve an owned transaction with safe operation receipt fields
  *     tags: [Transactions]
@@ -131,7 +131,7 @@ transactionRouter.use(authMiddleware);
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: transactionId
  *         required: true
  *         schema: { type: string, format: uuid }
  *     responses:
@@ -157,7 +157,7 @@ transactionRouter.use(authMiddleware);
 transactionRouter.post("/withdrawals", transactionController.withdraw);
 /**
  * @openapi
- * /transactions/withdrawals/by-request/{requestId}:
+ * /transactions/withdrawals/{requestId}:
  *   get:
  *     summary: Reconcile an owned mock withdrawal using its original request ID
  *     description: A 404 means no completed record is visible yet, not that an in-flight POST cannot complete. Retry only with the same request ID.
@@ -181,14 +181,11 @@ transactionRouter.post("/withdrawals", transactionController.withdraw);
  *       403: { description: Tutors only }
  *       404: { description: No valid owned withdrawal is currently visible }
  */
-transactionRouter.get(
-  "/withdrawals/by-request/:requestId",
-  transactionController.getWithdrawalByRequest
-);
-transactionRouter.get("/top-ups/options", transactionController.getTopUpOptions);
+transactionRouter.get("/withdrawals/:requestId", transactionController.getWithdrawalByRequest);
+transactionRouter.get("/top-up-options", transactionController.getTopUpOptions);
 transactionRouter.post("/top-ups", transactionController.topUp);
 transactionRouter.get("/", transactionController.list);
-transactionRouter.get("/:id", transactionController.get);
+transactionRouter.get("/:transactionId", transactionController.get);
 
 /**
  * @openapi
@@ -259,7 +256,7 @@ transactionRouter.get("/:id", transactionController.get);
  *                     total: { type: integer }
  *       400: { description: Invalid pagination or transaction type }
  *       401: { description: Authentication required }
- * /transactions/top-ups/options:
+ * /transactions/top-up-options:
  *   get:
  *     summary: Get the student's allowed top-up amounts
  *     tags: [Transactions]

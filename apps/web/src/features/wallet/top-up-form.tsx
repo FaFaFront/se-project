@@ -58,7 +58,7 @@ export function TopUpForm() {
       setBlocked(true);
       setError(err instanceof Error ? err.message : "Unable to read top-up recovery.");
     }
-    apiClient.get<TopUpOptions>("/transactions/top-ups/options").then(
+    apiClient.get<TopUpOptions>("/transactions/top-up-options").then(
       (data) => {
         if (active) setOptions(data);
       },

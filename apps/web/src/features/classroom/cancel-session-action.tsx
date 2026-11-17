@@ -61,7 +61,7 @@ function CancelSessionDialog({
 
     try {
       await apiClient.patch<ClassroomSession>(
-        `/sessions/${encodeURIComponent(session.id)}/cancel`,
+        `/sessions/${encodeURIComponent(session.id)}/cancellation`,
         {}
       );
       if (!mountedRef.current) return;

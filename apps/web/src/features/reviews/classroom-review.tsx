@@ -98,7 +98,7 @@ function ReviewDialog({
         ...(commentLength > 0 && { comment: comment.trim() }),
       };
       const review = await apiClient.post<Review>(
-        `/classrooms/${encodeURIComponent(classroomId)}/review`,
+        `/classrooms/${encodeURIComponent(classroomId)}/reviews`,
         payload
       );
       if (!mountedRef.current) return;

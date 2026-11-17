@@ -25,7 +25,7 @@ export type UserProfile = {
   subjects: Subject[];
 };
 
-/** Shape returned by `POST /users/profile` on completion. */
+/** Shape returned by `POST /users/me/profile` on completion. */
 export type PublicUser = {
   id: string;
   name: string | null;
@@ -41,5 +41,5 @@ export type PublicUser = {
   createdAt: string;
 };
 
-/** Shape of a successful `PUT /users/profile` response. */
+/** Shape of a successful `PATCH /users/me/profile` response. */
 export type ProfileUpdateResponse = UserProfile;

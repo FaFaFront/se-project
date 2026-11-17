@@ -18,6 +18,6 @@ apiRoutes.use("/conversations", conversationRouter);
 apiRoutes.use("/sessions", sessionRouter);
 apiRoutes.use("/subjects", subjectRouter);
 apiRoutes.use("/tutors", tutorRouter);
-apiRoutes.use("/upload", uploadRouter);
+apiRoutes.use("/uploads", uploadRouter);
 apiRoutes.use("/users", userRouter);
 apiRoutes.use("/transactions", transactionRouter);

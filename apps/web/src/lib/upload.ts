@@ -28,7 +28,7 @@ export async function uploadImageToGCS(file: File, folder = "avatars"): Promise<
 
   // 1. Request presigned upload URL from backend
   const { url, publicUrl } = await apiClient.post<PresignedUploadResponse>(
-    "/upload/presigned-url",
+    "/uploads/presigned-urls",
     {
       contentType: file.type,
       contentLength: file.size,

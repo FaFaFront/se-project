@@ -129,7 +129,7 @@ export const transactionController = {
   async get(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const ownerId = userId(req);
-      const id = z.string().uuid("Transaction ID must be a UUID").parse(req.params.id);
+      const id = z.string().uuid("Transaction ID must be a UUID").parse(req.params.transactionId);
       const transaction = await transactionService.get(ownerId, id);
       res
         .set("Cache-Control", "no-store")

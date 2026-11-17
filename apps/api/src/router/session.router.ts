@@ -53,8 +53,8 @@ sessionRouter.post(
 
 /**
  * @swagger
- * /sessions/{sessionId}/cancel:
- *   patch:
+ * /sessions/{sessionId}/cancellation:
+ *   post:
  *     summary: Cancel a scheduled or ongoing session
  *     description: >
  *       Only the tutor who owns the classroom can cancel a session.
@@ -85,8 +85,8 @@ sessionRouter.post(
  *       403: { description: Inactive account, not a tutor, or not this classroom's tutor }
  *       404: { description: Session not found }
  */
-sessionRouter.patch(
-  "/:sessionId/cancel",
+sessionRouter.post(
+  "/:sessionId/cancellation",
   authMiddleware,
   requireActiveAccount,
   requireRole("tutor"),

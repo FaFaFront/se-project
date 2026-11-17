@@ -437,7 +437,7 @@ describe("transactionController", () => {
     });
     const get = await callController(transactionController.get as never, {
       user: tutor,
-      params: { id: "nope" },
+      params: { transactionId: "nope" },
     });
 
     expect(lookup.error).toBeInstanceOf(ZodError);
@@ -449,7 +449,7 @@ describe("transactionController", () => {
 
     const { body, res } = await callController(transactionController.get as never, {
       user: tutor,
-      params: { id: ID.other },
+      params: { transactionId: ID.other },
     });
 
     expect(body.data).toEqual({ id: "x" });

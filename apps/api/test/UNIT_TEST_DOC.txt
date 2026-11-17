@@ -381,10 +381,10 @@ RT-01  (24) Every protected endpoint without a token -> 401
 RT-02  (24) Every protected endpoint with a forged token -> 401
 RT-03  (16) Inactive account -> 403 on: classrooms (list, create, view, edit,
            deactivate, book session, review), sessions (view, join, cancel),
-           conversations (inbox, start, history), upload, users/profile
+           conversations (inbox, start, history), upload, users/me/profile
            (POST, PUT)
 RT-04  (8) Still works for an inactive account: GET /users/me,
-           PATCH /users/me/status, and all 6 /transactions endpoints
+           PATCH /users/me/account-status, and all 6 /transactions endpoints
            (an inactive tutor can reactivate and withdraw their balance)
 RT-05  (10) Wrong role -> 403 on: create/edit/deactivate classroom, book
            session, cancel session (tutor only); review (student only);

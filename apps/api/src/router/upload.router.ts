@@ -13,7 +13,7 @@ const router = Router();
 
 /**
  * @swagger
- * /upload/presigned-url:
+ * /uploads/presigned-urls:
  *   post:
  *     summary: Get a GCS presigned URL for direct file upload
  *     description: >
@@ -83,6 +83,6 @@ const router = Router();
  *       401:
  *         description: Unauthorized
  */
-router.post("/presigned-url", authMiddleware, requireActiveAccount, uploadController.getUploadUrl);
+router.post("/presigned-urls", authMiddleware, requireActiveAccount, uploadController.getUploadUrl);
 
 export const uploadRouter = router;

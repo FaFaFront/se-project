@@ -56,7 +56,7 @@ function DeactivateClassroomDialog({
 
     try {
       await apiClient.patch<DeactivateClassroomResponse>(
-        `/classrooms/${encodeURIComponent(classroomId)}/deactivate`,
+        `/classrooms/${encodeURIComponent(classroomId)}/deactivation`,
         {}
       );
       if (!mountedRef.current) return;

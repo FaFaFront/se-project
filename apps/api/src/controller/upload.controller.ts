@@ -40,7 +40,7 @@ const GetUploadUrlSchema = z
 
 export const uploadController = {
   /**
-   * POST /upload/presigned-url
+   * POST /uploads/presigned-urls
    * Returns a GCS V4 signed URL the client can PUT to directly.
    * The response also includes the final public URL so the caller
    * can persist it after the upload succeeds.
