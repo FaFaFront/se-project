@@ -34,7 +34,7 @@ function isDefaultQuery(query: ClassroomListQuery): boolean {
 }
 
 /** The signed-in user's own classrooms: search plus subject/status filters, all combined server-side. */
-function OwnClassroomList() {
+function OwnClassroomList({ participantRole }: { participantRole: "student" | "tutor" }) {
   const [query, setQuery] = useState<ClassroomListQuery>(INITIAL_QUERY);
   const [debouncedSearch, setDebouncedSearch] = useState(query.search);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -118,7 +118,7 @@ function OwnClassroomList() {
       <ClassroomFilters
         query={query}
         subjects={subjects}
-        participantRole={profile.role === "student" ? "tutor" : "student"}
+        participantRole={participantRole}
         onChange={(patch) => setQuery((current) => ({ ...current, ...patch }))}
         onClear={isDefault ? undefined : clearFilters}
       />
@@ -228,5 +228,10 @@ export function ClassroomListPanel() {
   if (!profile) return null;
 
   // Keyed by user so switching accounts never shows the previous user's list.
-  return <OwnClassroomList key={profile.id} />;
+  return (
+    <OwnClassroomList
+      key={profile.id}
+      participantRole={profile.role === "student" ? "tutor" : "student"}
+    />
+  );
 }
