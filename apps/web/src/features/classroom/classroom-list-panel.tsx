@@ -118,6 +118,7 @@ function OwnClassroomList() {
       <ClassroomFilters
         query={query}
         subjects={subjects}
+        participantRole={profile.role === "student" ? "tutor" : "student"}
         onChange={(patch) => setQuery((current) => ({ ...current, ...patch }))}
         onClear={isDefault ? undefined : clearFilters}
       />

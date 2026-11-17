@@ -30,6 +30,16 @@ export function JoinSessionAction({
 
   async function join() {
     if (submitting.current || disabled) return;
+
+    // This must happen in the click handler; opening it after the request would
+    // be treated as a popup by most browsers.
+    const meetWindow = window.open("about:blank", "_blank");
+    if (!meetWindow) {
+      setError("Your browser blocked the Meet tab. Allow pop-ups and try again.");
+      return;
+    }
+    meetWindow.opener = null;
+
     submitting.current = true;
     setPending(true);
     setError(null);
@@ -38,8 +48,9 @@ export function JoinSessionAction({
         `/sessions/${encodeURIComponent(sessionId)}/attendance`,
         {}
       );
-      if (active.current) window.location.assign(session.meetLink);
+      meetWindow.location.replace(session.meetLink);
     } catch (err) {
+      meetWindow.close();
       if (!active.current) return;
       submitting.current = false;
       setPending(false);

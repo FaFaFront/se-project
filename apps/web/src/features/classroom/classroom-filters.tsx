@@ -21,12 +21,21 @@ const STATUS_OPTIONS: { label: string; value: ClassroomStatusFilter }[] = [
 export interface ClassroomFiltersProps {
   query: ClassroomListQuery;
   subjects: Subject[];
+  participantRole: "student" | "tutor";
   onChange: (patch: Partial<ClassroomListQuery>) => void;
   /** Shown only while the query differs from the default view. */
   onClear?: () => void;
 }
 
-export function ClassroomFilters({ query, subjects, onChange, onClear }: ClassroomFiltersProps) {
+export function ClassroomFilters({
+  query,
+  subjects,
+  participantRole,
+  onChange,
+  onClear,
+}: ClassroomFiltersProps) {
+  const searchLabel = `Search by ${participantRole} or subject`;
+
   return (
     <div className="gap-base flex flex-col md:flex-row md:items-end">
       <div className="relative md:flex-1">
@@ -36,8 +45,8 @@ export function ClassroomFilters({ query, subjects, onChange, onClear }: Classro
         />
         <Input
           type="search"
-          aria-label="Search by student or subject"
-          placeholder="Search by student or subject"
+          aria-label={searchLabel}
+          placeholder={searchLabel}
           value={query.search}
           onChange={(event) => onChange({ search: event.target.value })}
           className="pl-9"
