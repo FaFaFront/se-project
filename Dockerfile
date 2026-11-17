@@ -13,7 +13,8 @@
 # On first start the DB schema is created (prisma db push) and, if the User table is
 # empty, seeded with tutor01..50@gmail.com (Tutor123!) / student01..50@gmail.com (Student123!).
 #
-# Optional runtime env: JWT_SECRET, POSTGRES_USER/PASSWORD/DB, CORS_ORIGIN, REDIS_URL,
+# Optional runtime env: JWT_SECRET (random + persisted on the volume if unset),
+# API_NODE_ENV=development|production, DATABASE_URL (use an external DB instead; never seeded), POSTGRES_USER/PASSWORD/DB, CORS_ORIGIN, REDIS_URL,
 # SEED_ON_EMPTY=false, GOOGLE_STORAGE_BUCKET / GOOGLE_CLOUD_PROJECT_ID /
 # GOOGLE_STORAGE_SERVICE_ACCOUNT_KEY (uploads).
 FROM node:22-alpine
@@ -51,8 +52,9 @@ RUN cd apps/web && yarn build
 ENV POSTGRES_USER=app \
     POSTGRES_PASSWORD=app \
     POSTGRES_DB=se_project \
-    PGDATA=/var/lib/postgresql/data \
-    SEED_ON_EMPTY=true
+    PGDATA=/var/lib/postgresql/data/pgdata \
+    SEED_ON_EMPTY=true \
+    API_NODE_ENV=development
 
 COPY <<'EOF_SCRIPT' /usr/local/bin/start.sh
 #!/bin/bash
@@ -77,34 +79,61 @@ if [ "$("${PSQL[@]}" -d postgres -c "SELECT 1 FROM pg_database WHERE datname='$P
   "${PSQL[@]}" -d postgres -c "CREATE DATABASE \"$POSTGRES_DB\"" >/dev/null
 fi
 
-# 2. Schema + optional seed
-export DATABASE_URL="${DATABASE_URL:-postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@127.0.0.1:5432/$POSTGRES_DB}"
-export JWT_SECRET="${JWT_SECRET:-change-me-in-production}"
+# 2. Connection string + secrets
+urlenc() { node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$1"; }
+
+# The bundled database is only seeded when we point the app at it. If the caller supplies
+# their own DATABASE_URL, the app uses it as-is and we never seed it.
+if [ -n "${DATABASE_URL:-}" ]; then
+  BUNDLED_DB=false
+else
+  BUNDLED_DB=true
+  export DATABASE_URL="postgresql://$(urlenc "$POSTGRES_USER"):$(urlenc "$POSTGRES_PASSWORD")@127.0.0.1:5432/$(urlenc "$POSTGRES_DB")"
+fi
+
+# No hard-coded JWT secret: use the supplied one, otherwise generate a random secret once
+# and keep it on the data volume so tokens stay valid across restarts.
+if [ -z "${JWT_SECRET:-}" ]; then
+  SECRET_FILE="$(dirname "$PGDATA")/jwt_secret"
+  if [ ! -s "$SECRET_FILE" ]; then
+    (umask 077 && openssl rand -base64 48 > "$SECRET_FILE")
+  fi
+  JWT_SECRET="$(cat "$SECRET_FILE")"
+fi
+export JWT_SECRET
+
+# 3. Schema + optional seed
 cd /app/apps/api
 echo "[start] applying schema"
 yarn prisma db push --skip-generate >/dev/null
-if [ "$SEED_ON_EMPTY" = "true" ] && [ "$("${PSQL[@]}" -d "$POSTGRES_DB" -c 'SELECT COUNT(*) FROM users')" = "0" ]; then
+if [ "$BUNDLED_DB" = "true" ] && [ "$SEED_ON_EMPTY" = "true" ] \
+  && [ "$("${PSQL[@]}" -d "$POSTGRES_DB" -c 'SELECT COUNT(*) FROM users')" = "0" ]; then
   echo "[start] empty database, seeding"
   yarn db.seed
 fi
 
-# 3. API + Web
-if [ -n "${REDIS_URL:-}" ]; then API_ENV=production; else API_ENV=development; fi
-NODE_ENV=$API_ENV PORT=4000 yarn start &
+# 4. API + Web. API_NODE_ENV is explicit ("production" requires a rediss:// REDIS_URL with auth);
+# it is independent of whether REDIS_URL is set.
+NODE_ENV="$API_NODE_ENV" PORT=4000 yarn start &
 API_PID=$!
 (cd /app/apps/web && NODE_ENV=production PORT=3000 yarn start) &
 WEB_PID=$!
 
 shutdown() {
+  local code="${1:-0}"
   kill "$API_PID" "$WEB_PID" 2>/dev/null || true
   su-exec postgres pg_ctl -D "$PGDATA" -m fast stop >/dev/null 2>&1 || true
-  exit 0
+  exit "$code"
 }
-trap shutdown TERM INT
+# Docker stop (TERM/INT) is a clean exit
+trap 'shutdown 0' TERM INT
 
-# If either app dies, stop the container
-wait -n "$API_PID" "$WEB_PID" || true
-shutdown
+# If either app dies on its own, stop the container with that app's exit status
+# (an unexpected exit 0 is still reported as a failure).
+status=0
+wait -n "$API_PID" "$WEB_PID" || status=$?
+[ "$status" -eq 0 ] && status=1
+shutdown "$status"
 EOF_SCRIPT
 RUN chmod +x /usr/local/bin/start.sh
 
