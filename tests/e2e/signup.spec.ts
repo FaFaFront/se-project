@@ -15,6 +15,7 @@ test.describe("Sign up", () => {
     await page.getByLabel("Gmail", { exact: true }).fill(UNUSED_EMAIL);
     await page.getByLabel("Password", { exact: true }).fill("P@ssw0rd");
     await page.getByLabel("Confirm password", { exact: true }).fill("P@ssw0rd");
+    await page.getByRole("checkbox", { name: /Privacy Policy/ }).check();
 
     const registered = page.waitForResponse(
       (response) =>
@@ -48,6 +49,9 @@ test.describe("Sign up", () => {
     await expect(page.getByText("Gmail is required", { exact: true })).toBeVisible();
     await expect(page.getByText("Password is required", { exact: true })).toBeVisible();
     await expect(page.getByText("Please confirm your password", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("You must accept the Privacy Policy to sign up", { exact: true })
+    ).toBeVisible();
     await expect(page.getByLabel("Gmail", { exact: true })).toHaveAttribute("aria-invalid", "true");
     await expect(page).toHaveURL("/register");
     expect(submissions).toHaveLength(0);
@@ -61,6 +65,7 @@ test.describe("Sign up", () => {
     await page.getByLabel("Gmail", { exact: true }).fill(EXISTING_ACCOUNT.email);
     await page.getByLabel("Password", { exact: true }).fill("newpassword123");
     await page.getByLabel("Confirm password", { exact: true }).fill("newpassword123");
+    await page.getByRole("checkbox", { name: /Privacy Policy/ }).check();
 
     const rejected = page.waitForResponse(`${API_URL}/auth/register`);
     await page.getByRole("main").getByRole("button", { name: "Sign up", exact: true }).click();
@@ -105,6 +110,25 @@ test.describe("Sign up", () => {
 
     await expect(page.getByText("Passwords do not match", { exact: true })).toBeVisible();
     await expect(page.getByLabel("Confirm password", { exact: true })).toHaveAttribute(
+      "aria-invalid",
+      "true"
+    );
+    await expect(page).toHaveURL("/register");
+    expect(submissions).toHaveLength(0);
+    await expectSignedOut(page);
+  });
+
+  test("TC1-6: Student cannot register without accepting the Privacy Policy", async ({ page }) => {
+    const submissions = trackSubmissions(page, "/auth/register");
+    await page.getByLabel("Gmail", { exact: true }).fill(UNUSED_EMAIL);
+    await page.getByLabel("Password", { exact: true }).fill("P@ssw0rd");
+    await page.getByLabel("Confirm password", { exact: true }).fill("P@ssw0rd");
+    await page.getByRole("main").getByRole("button", { name: "Sign up", exact: true }).click();
+
+    await expect(
+      page.getByText("You must accept the Privacy Policy to sign up", { exact: true })
+    ).toBeVisible();
+    await expect(page.getByRole("checkbox", { name: /Privacy Policy/ })).toHaveAttribute(
       "aria-invalid",
       "true"
     );

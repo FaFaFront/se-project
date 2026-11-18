@@ -2,7 +2,10 @@
 
 import { useState, type FormEvent } from "react";
 
+import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { PasswordForm } from "@/components/ui/password-form";
 import { Select, type SelectOption } from "@/components/ui/select";
@@ -13,6 +16,7 @@ const MINIMUM_PASSWORD_LENGTH = 8;
 
 const FALLBACK_ERROR = "Unable to sign up. Please try again.";
 const NETWORK_ERROR = "Unable to reach the server. Please try again.";
+const PRIVACY_POLICY_ERROR = "You must accept the Privacy Policy to sign up";
 
 const ROLE_OPTIONS: SelectOption[] = [
   { label: "Student", value: "student" },
@@ -34,10 +38,13 @@ export interface RegistrationFormProps {
   className?: string;
 }
 
-type FieldName = "email" | "password" | "confirmPassword";
+type FieldName = "email" | "password" | "confirmPassword" | "privacyPolicy";
 type FieldErrors = Partial<Record<FieldName, string>>;
 
-function validate({ email, password, confirmPassword }: RegistrationFormValues): FieldErrors {
+function validate(
+  { email, password, confirmPassword }: RegistrationFormValues,
+  acceptedPrivacyPolicy: boolean
+): FieldErrors {
   const errors: FieldErrors = {};
 
   if (!email) {
@@ -58,6 +65,10 @@ function validate({ email, password, confirmPassword }: RegistrationFormValues):
     errors.confirmPassword = "Passwords do not match";
   }
 
+  if (!acceptedPrivacyPolicy) {
+    errors.privacyPolicy = PRIVACY_POLICY_ERROR;
+  }
+
   return errors;
 }
 
@@ -70,6 +81,7 @@ export function RegistrationForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [acceptedPrivacyPolicy, setAcceptedPrivacyPolicy] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,7 +90,7 @@ export function RegistrationForm({
     event.preventDefault();
 
     const values = { role, email: email.trim(), password, confirmPassword };
-    const errors = validate(values);
+    const errors = validate(values, acceptedPrivacyPolicy);
     setFieldErrors(errors);
     setFormError(null);
     if (Object.keys(errors).length > 0) return;
@@ -150,6 +162,33 @@ export function RegistrationForm({
         disabled={isSubmitting}
         error={Boolean(fieldErrors.confirmPassword)}
         errorMessage={fieldErrors.confirmPassword}
+      />
+
+      <Checkbox
+        name="privacyPolicy"
+        checked={acceptedPrivacyPolicy}
+        onChange={(event) => {
+          setAcceptedPrivacyPolicy(event.target.checked);
+          if (event.target.checked) {
+            setFieldErrors((current) => ({ ...current, privacyPolicy: undefined }));
+          }
+        }}
+        disabled={isSubmitting}
+        error={Boolean(fieldErrors.privacyPolicy)}
+        errorMessage={fieldErrors.privacyPolicy}
+        label={
+          <>
+            I have read and accept the{" "}
+            <Link
+              href="/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary underline underline-offset-4"
+            >
+              Privacy Policy
+            </Link>
+          </>
+        }
       />
 
       {formError && (
