@@ -48,6 +48,7 @@ and videos in `test-results/`. Generated output is ignored by Git and format/lin
 | TC1-3 | Tutor, existing `nat.silp@gmail.com`, matching `newpassword123` | HTTP 409 and duplicate-email message                       |
 | TC1-4 | Student, `test123#gmail.com`, matching `12345`                  | Email/password messages; no registration request           |
 | TC1-5 | Tutor, `test123@gmail.com`, `password123` / `password999`       | Password mismatch; no registration request                 |
+| TC1-6 | Student, valid credentials, Privacy Policy not accepted         | Privacy Policy error; no registration request              |
 | TC2-1 | `nat.silp@gmail.com` / `selab2026`                              | Login succeeds; session survives protected-page navigation |
 | TC2-2 | Empty login credentials                                         | Required-field messages; no login request                  |
 | TC2-3 | Missing `newuser@gmail.com` / `selab1999`                       | HTTP 401; remains signed out                               |
